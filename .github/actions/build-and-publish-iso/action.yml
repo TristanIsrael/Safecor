@@ -28,8 +28,9 @@ runs:
 
   - name: Apply patches
     shell: sh
-    run: |      
-      setup/iso/patches/apply-patches.sh
+    run: |
+      sudo chmod +x setup/iso/patches/apply-patches.sh
+      sudo setup/iso/patches/apply-patches.sh
 
   - name: Build ISO 
     shell: sh
