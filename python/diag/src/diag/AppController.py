@@ -97,7 +97,8 @@ class AppController(QObject):
                         total += value
                     except (IndexError, ValueError):
                         pass
-        return total
+
+        return round(total)
 
     @Slot()
     def shutdown(self):
