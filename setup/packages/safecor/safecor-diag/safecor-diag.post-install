@@ -1,9 +1,6 @@
 #!/bin/sh
 
-#echo "Add debug service to default runlevel"
-#rc-udpate add debug
-
-#echo "Add diag app to default reunlevel"
-#rc-update add diag
+echo Activate colored prompt
+mv /etc/profile.d/color_prompt.sh.disabled /etc/profile.d/color_prompt.sh
 
 exit 0

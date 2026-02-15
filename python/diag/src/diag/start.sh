@@ -20,7 +20,4 @@ echo "Detected mouse at: $MOUSE_EVDEV"
 # Close the splash
 echo "exit" > /.splash.ctrl
 
-chvt 16
-sleep 0.2
-
-/usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -platform linuxfb:tty=/dev/tty16 -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV > /dev/null 2>&1
+/usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV > /dev/null 2>&1
