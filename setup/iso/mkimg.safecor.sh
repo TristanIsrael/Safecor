@@ -60,11 +60,11 @@ profile_safecor() {
     desc="ISO image for Safecor apps"
     arch="x86_64"
 		
-    kernel_cmdline="$kernel_cmdline quiet console=null loglevel=0"
+    kernel_cmdline="$kernel_cmdline console=none loglevel=0"
     syslinux_serial=""
     kernel_addons=""
     kernel_flavors="lts"
-    xen_params="quiet console=null loglevel=0"
+    xen_params="quiet console=none loglevel=0"
     apks="$apks rng-tools xen xen-hypervisor syslinux"
     arch="x86_64"
 }

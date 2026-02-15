@@ -26,6 +26,11 @@ runs:
     run: |
       git clone --depth=1 https://gitlab.alpinelinux.org/alpine/aports.git
 
+  - name: Apply patches
+    shell: sh
+    run: |      
+      setup/iso/patches/apply-patches.sh
+
   - name: Build ISO 
     shell: sh
     env:

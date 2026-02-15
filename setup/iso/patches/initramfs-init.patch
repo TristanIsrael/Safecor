@@ -1,0 +1,14 @@
+--- initramfs-init	2024-12-04 20:06:41.000000000 +0000
++++ initramfs-init.patched	2026-02-15 10:52:56.142103161 +0000
+@@ -120,6 +120,11 @@
+ }
+
+ setup_inittab_console() {
++	# Verify whether console=none is provided on the kernel command line
++    	for c in $KOPT_consoles; do
++        	[ "$c" = "none" ] && return
++    	done
++
+ 	term=vt100
+ 	# Inquire the kernel for list of console= devices
+ 	consoles="$(for c in console $KOPT_consoles $(detect_serial_consoles); do list_console_devices $c; done)"

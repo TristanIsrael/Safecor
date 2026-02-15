@@ -7,7 +7,7 @@
             "path": "../Safecor.wiki"
         },
         {
-            "path": "../AlpineLinux.nosync/aports/scripts"
+            "path": "../AlpineLinux.nosync/aports_fork/scripts"
         }
     ],    
     "settings": {
