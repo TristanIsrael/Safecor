@@ -4,9 +4,9 @@
  }
 
  setup_inittab_console() {
-+	# Verify whether console=none is provided on the kernel command line
++	# Verify whether console=null is provided on the kernel command line
 +    	for c in $KOPT_consoles; do
-+        	[ "$c" = "none" ] && return
++        	[ "$c" = "null" ] && return
 +    	done
 +
  	term=vt100
