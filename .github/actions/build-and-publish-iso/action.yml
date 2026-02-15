@@ -30,7 +30,7 @@ runs:
     shell: sh
     run: |
       sudo chmod +x setup/iso/patches/apply-patches.sh
-      sudo setup/iso/patches/apply-patches.sh
+      sudo setup/iso/patches/apply-patches.sh "$PWD/setup/iso/patches"
 
   - name: Build ISO 
     shell: sh
