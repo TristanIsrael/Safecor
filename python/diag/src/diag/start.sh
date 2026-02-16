@@ -23,7 +23,5 @@ echo 0 > /sys/class/graphics/fbcon/cursor_blink 2>/dev/null || true
 # Close the splash
 echo "exit" > /.splash.ctrl 2>/dev/null || true
 
-sleep 1
-
 # Start the app
-/usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -platform linuxfb -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV
+/usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -platform linuxfb:tty=/dev/null -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV
