@@ -5,7 +5,7 @@ import net.alefbet
 Window {
     id: window
 
-    property bool mode_paysage: width < height
+    property bool landscape: width < height
     
     //anchors.fill: parent
     visibility: Window.FullScreen
@@ -17,19 +17,19 @@ Window {
     }
 
     Component.onCompleted: {
-        console.log("Mode paysage activé : " + (mode_paysage ? "Oui" : "Non"))
-        console.log("Fonctionne sur " +Qt.platform.os)
+        console.log("Landscape mode: " + (landscape ? "Yes" : "No"))
+        console.log("Working on: " +Qt.platform.os)
     }    
 
     onWidthChanged: {
-        if( (window.width < window.height) && !mode_paysage ) {            
-            console.log("Bascule automatique en mode paysage")
-            mode_paysage = true   
+        if( (window.width < window.height) && !landscape ) {            
+            console.log("Automatically switch to landscape mode")
+            landscape = true   
         }
     }  
 
     onVisibleChanged: {  
         if(visible)      
-            console.log("Résolution : " +Qt.application.screens[0].width +"x" +Qt.application.screens[0].height)
+            console.log("Screen resolution: " +Qt.application.screens[0].width +"x" +Qt.application.screens[0].height)
     }
 }

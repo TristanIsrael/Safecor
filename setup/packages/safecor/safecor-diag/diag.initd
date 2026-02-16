@@ -13,6 +13,7 @@ start_pre() {
     echo "exit" > /.splash.ctrl 2>/dev/null || true
 
     sleep 1
+    echo 1 > /sys/class/graphics/fb0/blank    
 }
 
 start() {
