@@ -1,0 +1,24 @@
+#!/sbin/openrc-run
+
+name="diag"
+
+depend() {
+    need xenstored udev-trigger localmount
+    after bootmisc
+}
+
+start() {
+    ebegin "Start diagnostic tool"
+
+    start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/diag/src/diag/start.sh --pidfile /var/run/$name.pid --background
+
+    eend $?
+}
+
+stop() {
+    ebegin "Stop diagnostic tool"
+
+    kill -9 $(cat /var/run/$name.pid)
+
+    eend $?
+}

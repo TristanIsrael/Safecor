@@ -23,6 +23,7 @@ open-tty.sh
 motd
 rc.conf
 inittab
+diag.initd
 "
 
 prepare() {
@@ -43,7 +44,7 @@ package() {
     cd "$pkgdir/usr/lib/safecor"
     ln -s "diag-$pkgver" diag    
 
-    #install -D -m755 "$srcdir"/diag.initd "$pkgdir/etc/init.d/diag"
+    install -D -m755 "$srcdir"/diag.initd "$pkgdir/etc/init.d/diag"
     #install -D -m755 "$srcdir"/debug.initd "$pkgdir/etc/init.d/debug"
     install -D -m755 "$srcdir"/start-debug.sh "$pkgdir/usr/lib/safecor/bin/start-debug.sh"
     install -D -m755 "$srcdir"/open-tty.sh "$pkgdir/usr/lib/safecor/bin/open-tty.sh"
