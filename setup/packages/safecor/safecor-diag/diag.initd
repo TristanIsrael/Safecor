@@ -3,8 +3,8 @@
 name="diag"
 
 depend() {
-    need xenstored udev-trigger localmount
-    after bootmisc
+    need xenstored udev-trigger
+    after *
 }
 
 start() {
