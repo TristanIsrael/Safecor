@@ -21,4 +21,4 @@ echo "Detected mouse at: $MOUSE_EVDEV"
 echo "exit" > /.splash.ctrl 2>/dev/null || true
 
 # Start the app
-QT_QPA_PLATFORM=eglfs QT_QPA_EGLFS_FB=/dev/fb0 /usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV
+/usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -platform eglfs -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV
