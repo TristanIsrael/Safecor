@@ -9,11 +9,11 @@ depend() {
 
 start_pre() {
     # Close splash if needed
-    exec 3<>/.splash.ctrl
-    echo "exit" > /.splash.ctrl 2>/dev/null || true
-
-    sleep 1
-    echo 1 > /sys/class/graphics/fb0/blank    
+    if [ -e /.splash.ctrl ]; then
+        exec 3<>/.splash.ctrl
+        echo "exit" > /.splash.ctrl 2>/dev/null || true
+        echo 1 > /sys/class/graphics/fb0/blank
+    fi
 }
 
 start() {

@@ -21,8 +21,5 @@ echo "Detected mouse at: $MOUSE_EVDEV"
 #exec 3<>/.splash.ctrl
 #echo "exit" > /.splash.ctrl 2>/dev/null || true
 
-# Clear the framebuffer
-echo 1 > /sys/class/graphics/fb0/blank
-
 # Start the app
-QT_LOGGING_RULES="*.debug=true" QT_DEBUG_PLUGINS=1 QT_QPA_PLATFORM="linuxfb" QT_QPA_FB_DEVICE="/dev/fb0" QT_QPA_FB_TTY="/dev/hvc0" /usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV
+QT_QPA_PLATFORM="linuxfb" /usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV
