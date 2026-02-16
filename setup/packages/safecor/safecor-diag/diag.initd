@@ -7,6 +7,14 @@ depend() {
     after *
 }
 
+start_pre() {
+    # Close splash if needed
+    exec 3<>/.splash.ctrl
+    echo "exit" > /.splash.ctrl 2>/dev/null || true
+
+    sleep 1
+}
+
 start() {
     ebegin "Start diagnostic tool"
 
