@@ -4,7 +4,7 @@ import os
 import signal
 import subprocess
 from pathlib import Path
-import sys, threading
+import sys
 
 from PySide6.QtCore import QUrl, Qt, QTimer
 from PySide6.QtGui import QKeyEvent, QKeySequence, QGuiApplication, QFont
@@ -13,8 +13,8 @@ from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterType, qmlRegisterSin
 from AppController import AppController
 
 class MyView(QQuickView):
+
     def keyPressEvent(self, event: QKeyEvent):
-        # print(event.modifiers(), Qt.ControlModifier, event.key())
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_C:
             # Ctrl+C has been pressed
             self.close()
@@ -49,6 +49,8 @@ def main():
         view.showFullScreen()
     else:
         view.show()
+
+    
 
     #if not engine.rootObjects():
     #    sys.exit(-1)
