@@ -1,4 +1,7 @@
-import cpuinfo
+try:
+    import cpuinfo
+except ImportError:
+    pass
 import subprocess
 import re
 from Singleton import SingletonMeta

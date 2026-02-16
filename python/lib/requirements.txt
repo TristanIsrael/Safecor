@@ -6,4 +6,5 @@ pyudev
 msgpack
 psutil
 libvirt-python
+PySide6
 evdev

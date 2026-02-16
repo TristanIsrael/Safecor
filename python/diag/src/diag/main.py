@@ -18,7 +18,6 @@ class MyView(QQuickView):
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_C:
             # Ctrl+C has been pressed
             self.close()
-            #QGuiApplication.quit()
             subprocess.run("poweroff")
         else:
             super().keyPressEvent(event)
@@ -26,7 +25,7 @@ class MyView(QQuickView):
 def main():
     app = QGuiApplication(sys.argv)
 
-    signal.signal(signal.SIGINT, lambda *_: app.quit())
+    #signal.signal(signal.SIGINT, lambda *_: app.quit())
     
     # Expose les Types QML
     qmlRegisterSingletonInstance(AppController, "net.alefbet", 1, 0, 'AppController', AppController(app))
@@ -36,28 +35,22 @@ def main():
     app.setFont(font)
 
     app_root_path = Path(__file__).parent
-    #engine = QQmlApplicationEngine()
-    view = MyView()
+    engine = QQmlApplicationEngine()
+    #view = MyView()
 
-    view.engine().quit.connect(app.quit)
-    view.engine().addImportPath(app_root_path / 'qml')
-    #engine.addImportPath(app_root_path / 'qml')
+    #view.engine().quit.connect(app.quit)
+    #view.engine().addImportPath(app_root_path / 'qml')
+    engine.addImportPath(app_root_path / 'qml')
     qml_file = app_root_path / 'qml/main.qml'
-    view.setSource(qml_file.as_uri())
-    #engine.load(qml_file.as_uri())
-    if os.getenv("DEVMODE") is None:
-        view.showFullScreen()
-    else:
-        view.show()
+    #view.setSource(qml_file.as_uri())
+    engine.load(qml_file.as_uri())
 
-    
-
-    #if not engine.rootObjects():
-    #    sys.exit(-1)
-
-    #qml_root = engine.rootObjects()[0]
     #if os.getenv("DEVMODE") is None:
-    #    qml_root.showFullScreen()
+    #    view.showFullScreen()
+    #else:
+    #    view.setWidth(800)
+    #    view.setHeight(600)
+    #    view.show()
 
     return app.exec()
 

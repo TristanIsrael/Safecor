@@ -2,12 +2,14 @@ import QtQuick
 import QtQuick.Controls
 import net.alefbet
 
-Item {
+Window {
     id: window
 
     property bool mode_paysage: width < height
-
-    anchors.fill: parent
+    
+    //anchors.fill: parent
+    visibility: Window.FullScreen
+    flags: Qt.FramelessWindowHint
     visible: true    
 
     MainScreen {

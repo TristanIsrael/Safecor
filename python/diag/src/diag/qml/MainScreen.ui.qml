@@ -89,9 +89,9 @@ Rectangle {
                 bottom: buttons.top
             }
 
-            HardwareCapabilities {}
+            //HardwareCapabilities {}
 
-            SecurityCapabilities {}
+            //SecurityCapabilities {}
         }
 
         RowLayout {
