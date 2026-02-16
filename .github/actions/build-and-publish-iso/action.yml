@@ -43,6 +43,7 @@ runs:
       sudo chmod +x aports/scripts/*.sh
 
       # Copy splash images
+      cp setup/iso/splash.ppm aports/scripts || true # Default Safecor Splash
       cp setup/iso/${{ inputs.package-name }}/splash.* aports/scripts || true
 
       mkdir -pv ~/tmp
