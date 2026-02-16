@@ -22,11 +22,11 @@ You are **not allowed to fork, copy, modify, or reuse** this code in any form, i
 
 Newcomers should begin with the [architecture documentation](wiki/Architecture.md).
 
-The main documentation is available in the [Github Wiki](wiki/).
+The main documentation is available in the [Github Wiki](https://github.com/TristanIsrael/Safecor/wiki).
 
 API automatically generated documentation:
 - [Python API documentation on Github Pages](https://tristanisrael.github.io/Safecor)
-- [Protocol documentation on Github Wiki](wiki/Protocol)
+- [Protocol documentation on Github Wiki](https://github.com/TristanIsrael/Safecor/wiki/Protocol)
 
 ## Project directory structure
 
