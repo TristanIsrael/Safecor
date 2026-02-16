@@ -47,7 +47,7 @@ jobs:
           python3 -m venv venv 
           . ./venv/bin/activate
           pip install --upgrade pip
-          cd python/lib/src/safecor
+          cd python/lib
           pip install -r requirements-doc.txt
           pip install -r requirements.txt
           cd ../..
@@ -57,7 +57,7 @@ jobs:
         shell: sh
         run: |
           . ./venv/bin/activate
-          cd python/lib/
+          cd python/lib
           poetry run sphinx-autogen -o docs/source/api/generated docs/source/api/safecor.rst
           poetry run sphinx-build -b html docs/source docs/build/html
 
