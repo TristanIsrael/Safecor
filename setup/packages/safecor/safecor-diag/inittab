@@ -11,5 +11,5 @@
 ::shutdown:/sbin/openrc shutdown
 
 # Debug consoles and Diag integration
-hvc0::once:/bin/sh -c 'nohup /usr/lib/safecor/bin/start-debug.sh > /dev/null 2>&1 &'
+::once:/bin/sh -c 'nohup /usr/lib/safecor/bin/start-debug.sh > /dev/null 2>&1 &'
 hvc0::once:/bin/sh -c '/usr/lib/safecor/diag/src/diag/start.sh > /dev/null 2>&1'

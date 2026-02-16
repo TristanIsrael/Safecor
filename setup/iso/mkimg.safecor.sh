@@ -60,7 +60,7 @@ profile_safecor() {
     desc="ISO image for Safecor apps"
     arch="x86_64"
 		
-    kernel_cmdline="$kernel_cmdline console=null loglevel=0"
+    kernel_cmdline="$kernel_cmdline console=hvc0 loglevel=0"
     syslinux_serial=""
     kernel_addons=""
     kernel_flavors="lts"
