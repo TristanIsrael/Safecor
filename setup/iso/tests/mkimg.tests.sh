@@ -5,8 +5,7 @@ profile_diag() {
     title="Safecor tests"
     desc="Functional tests app for Safecor"
     kernel_cmdline="$kernel_cmdline autodetect_serial=no"
-    apks="$apks safecor-tests"
-    apkovl="genapkovl-tests.sh"
+    apks="$apks safecor-tests"    
     hostname="safecor-tests"
     boot_addons=""   
 }

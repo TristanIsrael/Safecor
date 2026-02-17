@@ -1,7 +1,6 @@
 # Alpine package `safecor-diag`
 
-This package sets the system with an end-to-end test GUI. It provides only the system configuration. 
-The end-user application is provided by the package `safecor-diag-gui`.
+This package sets the system with an end-to-end diagnostics GUI. It provides only the system configuration to check a system's compatibility.
 
 ## Dependencies
 

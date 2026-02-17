@@ -2,11 +2,6 @@
 
 mkdir -p /var/log/safecor
 
-chmod +x /usr/lib/safecor/tests/src/tests/start.sh
-
-rc-update add tests
-rc-service tests start
-
 # Remove unneeded big files
 rm -rf /usr/lib/libQt6WebEngineCore*
 

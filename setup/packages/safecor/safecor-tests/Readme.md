@@ -7,7 +7,7 @@ The end-user application is provided by the package `safecor-tests-gui`.
 
 Here is the dependencies tree for this product:
 
-- safecor-diag
+- safecor-tests
   - safecor-lib 
   - safecor-core 
   - safecor-sys-gui

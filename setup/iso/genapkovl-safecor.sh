@@ -33,6 +33,7 @@ $HOSTNAME
 EOF
 
 makefile root:root 0644 "$tmp"/etc/modules <<EOF
+xen_netback
 xen_blkback
 xenfs
 xen-platform-pci
@@ -40,17 +41,13 @@ xen_wdt
 tun
 EOF
 
-mkdir -p "$tmp"/etc/network
-makefile root:root 0644 "$tmp"/etc/network/interfaces <<EOF
-auto lo
-iface lo inet loopback
-EOF
-
 mkdir -p "$tmp"/etc/apk
 
 makefile root:root 0644 "$tmp"/etc/apk/world <<EOF
 xen
-safecor-tests
+eudev
+udev-init-scripts
+safecor-diag
 EOF
 
 rc_add devfs sysinit
@@ -59,6 +56,7 @@ rc_add udev sysinit
 rc_add splash sysinit
 
 rc_add hwclock boot
+rc_add modloop boot
 rc_add modules boot
 rc_add sysctl boot
 rc_add hostname boot
@@ -66,6 +64,7 @@ rc_add bootmisc boot
 rc_add syslog boot
 
 rc_add udev-postmount default
+rc_add udev-trigger default
 rc_add xenstored default
 rc_add xenconsoled default
 
