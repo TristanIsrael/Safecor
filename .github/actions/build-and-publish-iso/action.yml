@@ -39,6 +39,7 @@ runs:
     run: |
       # Copy scripts
       cp setup/iso/mkimg.safecor.sh aports/scripts
+      cp setup/iso/genapkovl-safecor.sh aports/scripts
       cp setup/iso/${{ inputs.package-name }}/*.sh aports/scripts
       sudo chmod +x aports/scripts/*.sh
 
