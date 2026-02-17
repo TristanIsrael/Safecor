@@ -21,7 +21,7 @@ echo "Detected mouse at: $MOUSE_EVDEV"
 if [ -e /.splash.ctrl ]; then
     exec 3<>/.splash.ctrl
     echo "exit" > /.splash.ctrl 2>/dev/null || true
-    echo 1 > /sys/class/graphics/fb0/blank
+    #echo 1 > /sys/class/graphics/fb0/blank
 fi
 
 # Start the app
