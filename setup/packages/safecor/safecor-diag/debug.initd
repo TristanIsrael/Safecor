@@ -7,15 +7,15 @@ depend() {
 }
 
 start() {
-    ebegin "Start diagnostic tool"
+    ebegin "Start debug console"
 
-    start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/diag/src/diag/start.sh --pidfile /var/run/$name.pid --background
+    start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/bin/start-debug.sh --pidfile /var/run/$name.pid --background
 
     eend $?
 }
 
 stop() {
-    ebegin "Stop diagnostic tool"
+    ebegin "Stop debug console"
 
     kill -9 $(cat /var/run/$name.pid)
 

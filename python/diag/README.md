@@ -2,7 +2,7 @@
 
 Safecor Diagnostic tool is a simple way of veryfing that a platform can run a product based on Safecor and evaluate the level of security offered.
 
-You can create an USB disk and use it on multiple platforms to verify their capacity.
+You can create a USB disk and use it on multiple platforms to verify their capacity.
 
 > ⚠️ **Notice**
 >
@@ -18,3 +18,7 @@ You can create an USB disk and use it on multiple platforms to verify their capa
 - Format a USB disk in FAT.
 - Use a software like `Rufus` or `dd` to put the image on the disk.
 - Boot on the USB disk
+
+## Documentation
+
+See [Diagnostics on the wiki](https://github.com/TristanIsrael/Safecor/wiki/Diagnostics).

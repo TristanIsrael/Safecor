@@ -17,15 +17,15 @@ start_pre() {
 }
 
 start() {
-    ebegin "Start debug console"
+    ebegin "Start diag app"
 
-    start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/bin/start-debug.sh --pidfile /var/run/$name.pid --background
+    start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/diag/src/diag/start.sh --pidfile /var/run/$name.pid --background
 
     eend $?
 }
 
 stop() {
-    ebegin "Stop debug console"
+    ebegin "Stop diag app"
 
     kill -9 $(cat /var/run/$name.pid)
 
