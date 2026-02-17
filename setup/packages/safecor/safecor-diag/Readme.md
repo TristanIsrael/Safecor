@@ -14,7 +14,7 @@ Here is the dependencies tree for this product:
 
 ## Build process
 
-This produtct is intended to be built as an ISO image and booted from a USB key.
+This product is intended to be built as an ISO image and booted from a USB key.
 
 The ISO image is built by `mkimage.sh` and the scripts `mkimg.diag.sh` and `genapkovl-diag.sh` located in `setup/iso/diag`.
 
