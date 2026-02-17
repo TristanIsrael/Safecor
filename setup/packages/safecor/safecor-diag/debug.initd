@@ -1,0 +1,23 @@
+#!/sbin/openrc-run
+
+name="debug"
+
+depend() {
+    need hwdrivers
+}
+
+start() {
+    ebegin "Start diagnostic tool"
+
+    start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/diag/src/diag/start.sh --pidfile /var/run/$name.pid --background
+
+    eend $?
+}
+
+stop() {
+    ebegin "Stop diagnostic tool"
+
+    kill -9 $(cat /var/run/$name.pid)
+
+    eend $?
+}

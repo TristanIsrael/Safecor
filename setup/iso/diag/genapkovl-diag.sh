@@ -41,12 +41,6 @@ xen_wdt
 tun
 EOF
 
-mkdir -p "$tmp"/etc/network
-makefile root:root 0644 "$tmp"/etc/network/interfaces <<EOF
-auto lo
-iface lo inet loopback
-EOF
-
 mkdir -p "$tmp"/etc/apk
 
 makefile root:root 0644 "$tmp"/etc/apk/world <<EOF
@@ -74,7 +68,7 @@ rc_add udev-trigger default
 rc_add xenstored default
 rc_add xenconsoled default
 #rc_add diag default
-#rc_add debug default
+rc_add debug default
 
 rc_add mount-ro shutdown
 rc_add killprocs shutdown
