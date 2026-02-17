@@ -28,7 +28,6 @@ class CtrlCInterceptor(QObject):
         if event.type() == QEvent.KeyPress:
             if event.key() == Qt.Key_C and (event.modifiers() & Qt.ControlModifier or event.modifiers() & Qt.MetaModifier):
                 print("Ctrl+C pressed")
-                self.close()
                 subprocess.run("poweroff")
                 return True  # avoid propagation
         return False

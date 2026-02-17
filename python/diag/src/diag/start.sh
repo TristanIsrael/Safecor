@@ -17,9 +17,12 @@ MOUSE_EVDEV=$(readlink -f "$MOUSE")
 echo "Detected keyboard at: $KEYBOARD_EVDEV"
 echo "Detected mouse at: $MOUSE_EVDEV"
 
-# Close the splash
-#exec 3<>/.splash.ctrl
-#echo "exit" > /.splash.ctrl 2>/dev/null || true
+# Close the splash if needed
+if [ -e /.splash.ctrl ]; then
+    exec 3<>/.splash.ctrl
+    echo "exit" > /.splash.ctrl 2>/dev/null || true
+    echo 1 > /sys/class/graphics/fb0/blank
+fi
 
 # Start the app
-QT_QPA_PLATFORM="linuxfb" /usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV
+/usr/bin/python3 /usr/lib/safecor/diag/src/diag/main.py -platform linuxfb -plugin EvdevKeyboard:$KEYBOARD_EVDEV -plugin EvdevMouse:$MOUSE_EVDEV
