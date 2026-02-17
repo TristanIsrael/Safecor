@@ -1,4 +1,4 @@
-profile_diag() {
+profile_tests() {
     profile_safecor
 
     profile_abbrev="tests"

@@ -155,12 +155,13 @@ class TestLogger(TestWithAPI):
             if line == "":
                 continue
             
-            self.assertStartsWith(line, f"{datetime.now():%Y-%m-%d}")
+            date_ref = f"{datetime.now():%Y-%m-%d}"
+            self.assertTrue(line.startswith(date_ref))
             
             if n_line == 1:
-                self.assertEndsWith(line, "This is a test")
+                self.assertTrue(line.endswith("This is a test"))
             else:
-                self.assertEndsWith(line, "This is another test")
+                self.assertTrue(line.endswith("This is another test"))
 
             n_line = n_line + 1
 
