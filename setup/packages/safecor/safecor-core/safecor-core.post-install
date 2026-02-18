@@ -28,6 +28,10 @@ adduser -H -D -s /sbin/nologin -G safecor svc-mqtt-logger
 adduser -H -D -s /sbin/nologin -G safecor svc-orchestrator
 adduser -H -D -s /sbin/nologin -G safecor svc-safecor-controller
 
+echo "**** Adding users to groups"
+addgroup svc-orchestrator mosquitto
+addgroup svc-mqtt-tunnels mosquitto
+
 echo "**** Settings permissions on files"
 mkdir -p /var/log/safecor
 chown -R nobody:safecor /var/log/safecor
@@ -50,6 +54,7 @@ rc-update add orchestrator
 rc-update add debug
 rc-update add hardening
 rc-update add apparmor boot
+rc-update add libvirtd 
 
 # Install new Grub file
 mv /etc/default/grub /etc/default/grub.orig
@@ -85,6 +90,7 @@ mv /etc/apparmor.d/usr.sbin.traceroute /etc/apparmor.d/disable
 mv /etc/apparmor.d/usr.sbin.winbindd /etc/apparmor.d/disable
 
 echo Setup system integrity
-/usr/lib/safecor/bin/integrity-setup.sh
+# Disabled because not working yet
+#/usr/lib/safecor/bin/integrity-setup.sh
 
 exit 0

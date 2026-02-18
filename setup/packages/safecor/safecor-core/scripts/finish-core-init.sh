@@ -17,12 +17,12 @@
     /usr/lib/safecor/bin/setup-xen-environment.sh
 
     echo ... Start initd scripts
-    rc-service setup-pci start
+    #rc-service setup-pci start
 
     echo Create XEN Domains
     /usr/bin/python3 /usr/lib/safecor/bin/create-domains.py $ALPINE_LOCAL_REPOSITORY/`uname -m`
 
-    # Orchestrator will be started on demande
+    # Orchestrator will be started on demand
     #rc-service orchestrator start
 
     #rc-service xen-pci start

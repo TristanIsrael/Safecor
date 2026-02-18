@@ -105,7 +105,7 @@ name = "sys-usb"
 serial = "pty" 
 memory= { sys_usb.memory }
 vcpus = { sys_usb.vcpus }
-cpus = "{ DomainsFactory.__cpus_affinity_to_string(sys_usb.vcpus) }"
+cpus = "{ System.cpu_affinity_to_string(sys_usb.cpu_affinity) }"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target=/usr/lib/safecor/system/bootiso-sys-usb.iso'
 ]
@@ -139,7 +139,7 @@ name = "sys-gui"
 serial = "pty" 
 memory={ sys_gui.memory }
 vcpus = { sys_gui.vcpus }
-cpus = "{ DomainsFactory.__cpus_affinity_to_string(sys_gui.cpu_affinity) }"
+cpus = "{ System.cpu_affinity_to_string(sys_gui.cpu_affinity) }"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target=/usr/lib/safecor/system/bootiso-sys-gui.iso'
 ]
@@ -159,8 +159,8 @@ device_model_args = [
      '-device', 'virtio-gpu-pci',
      '-display', 'gtk,full-screen=on,zoom-to-fit=on,gl=on',
      '-device', 'virtio-input-host,id=virtio-mouse,evdev=/dev/input/virtual_mouse',
-     '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/dev/input/virtual_keyboard'
-     '-device', 'virtio-input-host,id=virtio-touch,evdev=/dev/input/virtual_touch',     
+     '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/dev/input/virtual_keyboard',
+     '-device', 'virtio-input-host,id=virtio-touch,evdev=/dev/input/virtual_touch'
 ]
 usb=0
 vnc=0
@@ -181,7 +181,7 @@ serial = "pty"
 name = "{ domain.name }"
 memory = { domain.memory }
 vcpus = { domain.vcpus }
-cpus = "{ DomainsFactory.__cpus_affinity_to_string(dom.vcpus) }"
+cpus = "{ System.cpu_affinity_to_string(dom.cpu_affinity) }"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target=/usr/lib/safecor/system/{boot_iso_location}'
 ]
@@ -247,14 +247,6 @@ vif=[]
 ###
 ### Private functions
     @staticmethod
-    def __cpus_affinity_to_string(cpu_affinity:tuple) -> str:
-        if not cpu_affinity:
-            return "0"
-        elif len(cpu_affinity) == 1:
-            return str(cpu_affinity[0])
-        return f"{cpu_affinity[0]}-{cpu_affinity[-1]}"
-
-    @staticmethod
     def __create_blacklist_conf(domain_name:str = "") -> str:
         print(f"Create blacklist.conf file for { domain_name if domain_name != "" else "standard Domain" }")
         print(">>> DISABLED")
@@ -297,4 +289,6 @@ if __name__ == "__main__":
 
     print("Start topology factory")
     #alpine_repo = sys.argv[1]
+
+    System.get_topology()
     DomainsFactory.create_domains()

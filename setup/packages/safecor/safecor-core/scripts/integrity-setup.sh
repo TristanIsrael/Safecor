@@ -6,8 +6,10 @@ enable_fsverity() {
     local file="$1"
     fsverity enable "$file"
     if [ $? -gt 0 ];then
-        echo "Could not enable fsverity on $file" > &2
+        echo "Could not enable fsverity on $file" >&2
     fi
 }
 
-find / -type f -exec enable_fsverity {} \;
+find / -type f | while IFS= read -r file; do 
+    enable_fsverity "$file"
+done

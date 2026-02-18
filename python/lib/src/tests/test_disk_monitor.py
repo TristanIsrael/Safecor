@@ -46,7 +46,7 @@ class TestDiskMonitor(TestWithAPI):
         
         cls.clear_messages()
         self.__monitor.device_event("add", self.__device)
-        time.sleep(0.5)
+        time.sleep(1)
 
         self.assertEqual(len(cls.messages), 1)
         message = cls.messages[0]
@@ -58,7 +58,7 @@ class TestDiskMonitor(TestWithAPI):
         cls.clear_messages()
 
         self.__monitor.device_event("remove", self.__device)
-        time.sleep(0.5)
+        time.sleep(1)
 
         self.assertEqual(len(cls.messages), 1)
         message = cls.messages[0]

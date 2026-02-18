@@ -2,7 +2,7 @@ import unittest
 from safecor import Topology, Domain, DomainType
 
 
-class TestTopology(unittest.TestCase):    
+class TestTopology(unittest.TestCase):
 
     def test_init_domain(self):
         domain = Domain("My domain", DomainType.BUSINESS)

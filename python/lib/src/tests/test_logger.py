@@ -6,7 +6,7 @@ import io
 from datetime import datetime
 from contextlib import redirect_stdout
 from safecor import Logger, Topics, System, RequestFactory
-from _test_with_api import TestWithAPI
+from . import TestWithAPI
 
 class TestLogger(TestWithAPI):
 

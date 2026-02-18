@@ -7,8 +7,13 @@ echo Setup XEN environment
 # Setup the replacement script for qemu-system to patch the command
 # line sent by XEN
 # Setup QEMU proxy for XEN display
-mv /usr/bin/qemu-system-x86_64 /usr/bin/qemu-system-x86_64.real
-ln -s /usr/bin/qemu-system-x86_64.cmd /usr/bin/qemu-system-x86_64
+# TODO: replace with an alias
+if [ ! -L /usr/bin/qemu-system-x86_64 ]; then
+    mv /usr/bin/qemu-system-x86_64 /usr/bin/qemu-system-x86_64.real
+    ln -s /usr/bin/qemu-system-x86_64.cmd /usr/bin/qemu-system-x86_64
+else
+    echo "QEMU already patched"
+fi
 
 CONFIG_REPO=`jq -r '.network.repository' /etc/safecor/topology.json`
 CONFIG_RELEASES=`jq -r '.network.releases' /etc/safecor/topology.json`

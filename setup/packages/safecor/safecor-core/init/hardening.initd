@@ -25,16 +25,16 @@ start() {
         modprobe -r net_failover
 
         # Disable module loading after this point
-        sysctl -w kernel.modules_disabled=1
+        #sysctl -w kernel.modules_disabled=1
 
         # Disable ptrace completely
-        sysctl -w kernel.yama.ptrace_scope=3        
+        sysctl -w kernel.yama.ptrace_scope=3
 
         eend $?
     fi
 }
 
 stop() {
-    ebegin "Remove hardening. Noop."
+    ebegin "Remove hardening. No-op."
     eend 0
 }

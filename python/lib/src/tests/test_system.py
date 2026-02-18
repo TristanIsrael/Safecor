@@ -1,0 +1,321 @@
+import unittest
+import os
+import string
+import tempfile
+import random
+import shutil
+from pathlib import Path
+from safecor import Topology, Domain, DomainType, System, Constants
+
+
+class TestSystem(unittest.TestCase):
+    files_path = Path(__file__).resolve().parent / "files"
+
+    def setUp(self):
+        os.environ["MOCK_LIBVIRT"] = "1"
+
+    def test_get_platform_cpu_count(self):
+        self.assertEqual(System().get_platform_cpu_count(), 16)
+
+    def test_domain_name(self):
+        self.assertIsNotNone(System.domain_name())
+
+    def test_read_topology_file(self):
+        topo_filepath = self.files_path / "topology_1.json"
+        
+        topo = System.read_topology_file(topo_filepath.as_posix())
+        self.assertNotEqual(topo, "")
+
+    def test_get_topology_data(self):
+        topo_filepath = self.files_path / "topology_1.json"
+        
+        topo = System.get_topology_data(topo_filepath.as_posix())
+        self.assertNotEqual(topo, {})
+ 
+        self.assertEqual(topo.get("product", {}).get("name", ""), "Safecor Tests")
+        self.assertEqual(topo.get("pci", {}).get("blacklist", ""), "00:0d.0")
+        self.assertEqual(topo.get("usb", {}).get("use", 0), 1)
+        self.assertEqual(topo.get("gui", {}).get("use", 0), 1)
+        self.assertEqual(topo.get("gui", {}).get("memory", 0), 2000)
+        self.assertEqual(topo.get("gui", {}).get("app-package", ""), "safecor-tests-gui")
+        self.assertEqual(topo.get("gui", {}).get("screen", {}).get("rotation", 0), 90)        
+        self.assertEqual(topo.get("business", {}).get("repository", ""), "https://www.alefbet.net/wp-content/uploads/repositories/Safecor")
+        self.assertEqual(len(topo.get("business", {}).get("domains", "")), 2)
+        
+        domain = topo.get("business", {}).get("domains", "")[0]
+        self.assertEqual(domain.get("name", ""), "test-domain")
+        self.assertEqual(domain.get("app-package", ""), "bash")
+        self.assertEqual(domain.get("memory", 0), 100)
+        self.assertEqual(domain.get("cpu", 0), 0)
+
+        domain = topo.get("business", {}).get("domains", "")[1]
+        self.assertEqual(domain.get("name", ""), "another-domain")
+        self.assertEqual(domain.get("app-package", ""), "my-domain")
+        self.assertEqual(domain.get("memory", 0), 1024)
+        self.assertEqual(domain.get("cpu", 0), 0)
+
+    def test_get_topology_struct_no_vcpus_groups(self):
+        topo_filepath = self.files_path / "topology_1.json"
+        
+        topo = System.get_topology_struct(topo_filepath.as_posix())
+        self.assertNotEqual(topo, {})
+
+        self.assertEqual(topo.get("product", {}).get("name", ""), "Safecor Tests")
+
+        system = topo.get("system", {})
+        self.assertEqual(system.get("use_usb", False), True)
+        self.assertEqual(system.get("use_gui", False), True)
+        self.assertEqual(system.get("screen_rotation", 0), 90)
+        self.assertEqual(system.get("gui_app_package", ""), "safecor-tests-gui")
+        self.assertEqual(system.get("memory", 0), 2000)
+
+        domains = topo.get("domains", [])
+        self.assertEqual(len(domains), 4)
+
+        dom = domains["sys-usb"]
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom["name"], "sys-usb")
+        self.assertEqual(dom["type"], DomainType.CORE)
+        self.assertEqual(dom["memory"], 300)
+        self.assertEqual(dom["vcpus"], 2)
+        self.assertEqual(dom["cpus"], [0, 1])
+
+        dom = domains["sys-gui"]
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom["name"], "sys-gui")
+        self.assertEqual(dom["type"], DomainType.CORE)
+        self.assertEqual(dom["memory"], 2000)
+        self.assertEqual(dom["vcpus"], 14)
+        self.assertEqual(dom["cpus"], [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+
+        dom = domains["test-domain"]
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom["name"], "test-domain")
+        self.assertEqual(dom["type"], DomainType.BUSINESS)
+        self.assertEqual(dom["memory"], 100)
+        self.assertEqual(dom["vcpus"], 14)
+        self.assertEqual(dom["cpus"], [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+
+        dom = domains["another-domain"]
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom["name"], "another-domain")
+        self.assertEqual(dom["type"], DomainType.BUSINESS)
+        self.assertEqual(dom["memory"], 1024)
+        self.assertEqual(dom["vcpus"], 14)
+        self.assertEqual(dom["cpus"], [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+
+    def test_get_topology_struct_vcpus_groups(self):
+        topo_filepath = self.files_path / "topology_2.json"
+        
+        topo = System.get_topology_struct(topo_filepath.as_posix())
+        self.assertNotEqual(topo, {})
+
+        self.assertEqual(topo.get("product", {}).get("name", ""), "Safecor Tests")
+
+        system = topo.get("system", {})
+        self.assertEqual(system.get("use_usb", False), True)
+        self.assertEqual(system.get("use_gui", False), True)
+        self.assertEqual(system.get("screen_rotation", 0), 90)
+        self.assertEqual(system.get("gui_app_package", ""), "safecor-tests-gui")
+        self.assertEqual(system.get("memory", 0), 2000)
+
+        domains = topo.get("domains", [])
+        self.assertEqual(len(domains), 4)
+
+        dom = domains["sys-usb"]
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom["name"], "sys-usb")
+        self.assertEqual(dom["type"], DomainType.CORE)
+        self.assertEqual(dom["memory"], 300)
+        self.assertEqual(dom["vcpus"], 2)
+        self.assertEqual(dom["cpus"], [0, 1])
+
+        dom = domains["sys-gui"]
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom["name"], "sys-gui")
+        self.assertEqual(dom["type"], DomainType.CORE)
+        self.assertEqual(dom["memory"], 2000)
+        self.assertEqual(dom["vcpus"], 6)
+        self.assertEqual(dom["cpus"], [2,3,4,5,6,7])
+
+        dom = domains["test-domain"]
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom["name"], "test-domain")
+        self.assertEqual(dom["type"], DomainType.BUSINESS)
+        self.assertEqual(dom["memory"], 100)
+        self.assertEqual(dom["vcpus"], 8)
+        self.assertEqual(dom["package"], "bash")
+        self.assertEqual(dom["cpus"], [4,5,6,7,8,9,10,11])
+
+        dom = domains["another-domain"]
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom["name"], "another-domain")
+        self.assertEqual(dom["type"], DomainType.BUSINESS)
+        self.assertEqual(dom["memory"], 1024)
+        self.assertEqual(dom["vcpus"], 8)
+        self.assertEqual(dom["package"], "my-domain")
+        self.assertEqual(dom["cpus"], [4,5,6,7,8,9,10,11])
+
+
+    def test_get_topology(self):
+        topo_filepath = self.files_path / "topology_1.json"
+        
+        topo = System.get_topology(topo_filepath.as_posix())
+        self.assertIsNotNone(topo)
+
+        self.assertEqual(topo.product_name, "Safecor Tests")
+        self.assertEqual(len(topo.colors()), 1)
+        self.assertEqual(topo.colors().get("splash_bgcolor", ""), (0,0,0,0))
+        self.assertEqual(topo.use_usb, True)
+        self.assertEqual(topo.use_gui, True)
+        self.assertEqual(topo.screen.width, 1100)
+        self.assertEqual(topo.screen.height, 750)
+        self.assertEqual(topo.screen.rotation, 90)
+        self.assertEqual(topo.gui.use, True)
+        self.assertEqual(topo.gui.memory, 2000)
+        self.assertEqual(topo.gui.app_package, "safecor-tests-gui")
+
+        self.assertEqual(len(topo.domain_names()), 4)
+
+        dom = topo.domain("sys-usb")
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom.name, "sys-usb")
+        self.assertEqual(dom.domain_type, DomainType.CORE)
+        self.assertEqual(dom.memory, 300)
+        self.assertEqual(dom.vcpus, 2)
+        self.assertEqual(dom.cpu_affinity, [0, 1])
+
+        dom = topo.domain("sys-gui")
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom.name, "sys-gui")
+        self.assertEqual(dom.domain_type, DomainType.CORE)
+        self.assertEqual(dom.memory, 2000)
+        self.assertEqual(dom.vcpus, 14)
+        self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+
+        dom = topo.domain("test-domain")
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom.name, "test-domain")
+        self.assertEqual(dom.domain_type, DomainType.BUSINESS)
+        self.assertEqual(dom.memory, 100)
+        self.assertEqual(dom.vcpus, 14)
+        self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+
+        dom = topo.domain("another-domain")
+        self.assertIsNotNone(dom)
+        self.assertEqual(dom.name, "another-domain")
+        self.assertEqual(dom.domain_type, DomainType.BUSINESS)
+        self.assertEqual(dom.memory, 1024)
+        self.assertEqual(dom.vcpus, 14)
+        self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+
+    def test_parse_range(self):
+        self.assertEqual(System.parse_range("1-2"), (1,2))
+        self.assertEqual(System.parse_range(""), ())
+        self.assertEqual(System.parse_range("3-20"), (3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20))
+        self.assertEqual(System.parse_range("3"), (3,))
+        self.assertRaises(ValueError, System.parse_range, "20-2")
+
+    def test_compute_vcpus_for_group(self):
+        groups = {
+            "sys-gui": 0.4,
+            "group-1": 0.6
+        }
+
+        self.assertEqual(System.compute_vcpus_for_group("sys-gui", groups), 6)
+        self.assertEqual(System.compute_vcpus_for_group("group-1", groups), 8)
+        self.assertEqual(System.compute_vcpus_for_group("none", groups), 14)
+
+    def test_compute_cpus_for_group(self):
+        groups = {
+            "sys-gui": 0.4,
+            "group-1": 0.6
+        }
+
+        self.assertEqual(System().compute_cpus_for_group("sys-gui", groups), [2,3,4,5,6,7])
+        self.assertEqual(System().compute_cpus_for_group("group-1", groups), [4,5,6,7,8,9,10,11])
+        self.assertEqual(System().compute_cpus_for_group("none", groups), [2,3,4,5,6,7,8,9,10,11,12,13,14,15]) 
+
+    def test_get_system_information(self):
+        Constants.DOM0_REPOSITORY_PATH = "/tmp"
+        sysinfo = System.get_system_information()
+
+        print(sysinfo)
+        
+        core = sysinfo.get("core", {})
+        self.assertEqual(core.get("version", ""), "1.2.1")
+        self.assertEqual(core.get("debug_on", None), False)
+
+        system = sysinfo.get("system", {})
+        sysos = system.get("os", {})
+        self.assertNotEqual(sysos.get("name", ""), "")
+        self.assertNotEqual(sysos.get("release", ""), "")
+        self.assertNotEqual(sysos.get("version", ""), "")
+
+        machine = system.get("machine", {})
+        self.assertNotEqual(machine.get("arch", ""), "")
+        self.assertNotEqual(machine.get("platform", ""), "")
+
+        cpu = machine.get("cpu", {})
+        self.assertGreater(cpu.get("count", 0), 0)
+        self.assertGreater(cpu.get("freq_current", 0), 0)
+        self.assertGreater(cpu.get("freq_min", 0), 0)
+        self.assertGreater(cpu.get("freq_max", 0), 0)
+        self.assertGreater(cpu.get("percent", 0), 0)
+
+        memory = machine.get("memory", {})
+        self.assertGreater(memory.get("total", 0), 0)
+        self.assertGreater(memory.get("available", 0), 0)
+        self.assertGreater(memory.get("percent", 0), 0)
+        self.assertGreater(memory.get("free", 0), 0)
+        self.assertGreater(memory.get("used", 0), 0)
+
+        load = machine.get("load", {})
+        self.assertGreater(load.get("1", 0), 0)
+        self.assertGreater(load.get("5", 0), 0)
+        self.assertGreater(load.get("15", 0), 0)
+
+        # Create random files in /tmp
+        self.__create_random_files("/tmp/test_system.tmp")
+
+        storage = system.get("storage", {})
+        self.assertGreater(storage.get("total", 0), 0)
+        self.assertGreater(storage.get("used", 0), 0)
+        self.assertGreater(storage.get("free", 0), 0)
+        self.assertGreater(storage.get("files", 0), 0)
+
+        shutil.rmtree("/tmp/test_system.tmp")
+
+        self.assertGreater(system.get("boot_time", 0), 0)
+        #self.assertNotEqual(sysinfo.get("uuid", ""), "")
+
+        cpu_alloc = system.get("cpu_allocation", {})
+        self.assertEqual(len(cpu_alloc), 1)
+        self.assertEqual(cpu_alloc.get("test", []), [0, 1, 2, 3, 4, 5, 6, 7])
+        
+    def __create_random_files(self, tmp_dir:str):
+        file_paths = []
+
+        if not os.path.exists(tmp_dir):
+            os.mkdir(tmp_dir)
+
+        for i in range(10):
+            with tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="tmp_", suffix=".txt", delete=False) as f:
+                # Générer du contenu aléatoire
+                content = ''.join(random.choices(string.ascii_letters + string.digits, k=100))
+                f.write(content.encode("utf-8"))
+                file_paths.append(f.name)
+        
+        return file_paths
+    
+    def test_get_screen_width(self):
+        system = System()
+
+        # First call
+        self.assertEqual(system.get_screen_width(), 1100)
+
+        # Second call
+        self.assertEqual(system.get_screen_width(), 1100)
+        
+    def test_cpu_affinity_to_string(self):
+        self.assertEqual(System.cpu_affinity_to_string([1,2,3,4,5]), "1-5")

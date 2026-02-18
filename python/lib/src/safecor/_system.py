@@ -165,6 +165,8 @@ class System(metaclass=SingletonMeta):
         
         self.__cpu_count = LibvirtHelper.get_cpu_count()
 
+        return self.__cpu_count
+
         #try:            
         #    output = subprocess.check_output(['xl', 'info'], encoding='utf-8')
         #    for line in output.splitlines():
@@ -198,7 +200,7 @@ class System(metaclass=SingletonMeta):
         return platform.node()
 
     @staticmethod
-    def get_topology() -> Topology:
+    def get_topology(override_topology_file:str = "") -> Topology:
         """ Returns a ``Topology`` object initialized with the contents of the topology file 
         
             This function must be ran in the Dom0.
@@ -207,30 +209,32 @@ class System(metaclass=SingletonMeta):
         if not topology.initialized():
             # Initialize the topology object
             # We use the abstract struct returned by get_topology_struct()
-            topo = System.get_topology_struct()
+            topo = System.get_topology_struct(override_topology_file)
 
             # Product information
-            topology.product_name = topo["product"]["name"]
-            topology.add_color("splash_bgcolor", topo["product"]["splash_bgcolor"])            
+            topology.product_name = topo.get("product", {}).get("name", "Unknown")
+            topology.add_color("splash_bgcolor", topo.get("product", {}).get("splash_bgcolor", "#000000"))
 
             # System information
-            topology.use_usb = topo["use_usb"]
-            topology.use_gui = topo["use_gui"]
-            topology.screen.rotation = topo["screen_rotation"]
+            topology.use_usb = topo.get("system", {}).get("use_usb", False)
+            topology.use_gui = topo.get("system", {}).get("use_gui", False)
+            topology.screen.rotation = topo.get("system", {}).get("screen_rotation", 0)
             topology.screen.width = System().get_screen_width()
             topology.screen.height = System().get_screen_height()
             topology.uuid = System().get_system_uuid()
-            topology.gui.app_package = topo["gui_app_package"]
-            topology.gui.memory = topo["gui_memory"]            
+            topology.gui.app_package = topo.get("system", {}).get("gui_app_package", "error")
+            topology.gui.memory = topo.get("system", {}).get("gui_memory", 2000)
+            topology.gui.use = topology.use_gui
 
             # Domains information
-            for domain_name, domain_desc in topology.domains:
-                domain = Domain(domain_name, domain_desc["type"])
-                domain.vcpu_group = domain_desc["vcpu_group"]
-                domain.memory = domain_desc["memory"]
-                domain.vcpus = domain_desc["vcpus"]
-                domain.cpu_affinity = System.__parse_range(domain_desc["cpus"])
-                domain.package = domain_desc["package"]
+            domains = topo.get("domains", {})
+            for domain_name, domain_desc in domains.items():
+                domain = Domain(domain_name, domain_desc.get("type", DomainType.UNKNOWN))
+                domain.vcpu_group = domain_desc.get("vcpu_group", "")
+                domain.memory = domain_desc.get("memory", 0)
+                domain.vcpus = domain_desc.get("vcpus", "")
+                domain.cpu_affinity = domain_desc.get("cpus", []) #System.parse_range(domain.vcpus)
+                domain.package = domain_desc.get("package", "")
 
                 topology.add_domain(domain)
 
@@ -239,7 +243,21 @@ class System(metaclass=SingletonMeta):
         return topology
 
     @staticmethod
-    def __parse_range(value: str) -> tuple[int, ...]:
+    def parse_range(value: str) -> tuple[int, ...]:
+        """ Converts an int range represented as a string into a tuple of all values between min and max
+        
+            Examples:
+                >>> parse_range("1-2") 
+                    (1,2)
+                >>> parse_range("3-8") 
+                    (3,4,5,6,7,8)
+
+            The left value must be lower that the right value.
+        """
+
+        if value == "":
+            return ()
+
         if "-" in value:
             start, end = map(int, value.split("-", 1))
             if start > end:
@@ -303,12 +321,14 @@ class System(metaclass=SingletonMeta):
         use_gui = gui.get("use", False)
         gui_app_package = gui.get("app-package", "")
         screen_rotation = screen.get("rotation", 0)
+        gui_memory = gui.get("memory", 128)        
                 
         topo_struct["system"] = {
             "use_usb": use_usb,
             "use_gui": use_gui,
             "screen_rotation": screen_rotation,
-            "gui_app_package": gui_app_package
+            "gui_app_package": gui_app_package,
+            "memory": gui_memory
         }
 
         vcpu_groups = vcpu.get("groups", {})
@@ -321,7 +341,8 @@ class System(metaclass=SingletonMeta):
             "type": DomainType.CORE,
             "memory": 300,
             "vcpus": System.compute_vcpus_for_group("sys-usb", vcpu_groups),
-            "cpus": System().compute_cpus_for_group("sys-usb", vcpu_groups)
+            "cpus": System().compute_cpus_for_group("sys-usb", vcpu_groups),
+            "vcpu_groups": vcpu_groups
         }
 
         # sys-gui domain
@@ -330,7 +351,8 @@ class System(metaclass=SingletonMeta):
             "type": DomainType.CORE,
             "memory": gui.get("memory"),
             "vcpus": System.compute_vcpus_for_group("sys-gui", vcpu_groups),
-            "cpus": System().compute_cpus_for_group("sys-gui", vcpu_groups),            
+            "cpus": System().compute_cpus_for_group("sys-gui", vcpu_groups),  
+            "vcpu_groups": vcpu_groups          
         }
         
         for domain in business_domains:
@@ -343,16 +365,18 @@ class System(metaclass=SingletonMeta):
                 "memory": domain.get("memory", 0),
                 "package": domain.get("app-package", ""),
                 "vcpus": System.compute_vcpus_for_group(group_name, vcpu_groups),
-                "cpus": System().compute_cpus_for_group(group_name, vcpu_groups)
+                "cpus": System().compute_cpus_for_group(group_name, vcpu_groups),
+                "vcpu_groups": vcpu_groups
             }
 
-        topo_struct["domains"] = topo_domains        
+        topo_struct["domains"] = topo_domains
 
         # Get product information (copy)
         json_product = topo_data.get("product", {})
-        topo_product = topo_struct["product"]
+        topo_product = {}
         topo_product["name"] = json_product.get("name", "No Name")
         topo_product["splash_bgcolor"] = json_product.get("splash_bgcolor", "#1ca9f7")
+        topo_struct["product"] = topo_product
 
         return topo_struct
 
@@ -363,6 +387,7 @@ class System(metaclass=SingletonMeta):
         
             This function must be ran in the Dom0.
         """
+
         try:
             with open('/etc/safecor/topology.json' if override_topology_file == "" else override_topology_file, 'r') as f:
                 topo = f.read()
@@ -379,6 +404,7 @@ class System(metaclass=SingletonMeta):
         
             This function must be ran in the Dom0.
         """
+
         try:
             topo_data = System.read_topology_file(override_topology_file)
             data = json.loads(topo_data)
@@ -633,5 +659,28 @@ class System(metaclass=SingletonMeta):
             This function must be ran in the Dom0.
         """
 
+        cpu_alloc = {}
+
         # First get the list of domains
-        subprocess.run("")
+        domains = LibvirtHelper.get_domains()
+
+        for domain in domains.values():
+            cpu_alloc[domain.name] = domain.cpu_affinity
+
+        return cpu_alloc
+
+    @staticmethod
+    def cpu_affinity_to_string(cpu_affinity:list) -> str:
+        """ Converts the cpu affinity of the Domain definition to a string 
+        
+            Example:
+            >>>
+                cpu_affinity_to_string([1,2,3,4])
+                '1-4'
+        """
+
+        if len(cpu_affinity) == 0:
+            return ""
+        elif len(cpu_affinity) == 1:
+            return str(cpu_affinity[0])
+        return f"{cpu_affinity[0]}-{cpu_affinity[-1]}"

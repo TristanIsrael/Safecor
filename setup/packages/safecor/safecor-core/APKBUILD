@@ -9,7 +9,7 @@ arch="noarch"
 license="MIT"
 depends="openrc xorriso safecor-lib xen xen-hypervisor qemu-system-x86_64 qemu-ui-gtk seabios abuild pciutils xorg-server xrandr font-terminus 
 gtk+3.0 sdl2 sdl2_image mosquitto mosquitto-openrc mosquitto-clients socat py3-evdev py3-udev feh jq safecor-alpine-virt xdotool 
-qemu-hw-display-virtio-gpu-pci qemu-hw-display-virtio-gpu agetty apparmor apparmor-profiles py3-pillow fsverity-utils
+qemu-hw-display-virtio-gpu-pci qemu-hw-display-virtio-gpu agetty apparmor apparmor-profiles py3-pillow fsverity-utils py3-libvirt libvirt libvirt-xen
 "
 makedepends=""
 builddir="$srcdir/$pkgname-$pkgver"

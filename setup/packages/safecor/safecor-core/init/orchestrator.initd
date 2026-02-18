@@ -4,26 +4,34 @@ name="orchestrator"
 command_background="yes"
 pidfile="/var/run/orchestrator.pid"
 user="svc-orchestrator"
+group="safecor"
+logfile="/var/log/safecor/orchestrator.log"
 
 depend() {    
     after start-x
 }
 
 start() {
-    modprobe uinput
+    modprobe uinput    
     
     # Write screen information in the Xenstore for sys-gui
     ebegin "Store screen information"
-    #sysguiid="$(/usr/lib/safecor/bin/get-sys-gui-domid.sh)"
+
+    # Prepare the log file
+    rm -rf $logfile
+    touch $logfile
+    chown $user:$group $logfile
+    chmod 750 $logfile
+
     screen_size=`cat /sys/class/graphics/fb0/virtual_size`    
-    xenstore-write /local/domain/system/screen_size $screen_size            
-    python3 /usr/lib/safecor/bin/write-screen-information-to-xenstore.py
+    xenstore-write /local/domain/system/screen_size $screen_size > $logfile 2>&1       
+    python3 /usr/lib/safecor/bin/write-screen-information-to-xenstore.py > $logfile 2>&1
     eend $?    
 
-    /usr/lib/safecor/bin/set-xenstore-permissions.sh
+    /usr/lib/safecor/bin/set-xenstore-permissions.sh > $logfile 2>&1
 
     ebegin "Starting Safecor orchestrator"
-    start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --pidfile /var/run/$name.pid --background --user "$user" -- /usr/lib/safecor/bin/orchestrator.py
+    start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --pidfile /var/run/$name.pid --background --user "$user" --stdout "$logfile" --stderr "$logfile"  -- /usr/lib/safecor/bin/orchestrator.py
     eend $?
 }
 

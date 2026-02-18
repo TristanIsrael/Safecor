@@ -3,9 +3,9 @@ import time
 import threading
 import select
 import socket
-from safecor import Constants, Cles, Logger
+from safecor import Constants, Logger
 
-broker_msg_socket = Constants().constante(Cles.MQTT_MSG_BROKER_SOCKETS)
+BROKER_MSG_SOCKET = Constants.MQTT_MSG_BROKER_SOCKETS
 
 BUFFER_SIZE = 4096
 DEBUG = False
@@ -174,7 +174,7 @@ def create_msg_tunnel(client_socket:str, n_socket:int):
     ''' @brief Creates a new tunnel between two messaging sockets
     '''
     Logger.print(f"Creating new tunnel with client socket {client_socket} with ID {n_socket}.")
-    tunneler = UnixSocketTunneler(client_socket, broker_msg_socket, n_socket)
+    tunneler = UnixSocketTunneler(client_socket, BROKER_MSG_SOCKET, n_socket)
     tunneler.tunnel(client_socket)
 
 
@@ -182,7 +182,7 @@ def wait_for_broker_socket() -> bool:
     ''' @brief Waits for the MQTT broker to create its sockets '''
     Logger.print("Waiting for MQTT Broker sockets...")
     
-    cmd = f"find /var/run/ -name '{broker_msg_socket}'"
+    cmd = f"find /var/run/ -name '{BROKER_MSG_SOCKET}'"
 
     while True:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)

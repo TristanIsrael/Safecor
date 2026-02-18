@@ -5,17 +5,19 @@ from enum import Enum
 
 class DomainType(Enum):
     """ This enumeration defines a Domain"s type """
+    UNKNOWN = 0
     CORE = 1
     BUSINESS = 2
 
 class Domain:
     """ This class encapsulates information about a Domain """
 
+    id = 0
     name = "NoName"
     vcpu_group = "group1"
     memory = 1000
     vcpus = 1
-    cpu_affinity = (1) # Tuple (min, max)
+    cpu_affinity = [] # List of CPU pins
     package = ""
     domain_type = DomainType.BUSINESS
     

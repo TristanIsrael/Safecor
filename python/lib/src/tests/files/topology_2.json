@@ -1,0 +1,42 @@
+{
+    "product": {
+        "name": "Safecor Tests"
+    },
+    "pci": {        
+        "blacklist": "00:0d.0"
+    },
+    "usb": {
+        "use": 1
+    },
+    "gui": {
+        "use": 1,
+        "memory": 2000,
+        "app-package": "safecor-tests-gui",
+        "screen": {
+            "rotation": 90
+        }
+    },
+    "vcpu": {
+        "groups": {
+            "sys-gui": 0.4,
+            "group-1": 0.6
+        }
+    },
+    "business": {
+        "repository": "https://www.alefbet.net/wp-content/uploads/repositories/Safecor",
+        "domains": [
+            {
+                "name": "test-domain",
+                "app-package": "bash",
+                "memory": 100,
+                "vcpu_group": "group-1"
+            },
+            {
+                "name": "another-domain",
+                "app-package": "my-domain",
+                "memory": 1024,
+                "vcpu_group": "group-1"
+            }
+        ]
+    }
+}
