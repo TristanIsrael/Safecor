@@ -23,7 +23,7 @@ from ._mqtt_helper import MqttHelper
 from ._mqtt_client import MqttClient, ConnectionType, SerialMQTTClient
 from ._request_factory import RequestFactory
 from ._notification_factory import NotificationFactory
-from ._logger import Logger
+from ._logger import Logger, SysLogger
 from ._file_helper import FileHelper
 from ._response_factory import ResponseFactory
 try:
@@ -54,7 +54,7 @@ __all__ = [
     "Configuration", "ConfigurationReader",
     "RequestFactory",
     "LibvirtHelper",
-    "Logger",
+    "Logger", "SysLogger",
     "NotificationFactory", 
     "ResponseFactory",
     "DiskMonitor",

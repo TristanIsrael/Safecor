@@ -1,6 +1,9 @@
 #!/bin/sh
 
-echo Setup Alpine local repository
+SCRIPT_NAME=$(basename "$0")
+logger -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
+logger -t "Safecor/$SCRIPT_NAME" -p user.warn "*** Deprecated ***"
+
 
 echo *** Deprecated ***
 exit 0

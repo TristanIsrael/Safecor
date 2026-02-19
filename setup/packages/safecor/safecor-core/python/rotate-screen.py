@@ -1,7 +1,9 @@
 import subprocess
-from safecor import ConfigurationReader
+from safecor import ConfigurationReader, SysLogger
 
 def angle_to_rotate(angle):
+    """ Translates a rotation angle to XOrg value """
+
     mapping = {
         0: "normal",
         90: "left",
@@ -11,6 +13,8 @@ def angle_to_rotate(angle):
     return mapping.get(angle, "normal")
 
 def rotate_screen(angle:int) -> None:
+    """ Asks XOrg to rotate the screen """
+
     get_output_command = "xrandr --display :0 | grep ' connected' | awk 'NR==1 {print $1}'"
 
     try:
@@ -22,17 +26,16 @@ def rotate_screen(angle:int) -> None:
 
             # Exécute la commande de rotation
             subprocess.run(rotate_command, shell=True, check=True)
-            print("Screen {} rotated by {} degrees".format(screen_name, angle))
-            print(angle_to_rotate(angle))
+            SysLogger("Screen rotation").info(f"Screen {screen_name} rotated by {angle} degrees. Value={angle}")
         else:
-            print("No screen found")
+            SysLogger("Screen rotation").error("No screen found")
     except subprocess.CalledProcessError as e:
-        print(f"Error during execution: {e}")
+        SysLogger("Screen rotation").error(f"Error during execution: {e}")
     except Exception as e:
-        print(f"An error occured: {e}")
+        SysLogger("Screen rotation").error(f"An error occured: {e}")
 
 if __name__ == "__main__":
-    print("Rotate screen if needed")
+    SysLogger("Screen rotation").info("Rotate screen if needed...")
 
     # Rotation is defined in topology.json
     #topology_file="/etc/safecor/topology.json"
@@ -53,25 +56,27 @@ if __name__ == "__main__":
     #        "rotation": 0
     json_gui = config.get("gui")
     if json_gui is None:
-        print("No GUI in topology")
+        SysLogger("Screen rotation").info("No GUI in topology")
         exit(0)
         
     json_use = json_gui.get("use")
     if json_use is None:
-        print("GUI is unset in topology")
+        SysLogger("Screen rotation").info("GUI is unset in topology")
         exit(0)
 
     json_screen = json_gui.get("screen")
     if json_screen is None:
-        print("No screen option in topology")
+        SysLogger("Screen rotation").info("No screen option in topology")
         exit(0)
 
     rotation = json_screen.get("rotation")
     if rotation is None:
-        print("No rotation in topology")
+        SysLogger("Screen rotation").info("No rotation in topology")
         exit(0)
 
     if rotation != 0:
         rotate_screen(rotation)
     else:
-        print("No rotation needed")
+        SysLogger("Screen rotation").info("No rotation needed")
+
+    SysLogger("Screen rotation").info("... done")

@@ -1,20 +1,26 @@
 #!/bin/sh
 
+SCRIPT_NAME=$(basename "$0")
+logger -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
+
 # Read screen size
-#domid=`xenstore-read domid`
+logger -t "Safecor/$SCRIPT_NAME" -p user.info "Reading screen size from Xenstore"
 screen_size=`xenstore-read /local/domain/system/screen_size`
+logger -t "Safecor/$SCRIPT_NAME" -p user.debug "Screen size is $screen_size"
 
 # Read screen orientation
+logger -t "Safecor/$SCRIPT_NAME" -p user.info "Reading screen rotation from Xenstore"
 screen_rotation=`xenstore-read /local/domain/system/screen_rotation`
+logger -t "Safecor/$SCRIPT_NAME" -p user.debug "Screen rotation is $screen_rotation"
 
 # Compute the resolution with the orientation
 normalized_rotation=$(( (screen_rotation % 360 + 360) % 360 ))
 
-# Extraction de la largeur et de la hauteur
+# Extract width and height
 width=$(echo "$screen_size" | cut -d',' -f1)
 height=$(echo "$screen_size" | cut -d',' -f2)
 
-# Calcul de la nouvelle résolution en fonction de la rotation
+# Calculate new resolution using rotation angle
 case $normalized_rotation in
     0|360)
         new_width=$width
@@ -29,16 +35,21 @@ case $normalized_rotation in
         new_height=$height
         ;;
     *)
-        echo "Rotation invalide : $screen_rotation"
+        logger -t "Safecor/$SCRIPT_NAME" -p user.err "Invalid rotation angle: $screen_rotation"
         exit 1
         ;;
 esac
 
+logger -t "Safecor/$SCRIPT_NAME" -p user.info "Start the Domain sys-gui"
 DISPLAY=:0 xl create -f /etc/safecor/xen/sys-gui.conf
 sleep 1
 
 # Resize GTK window to fill the display
+logger -t "Safecor/$SCRIPT_NAME" -p user.info "Resize the GTK window"
 DISPLAY=:0 xdotool windowsize `DISPLAY=:0 xdotool search --name "sys-gui"` $new_width $new_height
 
 # We show the splash back
+logger -t "Safecor/$SCRIPT_NAME" -p user.info "Show the splash screen"
 DISPLAY=:0 feh --fullscreen --zoom fill /boot/Splash.png &
+
+logger -t "Safecor/$SCRIPT_NAME" -p user.info "... done"

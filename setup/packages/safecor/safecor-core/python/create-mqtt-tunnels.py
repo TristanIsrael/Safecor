@@ -3,7 +3,7 @@ import time
 import threading
 import select
 import socket
-from safecor import Constants, Logger
+from safecor import Constants, Logger, SysLogger
 
 BROKER_MSG_SOCKET = Constants.MQTT_MSG_BROKER_SOCKETS
 
@@ -14,6 +14,7 @@ DEBUG_HEX = True
 def hexdump(data, prefix=""):
     ''' @brief Print binary data in hexdump format.
     '''
+
     for i in range(0, len(data), 16):
         chunk = data[i:i + 16]
         hex_bytes = " ".join(f"{byte:02x}" for byte in chunk)
@@ -58,7 +59,7 @@ class UnixSocketTunneler:
 
                 broker_socket_path = f"/tmp/mqtt_msg_{self.n_socket}.sock"
                 broker_sock.connect(broker_socket_path)
-                Logger.print(f"Connected to the broker on socket {broker_socket_path} and tunneling with {messaging_socket_path}")
+                SysLogger("MQTT tunnels").info(f"Connected to the broker on socket {broker_socket_path} and tunneling with {messaging_socket_path}")
                 
                 while True:
                     rlist = []
@@ -81,7 +82,7 @@ class UnixSocketTunneler:
                         try:
                             data = client_sock.recv(4096)
                             if DEBUG:
-                                print(f"received {len(data)} bytes from client")
+                                SysLogger("MQTT tunnels").debug(f"received {len(data)} bytes from client")
 
                             if data:
                                 client_to_broker_buffer += data
@@ -89,7 +90,7 @@ class UnixSocketTunneler:
                                 if DEBUG:
                                     self.__debug_data(data, messaging_socket_path, "proxy")
                             else:
-                                Logger.print(f"Client socket closed on {messaging_socket_path}.")
+                                SysLogger("MQTT tunnels").info(f"Client socket closed on {messaging_socket_path}.")
                                 break
                         except BlockingIOError:
                             pass
@@ -99,14 +100,14 @@ class UnixSocketTunneler:
                         try:
                             data = broker_sock.recv(4096)
                             if DEBUG:
-                                print(f"received {len(data)} bytes from broker")
+                                SysLogger("MQTT tunnels").debug(f"received {len(data)} bytes from broker")
 
                             if data:
                                 broker_to_client_buffer += data
                                 if DEBUG:
                                     self.__debug_data(data, broker_socket_path, "proxy")
                             else:
-                                Logger.print(f"Broker socket closed on {broker_socket_path}.")
+                                SysLogger("MQTT tunnels").warn(f"Broker socket closed on {broker_socket_path}.")
                                 break
                         except BlockingIOError:
                             pass
@@ -130,7 +131,7 @@ class UnixSocketTunneler:
                             sent = client_sock.send(broker_to_client_buffer)
                             
                             if DEBUG:
-                                print(f"sent {sent} to client")
+                                SysLogger("MQTT tunnels").debug(f"sent {sent} to client")
                                 self.__debug_data(client_to_broker_buffer, "proxy", messaging_socket_path)
 
                             broker_to_client_buffer = broker_to_client_buffer[sent:]
@@ -138,7 +139,7 @@ class UnixSocketTunneler:
                             pass
                     
             except socket.error as e:
-                Logger.print(f"{self.client_socket_path} --> {self.broker_socket_path}. Socket error: {e}.")
+                SysLogger("MQTT tunnels").warn(f"{self.client_socket_path} --> {self.broker_socket_path}. Socket error: {e}.")
             finally:
                 client_sock.close()
                 broker_sock.close()
@@ -154,33 +155,35 @@ class UnixSocketTunneler:
         client_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         client_sock.connect(self.client_socket_path)
 
-        Logger.print(f"Connected to {self.client_socket_path} and waiting for data")
+        SysLogger("MQTT tunnels").info(f"Connected to {self.client_socket_path} and waiting for data")
 
         ready_to_read, _, _ = select.select([client_sock], [], [])
         if client_sock in ready_to_read:
-            Logger.print("Client has sent its first byte.")
+            SysLogger("MQTT tunnels").info("Client has sent its first byte.")
             return client_sock
         
     def __debug_data(self, data, emitter, receiver):
-        ''' @brief Writes debugging information about the sockets communication '''
+        ''' Writes debugging information about the sockets communication '''
 
         if DEBUG_HEX:
             hexdump(data, f"from {emitter} to {receiver}")
         else:
-            Logger.print(f"from {emitter} to {receiver}: {data}")
+            SysLogger("MQTT tunnels").info(f"from {emitter} to {receiver}: {data}")
 
 
 def create_msg_tunnel(client_socket:str, n_socket:int):
-    ''' @brief Creates a new tunnel between two messaging sockets
+    ''' Creates a new tunnel between two messaging sockets
     '''
-    Logger.print(f"Creating new tunnel with client socket {client_socket} with ID {n_socket}.")
+
+    SysLogger("MQTT tunnels").info(f"Creating new tunnel with client socket {client_socket} with ID {n_socket}.")
     tunneler = UnixSocketTunneler(client_socket, BROKER_MSG_SOCKET, n_socket)
     tunneler.tunnel(client_socket)
 
 
 def wait_for_broker_socket() -> bool:
-    ''' @brief Waits for the MQTT broker to create its sockets '''
-    Logger.print("Waiting for MQTT Broker sockets...")
+    ''' Waits for the MQTT broker to create its sockets '''
+
+    SysLogger("MQTT tunnels").info("Waiting for MQTT Broker sockets...")
     
     cmd = f"find /var/run/ -name '{BROKER_MSG_SOCKET}'"
 
@@ -191,12 +194,12 @@ def wait_for_broker_socket() -> bool:
         if len(files) == 0:
             time.sleep(1)
         else:
-            Logger.print("Broker sockets ready")
+            SysLogger("MQTT tunnels").info("Broker sockets ready")
             return True
 
 
 def watch_msg_sockets():
-    ''' @brief Monitors DomU sockets and starts a tunnel. 
+    ''' Monitors DomU sockets and starts a tunnel. 
     
         This functions looks for messaging sockets in the /var/run folder. When a new
         socket appears, a tunnel is created with the next available socket for Mosquitto.
@@ -215,7 +218,7 @@ def watch_msg_sockets():
         for file in new_files:
             if file == "":
                 continue
-            Logger.print(f"New messaging socket found : {file}")
+            SysLogger("MQTT tunnels").info(f"New messaging socket found : {file}")
             threading.Thread(target=create_msg_tunnel, args=(file, n_socket)).start()
             n_socket += 1
 
@@ -224,6 +227,8 @@ def watch_msg_sockets():
 
 
 if __name__ == "__main__":
+    SysLogger("MQTT tunnels").info("Starting MQTT tunnels")
+
     wait_for_broker_socket()
 
     threading.Thread(target=watch_msg_sockets).start()

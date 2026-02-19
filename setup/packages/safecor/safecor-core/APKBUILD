@@ -8,7 +8,7 @@ url="https://www.alefbet.net/"
 arch="noarch"
 license="MIT"
 depends="openrc xorriso safecor-lib xen xen-hypervisor qemu-system-x86_64 qemu-ui-gtk seabios abuild pciutils xorg-server xrandr font-terminus 
-gtk+3.0 sdl2 sdl2_image mosquitto mosquitto-openrc mosquitto-clients socat py3-evdev py3-udev feh jq safecor-alpine-virt xdotool 
+gtk+3.0 sdl2 sdl2_image mosquitto mosquitto-openrc mosquitto-clients socat py3-evdev py3-udev feh jq safecor-alpine-virt xdotool syslog-ng
 qemu-hw-display-virtio-gpu-pci qemu-hw-display-virtio-gpu agetty apparmor apparmor-profiles py3-pillow fsverity-utils py3-libvirt libvirt libvirt-xen
 "
 makedepends=""
@@ -112,7 +112,8 @@ package() {
     
     # Configuration
     install -D -m640 "$srcdir"/topology.json "$pkgdir/$CONFDIR"/topology.json
-    install -D -m644 "$srcdir"/safecor.conf "$pkgdir"/etc/modules-load.d/safecor.conf
+    install -D -m644 "$srcdir"/modules-safecor.conf "$pkgdir"/etc/modules-load.d/safecor.conf
+    install -D -m644 "$srcdir"/syslog-safecor.conf "$pkgdir"/etc/syslog-ng/conf.d/safecor.conf
     install -D -m644 "$srcdir"/10-energy-saving.conf "$pkgdir"/etc/X11/xorg.conf.d/10-energy-saving.conf
     install -D -m644 "$srcdir"/grub.default "$pkgdir"/etc/default/grub
     #install -D -m644 "$srcdir"/grub.cfg-durabook-r8 "$pkgdir"/boot/grub/grub.cfg

@@ -3,7 +3,7 @@
 import subprocess
 import tempfile
 import os
-from safecor import System, topology, Domain, DomainType
+from safecor import System, topology, Domain, DomainType, SysLogger
 
 class DomainsFactory:
     """ This class is designed to orchestrate the Domains creation during the
@@ -16,7 +16,7 @@ class DomainsFactory:
     def create_domains():
         """ Creates all the Domains of a Safecor system """
 
-        print("Start creating domains from topology")
+        SysLogger("DomainsFactory").info("Start creating domains from topology")
 
         if topology.use_usb:
             blacklist_conf = DomainsFactory.__create_blacklist_conf("sys-usb")
@@ -31,6 +31,8 @@ class DomainsFactory:
             DomainsFactory.__fetch_alpine_packages(package)
         
         DomainsFactory.__create_business_domains()
+
+        SysLogger("DomainsFactory").info("Finished creating domains")
             
 
     ###
@@ -38,7 +40,7 @@ class DomainsFactory:
     #
     @staticmethod
     def __create_domd_usb():
-        print("Create Driver Domain USB")
+        SysLogger("DomainsFactory").info("Create configuration for Driver Domain sys-usb")
 
         conf = DomainsFactory.__create_xl_conf_sys_usb()
 
@@ -46,12 +48,11 @@ class DomainsFactory:
             with open('/etc/safecor/xen/sys-usb.conf', 'w') as f:
                 f.write(conf)
 
-        print(">>> Domain sys-usb created successfully")
-        print("")
+        SysLogger("DomainsFactory").info("Configuration for Domain sys-usb created successfully")
 
     @staticmethod
     def __create_domd_gui():
-        print("Create Driver Domain GUI")
+        SysLogger("DomainsFactory").info("Create configuration for Driver Domain sys-gui")
 
         conf = DomainsFactory.__create_xl_conf_sys_gui()
 
@@ -59,12 +60,11 @@ class DomainsFactory:
             with open('/etc/safecor/xen/sys-gui.conf', 'w') as f:
                 f.write(conf)
 
-        print(">>> Domain sys-gui created successfully")
-        print("")
+        SysLogger("DomainsFactory").info("Configuration for Domain sys-gui created successfully")
     
     @staticmethod
     def __create_business_domains():
-        """ Creates all the business Domains """
+        SysLogger("DomainsFactory").info("Create all the business Domains")
 
         if len(topology.domains) > 0:
             for domain in topology.domains:
@@ -90,10 +90,9 @@ class DomainsFactory:
 
                 DomainsFactory.__fetch_alpine_packages(package)
 
-                print(f">>> Domain {domain.name} created successfully")
-                print("")
+                SysLogger("DomainsFactory").info(f"Domain {domain.name} created successfully")                
         else:
-            print("There are no business Domains to create")
+            SysLogger("DomainsFactory").info("There are not business domains to create")
 
     @staticmethod
     def __create_xl_conf_sys_usb() -> None:        
@@ -173,8 +172,6 @@ vif=[]
     def __create_xl_conf_domain(domain:Domain, boot_iso_location:str, share_packages:bool=True, share_storage:bool=True, share_system:bool=False):        
         dom = topology.domain(domain.name)
 
-        print("domain:", domain.name, "cpus=", domain.vcpus)
-
         txt = f'''
 type = "hvm"
 serial = "pty" 
@@ -224,14 +221,14 @@ vif=[]
             # When finished we remove the blacklist.conf file
             os.unlink(blacklist_conf)
         except Exception as e:
-            print("An error occured during domain provisioning")
-            print(e)
+            SysLogger("DomainsFactory").error(f"An error occured during the provisioning of the domain {domain_name}")
+            SysLogger("DomainsFactory").error(e)
 
     @staticmethod
     def __fetch_alpine_packages(package):
         # Fetch Alpine packages
         if package is None:
-            print("Error: package is empty")
+            SysLogger("DomainsFactory").error("No package name provided")
 
         subprocess.run(
             args= ["apk", "fetch", "-R", package],
@@ -248,8 +245,8 @@ vif=[]
 ### Private functions
     @staticmethod
     def __create_blacklist_conf(domain_name:str = "") -> str:
-        print(f"Create blacklist.conf file for { domain_name if domain_name != "" else "standard Domain" }")
-        print(">>> DISABLED")
+        SysLogger("DomainsFactory").info(f"Create blacklist.conf file for { domain_name if domain_name != "" else "standard Domain" }")
+        SysLogger("DomainsFactory").warn("BLACKLIST IS DISABLED")
 
         modules_multimedia = [ "simpledrm", "drm", "snd", "snd_hda_intel", "bluetooth", "btusb", "uvcvideo", "pcspkr", "videobuf2_v4l2", "joydev", "videodev", "videobuf2_common" ]
         modules_usb = [ "sd_mod", "usb_common", "usbcore", "usb_storage" ]
@@ -285,9 +282,9 @@ vif=[]
 ###
 ### Entry point
 if __name__ == "__main__":
-    print("Starting Domains creation process")
+    SysLogger("DomainsFactory").info("Starting Domains creation process")
 
-    print("Start topology factory")
+    #print("Start topology factory")
     #alpine_repo = sys.argv[1]
 
     System.get_topology()

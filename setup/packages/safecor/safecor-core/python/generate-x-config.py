@@ -1,4 +1,5 @@
-import json, subprocess
+import json
+from safecor import SysLogger
 
 
 def angle_to_rotate(angle):
@@ -14,44 +15,43 @@ def angle_to_rotate(angle):
 def write_monitor_section(angle:int) -> None:
     filepath = "/etc/X11/xorg.conf.d/10-monitor.conf"
 
-    # Lecture de la résolution normale
+    # Read current resolution
     with open('/sys/class/graphics/fb0/virtual_size', 'r') as fichier:
         resolution = fichier.read().strip().replace(",", "x")
         #print(resolution)
 
-    # Calcul de la résolution
+    # Calculate resolution
     if resolution is None:
         resolution = "1024x768"
 
-    #new_resolution = compute_resolution(resolution, angle)
-    #print(new_resolution)
-
-    # Commande pour appliquer la rotation
-    section = """
+    # Apply rotation
+    section = f"""
 Section "Monitor"
     Identifier "Monitor0"
-    Option "PreferredMode" "{}"
-    Option "Rotate" "{}" 
+    Option "PreferredMode" "{resolution}"
+    Option "Rotate" "{angle_to_rotate(angle)}"
     Option "DPMS" "false"
 EndSection
-""".format(resolution, angle_to_rotate(angle))
+"""
             
     with open(filepath, "w") as fichier:
         fichier.write(section)
 
 if __name__ == "__main__":
-    print("Generate X server configuration files")
+    SysLogger("Generate X config").info("Generating X server configuration files...")
 
     # Rotation is defined in topology.json
-    topology_file="/etc/safecor/topology.json"
+    TOPOLOGY_FILE="/etc/safecor/topology.json"
 
     try:
-        with open(topology_file, 'r') as file:
+        with open(TOPOLOGY_FILE, 'r') as file:
             json_data = json.load(file)
     except Exception as e:
-        print("An error occured while reading the topology file {}".format(topology_file))    
-        print(e)    
-        exit(1)    
+        SysLogger("Generate X config").error(f"An error occured while reading the topology file {TOPOLOGY_FILE}")
+        SysLogger("Generate X config").error(e)
+        print(f"An error occured while reading the topology file {TOPOLOGY_FILE}")
+        print(e)
+        exit(1)
 
     #"gui": {
     #    "use": 1,    
@@ -73,3 +73,4 @@ if __name__ == "__main__":
                
         write_monitor_section(rotation)
     
+    SysLogger("Generate X config").info("... done")

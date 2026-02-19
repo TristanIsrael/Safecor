@@ -2,7 +2,7 @@ from PIL import Image
 import sys
 import os
 import json
-from safecor import topology
+from safecor import topology, SysLogger
 
 LOGO_FILEPATH = "/boot/splash.png"
 TOPOLOGY_FILE="/etc/safecor/topology.json"
@@ -11,7 +11,7 @@ def create_splash() -> Image:
     width = topology.screen.width
     height = topology.screen.height
 
-    print(f"Create splash of size {width}x{height}")
+    SysLogger("Create splash").info(f"Create splash of size {width}x{height}")
 
     splash = Image.new("RGB", (width, height), topology.colors["splash_bgcolor"])
     image = Image.open(LOGO_FILEPATH)
@@ -27,21 +27,25 @@ def create_splash() -> Image:
 def save_splash(splash:Image, dest:str):
     width, height = splash.size
 
-    print("Create PNG file")
+    SysLogger("Create splash").info("Create PNG file")
     splash.save(f"{dest}/splash_{width}_{height}.png")
     
-    print("Create PPM file")
+    SysLogger("Create splash").info("Create PPM file")
     splash.save(f"{dest}/splash_{width}_{height}.ppm", format="PPM")
 
 if __name__ == "__main__":
+    SysLogger("Create splash").info("Starting...")
+
     if len(sys.argv) < 1:
-        print("Error: missing arguments")
+        SysLogger("Create splash").error("Error: missing arguments")
+        print("Error: Missing arguments")
         print("Usage: ")
         print(f"    {os.path.basename(__file__)} destination_dir")
-        exit()
+        sys.exit()
     
     dest = sys.argv[3]
 
     image = create_splash()
     save_splash(image, dest)
 
+    SysLogger("Create splash").info("... done")

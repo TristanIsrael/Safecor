@@ -40,6 +40,10 @@ chown -R nobody:safecor /usr/lib/safecor
 rc-update add splash boot
 rc-service splash start
 
+rc-update del syslog boot
+rc-update add syslog-ng boot
+rc-update add apparmor boot
+
 rc-service modules restart
 
 rc-service xenconsoled start
@@ -53,7 +57,6 @@ rc-update add start-x
 rc-update add orchestrator
 rc-update add debug
 rc-update add hardening
-rc-update add apparmor boot
 rc-update add libvirtd 
 
 # Install new Grub file

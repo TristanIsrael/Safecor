@@ -1,8 +1,9 @@
 import subprocess
-from safecor import ConfigurationReader
+import sys
+from safecor import ConfigurationReader, SysLogger
 
 if __name__ == "__main__":    
-    print("Write screen information into Xenstore")
+    SysLogger("write-screen-information-to-xenstore").info("Write screen information into Xenstore...")
 
     # Rotation is defined in topology.json
     #topology_file="/etc/safecor/topology.json"
@@ -23,26 +24,28 @@ if __name__ == "__main__":
     #        "rotation": 0
     json_gui = config.get("gui")
     if json_gui is None:
-        print("No GUI in topology")
-        exit(0)
+        SysLogger("write-screen-information-to-xenstore").info("No GUI in topology")
+        sys.exit(0)
         
     json_use = json_gui.get("use")
     if json_use is None:
-        print("GUI is unset in topology")
-        exit(0)
+        SysLogger("write-screen-information-to-xenstore").info("GUI is unset in topology")
+        sys.exit(0)
 
     json_screen = json_gui.get("screen")
     if json_screen is None:
-        print("No screen option in topology")
-        exit(0)
+        SysLogger("write-screen-information-to-xenstore").info("No screen option in topology")
+        sys.exit(0)
 
     rotation = json_screen.get("rotation")
     if rotation is None:
-        print("No rotation in topology")
-        exit(0)
+        SysLogger("write-screen-information-to-xenstore").info("No rotation in topology")
+        sys.exit(0)
 
     if rotation is None:
         rotation = 0
 
     command = f"xenstore-write /local/domain/system/screen_rotation {rotation}"
     subprocess.run(command, shell=True, check=True)
+
+    SysLogger("write-screen-information-to-xenstore").info("... done")
