@@ -3,7 +3,7 @@
 name="start-x"
 
 depend() {
-    after sysctl
+    after sysctl splash
 }
 
 start() {

@@ -43,7 +43,7 @@ chown -R nobody:safecor /var/log/safecor
 chown -R nobody:safecor /usr/lib/safecor
 
 logger -t "Safecor/core-post-install" "Reorganizing services"
-rc-update add libvirtd boot
+rc-update add libvirtd default
 rc-service libvirtd start
 rc-update add splash boot
 rc-service splash start

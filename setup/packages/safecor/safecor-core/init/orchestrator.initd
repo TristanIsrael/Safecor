@@ -8,11 +8,11 @@ group="safecor"
 logfile="/var/log/safecor/orchestrator.log"
 
 depend() {    
-    after start-x
+    after start-x libvirtd
 }
 
 start() {
-    modprobe uinput    
+    modprobe uinput
     
     # Write screen information in the Xenstore for sys-gui
     ebegin "Store screen information"

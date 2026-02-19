@@ -3,7 +3,7 @@
 name="splash"
 
 depend() {
-    before *
+    after libvirtd xenstored
 }
 
 start() {
