@@ -3,7 +3,7 @@
 import subprocess
 import tempfile
 import os
-from safecor import System, topology, Domain, DomainType, SysLogger
+from safecor import System, Domain, DomainType, SysLogger
 
 class DomainsFactory:
     """ This class is designed to orchestrate the Domains creation during the
@@ -17,6 +17,8 @@ class DomainsFactory:
         """ Creates all the Domains of a Safecor system """
 
         SysLogger("DomainsFactory").info("Start creating domains from topology")
+
+        topology = System.get_topology()
 
         if topology.use_usb:
             blacklist_conf = DomainsFactory.__create_blacklist_conf("sys-usb")
@@ -66,6 +68,8 @@ class DomainsFactory:
     def __create_business_domains():
         SysLogger("DomainsFactory").info("Create all the business Domains")
 
+        topology = System.get_topology()
+
         if len(topology.domains) > 0:
             for domain in topology.domains:
                 domain: Domain
@@ -96,6 +100,8 @@ class DomainsFactory:
 
     @staticmethod
     def __create_xl_conf_sys_usb() -> None:        
+        topology = System.get_topology()
+
         sys_usb = topology.domain("sys-usb")
 
         txt = f'''
@@ -129,7 +135,9 @@ vif=[]
         return txt
 
     @staticmethod
-    def __create_xl_conf_sys_gui() -> None:        
+    def __create_xl_conf_sys_gui() -> None:
+        topology = System.get_topology()
+
         sys_gui = topology.domain("sys-gui")
 
         txt = f'''
@@ -169,7 +177,9 @@ vif=[]
         return txt
 
     @staticmethod
-    def __create_xl_conf_domain(domain:Domain, boot_iso_location:str, share_packages:bool=True, share_storage:bool=True, share_system:bool=False):        
+    def __create_xl_conf_domain(domain:Domain, boot_iso_location:str, share_packages:bool=True, share_storage:bool=True, share_system:bool=False):
+        topology = System.get_topology()
+        
         dom = topology.domain(domain.name)
 
         txt = f'''

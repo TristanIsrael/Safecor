@@ -19,7 +19,6 @@ INPUTS_SOCKET="/var/run/sys-usb-input.sock"
 VIRTUAL_MOUSE_PATH="/dev/input/virtual_mouse"
 VIRTUAL_TOUCH_PATH="/dev/input/virtual_touch"
 VIRTUAL_KEYBOARD_PATH="/dev/input/virtual_keyboard"
-CREATE_DOMAINS=True
 
 
 def find_touchscreen() -> InputDevice:
@@ -235,6 +234,8 @@ def expose_pci_devices():
 
 
 def patch_sys_usb_conf(usb_devs:list):
+    """ Adds the PCI passthrough option to the sys-usb XL configuration file """
+
     with open("/etc/safecor/xen/sys-usb.conf", 'r') as file:
         lines = file.readlines()
     filtered_lines = [line for line in lines if "pci =" not in line]
@@ -247,8 +248,25 @@ def patch_sys_usb_conf(usb_devs:list):
     with open("/etc/safecor/xen/sys-usb.conf", "w") as file:
         file.writelines(filtered_lines)
 
+def can_create_domains() -> bool:
+    """ Verifies whether the automatic creation of the Domains is authorized 
+    
+    The automatic creation of the Domains can be disabled by adding `no_autostart` to the kernel command line.
+    """
+
+    with open("/proc/cmdline", "r") as f:
+        cmdline = f.read()
+
+    if "no_autostart" in cmdline.split():
+        SysLogger("Orchesrator").info("The Domains autostart is disabled from the kernel command line")
+        return False
+    
+    return True
+
 
 def start_business_domains():
+    """ Starts the business Domains"""
+
     #with open('/etc/safecor/topology.json', 'r') as f:
     #    data = json.loads(f.read())
     #    f.close()
@@ -271,10 +289,13 @@ def start_business_domains():
 
 
 def on_mqtt_message(topic:str, payload:dict):
+    # Unused for the moment
     pass
 
 
 def on_mqtt_ready():
+    """ Callback for MQTT broker connection """
+
     SysLogger("Orchestrator").info("Starting Orchestrator")
 
     mqtt.add_message_callback(on_mqtt_message)
@@ -323,20 +344,20 @@ def on_mqtt_ready():
     expose_pci_devices()
 
     # Start sys-usb
-    if CREATE_DOMAINS:
+    if can_create_domains():
         cmd = ["/usr/lib/safecor/bin/start-sys-usb.sh"]
-        res = subprocess.run(cmd)
+        res = subprocess.run(cmd, check= True)
 
-        if res == 0:
+        if res.returncode == 0:
             SysLogger("Orchestrator").info("Started Domain sys-usb")
         else:
             SysLogger("Orchestrator").critical("Domain sys-usb did not start")
 
         # Start sys-gui
         cmd = ["/usr/lib/safecor/bin/start-sys-gui.sh"]
-        res = subprocess.run(cmd)
+        res = subprocess.run(cmd, check= True)
 
-        if res == 0:
+        if res.returncode == 0:
             SysLogger("Orchestrator").info("Started Domain sys-gui")
         else:
             SysLogger("Orchestrator").critical("Domain sys-gui did not start")
