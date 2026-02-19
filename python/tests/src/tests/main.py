@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 from PySide6.QtCore import QUrl, Qt
-from PySide6.QtGui import QKeyEvent, QGuiApplication, QFont
+from PySide6.QtGui import QKeyEvent, QGuiApplication, QFont, QFontDatabase
 from PySide6.QtQuick import QQuickView
 from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterType, qmlRegisterSingletonType, qmlRegisterUncreatableType, qmlRegisterSingletonInstance
 from app_controller import AppController
@@ -29,12 +29,18 @@ def main():
     
     # Expose QML Types
     qmlRegisterSingletonInstance(AppController, "Safecor", 1, 0, 'AppController', AppController(app))
-
-    # Install font
-    #font = QFont("Roboto", 18)
-    #app.setFont(font)
             
     app_root_path = Path(__file__).parent
+
+    # Install font Google Material
+    font_file = app_root_path / "fonts/MaterialSymbolsOutlined-VariableFont_FILL,GRAD,opsz,wght.ttf"
+    font_id = QFontDatabase.addApplicationFont(font_file)
+
+    if font_id != -1:
+        print("The font Google Material has been correctly installed")
+    else:
+        print(f"The font Google Material has not been installed. Font path={font_file}")
+
     view = MyView()
     
     view.engine().quit.connect(app.quit)
