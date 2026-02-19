@@ -43,6 +43,8 @@ chown -R nobody:safecor /var/log/safecor
 chown -R nobody:safecor /usr/lib/safecor
 
 logger -t "Safecor/core-post-install" "Reorganizing services"
+rc-update add libvirtd boot
+rc-service libvirtd start
 rc-update add splash boot
 rc-service splash start
 
@@ -61,8 +63,6 @@ rc-update add start-x
 rc-update add orchestrator
 rc-update add debug
 rc-update add hardening
-rc-update add libvirtd 
-rc-service libvirtd start
 
 # Install new Grub file
 logger -t "Safecor/core-post-install" "Setup grub configuration"

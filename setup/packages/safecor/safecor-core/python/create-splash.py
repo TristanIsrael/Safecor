@@ -7,10 +7,16 @@ from safecor import SysLogger, System
 LOGO_FILEPATH = "/boot/splash.png"
 TOPOLOGY_FILE="/etc/safecor/topology.json"
 
-def create_splash() -> Image:
+
+def create_splash(width:int, height:int) -> Image:
     topology = System.get_topology()
-    width = topology.screen.width
-    height = topology.screen.height
+
+    # Calculate new dimensions with the rotation
+    if topology.screen.rotation == 90 or topology.screen.rotation == 270:
+        _width = width
+        _height = height
+        width = _height
+        height = _width
 
     SysLogger("Create splash").info(f"Create splash of size {width}x{height}")
 
@@ -28,13 +34,13 @@ def create_splash() -> Image:
     return splash
 
 def save_splash(splash:Image, dest:str):
-    width, height = splash.size
+    # dest does not contain the extension
 
     SysLogger("Create splash").info("Create PNG file")
-    splash.save(f"{dest}/splash_{width}_{height}.png")
+    splash.save(f"{dest}.png")
     
     SysLogger("Create splash").info("Create PPM file")
-    splash.save(f"{dest}/splash_{width}_{height}.ppm", format="PPM")
+    splash.save(f"{dest}.ppm", format="PPM")
 
 if __name__ == "__main__":
     SysLogger("Create splash").info("Starting...")
@@ -46,9 +52,11 @@ if __name__ == "__main__":
         print(f"    {os.path.basename(__file__)} destination_dir")
         sys.exit()
     
-    dest = sys.argv[3]
+    _width = int(sys.argv[1])
+    _height = int(sys.argv[2])
+    _dest = sys.argv[3]
 
-    image = create_splash()
-    save_splash(image, dest)
+    _image = create_splash(_width, _height)
+    save_splash(_image, _dest)
 
     SysLogger("Create splash").info("... done")

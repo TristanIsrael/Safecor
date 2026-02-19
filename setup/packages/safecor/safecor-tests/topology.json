@@ -1,6 +1,7 @@
 {
     "product": {
-        "name": "Safecor Tests"        
+        "name": "Safecor Tests",
+        "splash_bgcolor": "#1ca9f7"  
     },
     "pci": {
         "blacklist": "00:0d.0"

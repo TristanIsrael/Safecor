@@ -15,7 +15,7 @@ start() {
     width=`cat /sys/class/graphics/fb0/virtual_size | cut -d, -f1`
     height=`cat /sys/class/graphics/fb0/virtual_size | cut -d, -f2`
     splash_source="/boot/splash.png"
-    splash_file="/boot/splash_${width}_${height}.ppm"
+    splash_file="/boot/splash_fullscreen"
 
     if [ ! -f $splash_source ]
     then 
@@ -23,11 +23,11 @@ start() {
         return 0
     fi 
 
-    echo "Create splash files for the device"
-    python3 /usr/lib/safecor/bin/create-splash.py $width $height /boot
+    echo "Create splash files for the device"    
+    python3 /usr/lib/safecor/bin/create-splash.py $width $height "/boot/$splash_file"
 
     ebegin "Loading splash file"
-    fbsplash -s $splash_file -T 16
+    fbsplash -s "$splash_file.ppm" -T 16
     eend $?
 }
 
