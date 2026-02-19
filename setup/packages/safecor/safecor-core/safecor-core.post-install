@@ -103,4 +103,10 @@ mv /etc/apparmor.d/usr.sbin.winbindd /etc/apparmor.d/disable
 # Disabled because not working yet
 #/usr/lib/safecor/bin/integrity-setup.sh
 
+# Permissions
+logger -t "Safecor/core-post-install" "Set permissions for XEN PV sockets"
+mkdir -p /var/run/safecor
+chown root:safecor /var/run/safecor
+chmod 2770 /var/run/safecor
+
 exit 0

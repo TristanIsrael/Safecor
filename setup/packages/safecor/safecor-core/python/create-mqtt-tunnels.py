@@ -55,7 +55,7 @@ class UnixSocketTunneler:
                 broker_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
                 # Connect to the client and wait for data
-                client_sock = self.__create_client_socket_and_wait_for_connection()
+                client_sock = self.__connect_to_client_socket_and_wait_for_data()
 
                 broker_socket_path = f"/tmp/mqtt_msg_{self.n_socket}.sock"
                 broker_sock.connect(broker_socket_path)
@@ -147,8 +147,8 @@ class UnixSocketTunneler:
                 broker_to_client_buffer = b''
                 time.sleep(1)  # Wait before retrying
 
-    def __create_client_socket_and_wait_for_connection(self) -> socket.socket:
-        ''' @brief Creates a UNIX socket and waits for a connection on it.
+    def __connect_to_client_socket_and_wait_for_data(self) -> socket.socket:
+        ''' @brief Connects to the XEN PV socket and wait for data.
         
             This function is blocking until a connection is made on the new socket.
         '''
@@ -206,7 +206,7 @@ def watch_msg_sockets():
     '''
     Logger.print("Looking for msg mqtt sockets")
 
-    cmd = "find /var/run/ -name '*-msg.sock'"
+    cmd = "find /var/run/safecor/ -name '*-msg.sock'"
     sockets = set()
     n_socket = 1
 

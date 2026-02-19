@@ -14,12 +14,13 @@ addgroup safecor
 adduser -H -D -s /sbin/nologin -G safecor svc-sys-usb-controller
 adduser -H -D -s /sbin/nologin -G safecor svc-tty-tunnel
 
+echo "**** Set permissions on Xen serial devices"
+chgrp safecor /dev/hvc*
+
 rc-update add safecor-sys-usb-controller
 rc-service safecor-sys-usb-controller start
 
 echo Start udev service
-#rc-service mdev stop
-#rc-update del mdev sysinit
 rc-update add udev boot
 rc-service udev start
 udevadm control --reload-rules

@@ -22,7 +22,7 @@ def rotate_screen(angle:int) -> None:
 
         if screen_name:
             # Commande pour appliquer la rotation
-            rotate_command = "xrandr --display :0 --output {} --rotate {}".format(screen_name, angle_to_rotate(angle))
+            rotate_command = f"xrandr --display :0 --output {screen_name} --rotate {angle_to_rotate(angle)}"
 
             # Exécute la commande de rotation
             subprocess.run(rotate_command, shell=True, check=True)

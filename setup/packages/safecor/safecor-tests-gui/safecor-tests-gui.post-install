@@ -5,4 +5,6 @@ mkdir -p /var/log/safecor
 # Remove unneeded big files
 rm -rf /usr/lib/libQt6WebEngineCore*
 
+rc-service tests start
+
 exit 0

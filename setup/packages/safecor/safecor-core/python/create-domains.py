@@ -120,9 +120,9 @@ p9 = [
 ]
 channel = [
 #'name=console, connection=pty',
-'name=sys-usb-msg, connection=socket, path=/var/run/sys-usb-msg.sock',
-'name=sys-usb-input, connection=socket, path=/var/run/sys-usb-input.sock',
-'name=sys-usb-tty, connection=socket, path=/var/run/sys-usb-tty.sock'
+'name=sys-usb-msg, connection=socket, path=/var/run/safecor/sys-usb-msg.sock',
+'name=sys-usb-input, connection=socket, path=/var/run/safecor/sys-usb-input.sock',
+'name=sys-usb-tty, connection=socket, path=/var/run/safecor/sys-usb-tty.sock'
 ]
 vga = "none"
 device_model_override = "/usr/bin/qemu-system-x86_64"
@@ -156,8 +156,8 @@ p9 = [
 ]
 channel = [
 #'name=console, connection=pty',
-'name=sys-gui-msg, connection=socket, path=/var/run/sys-gui-msg.sock',
-'name=sys-gui-input, connection=socket, path=/var/run/sys-gui-input.sock'
+'name=sys-gui-msg, connection=socket, path=/var/run/safecor/sys-gui-msg.sock',
+'name=sys-gui-input, connection=socket, path=/var/run/safecor/sys-gui-input.sock'
 ]
 vga = "none"
 device_model_override = "/usr/bin/qemu-system-x86_64"
@@ -214,7 +214,7 @@ vif=[]
 
         # Add serial channels
         channels = []
-        channels.append(f"'name={domain.name}-msg, connection=socket, path=/var/run/{domain.name}-msg.sock'") # /dev/hvc1
+        channels.append(f"'name={domain.name}-msg, connection=socket, path=/var/run/safecor/{domain.name}-msg.sock'") # /dev/hvc1
         
         if len(channels) > 0:
             txt += "channel = [\n{}\n]\n".format(",\n".join(channels))

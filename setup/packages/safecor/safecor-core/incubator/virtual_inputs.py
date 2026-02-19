@@ -5,7 +5,7 @@ import socket
 import msgpack
 
 # Configuration du port série
-SERIAL_PORT = "/var/run/sys-usb-input.sock"  # Remplacez par le port série réel
+SERIAL_PORT = "/var/run/safecor/sys-usb-input.sock"  # Remplacez par le port série réel
 BAUDRATE = 9600
 
 # Taille d'une trame packée (a=uint8, b=uint16, c=uint16, d=int32)

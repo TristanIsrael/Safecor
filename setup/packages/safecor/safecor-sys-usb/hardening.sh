@@ -1,4 +1,3 @@
-@ -0,0 +1,34 @@
 #!/bin/bash
 
 # This file contains kernel parameters and shell instructions to harden 
