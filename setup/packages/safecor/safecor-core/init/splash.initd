@@ -27,7 +27,7 @@ start() {
     python3 /usr/lib/safecor/bin/create-splash.py $width $height /boot
 
     ebegin "Loading splash file"
-    fbsplash -s $splash_file -T 2
+    fbsplash -s $splash_file -T 16
     eend $?
 }
 
