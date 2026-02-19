@@ -31,9 +31,9 @@ class Constants():
     MQTT_MSG_BROKER_SOCKET = "/tmp/mqtt_msg_dom0.sock"
     MQTT_MSG_BROKER_SOCKETS = "/tmp/mqtt_msg*.sock"
     MQTT_LOG_BROKER_SOCKET = "/tmp/mqtt_log.sock"
-    MQTT_MSG_SOCKET_FILTER = "/var/run/*-msg.sock"
-    MQTT_LOG_SOCKET_FILTER = "/var/run/*-log.sock"
-    XEN_SOCKETS_PATH = "/var/run"
+    MQTT_MSG_SOCKET_FILTER = "/var/run/safecor/*-msg.sock"
+    MQTT_LOG_SOCKET_FILTER = "/var/run/safecor/*-log.sock"
+    XEN_SOCKETS_PATH = "/var/run/safecor"
 
     # PV channel socket between DomU and Dom0
     DOMU_INPUT_SOCKET_FILEPATH = "/dev/hvc2"
@@ -41,7 +41,7 @@ class Constants():
     LOCAL_LOG_FILEPATH = "/var/log/safecor/safecor.log"
     LOG_STRING_FORMAT_PRODUCTION = '%(asctime)s %(levelname)-8s %(domaine)-10s [%(entite)-20s] %(message)s'
     LOG_STRING_FORMAT_DEBUG = '%(asctime)s %(levelname)-8s %(domaine)-10s [%(entite)-20s] %(message)s'
-    SYS_USB_INPUT_SOCKET_FILEPATH = "/var/run/sys-usb-input.sock"
+    SYS_USB_INPUT_SOCKET_FILEPATH = "/var/run/safecor/sys-usb-input.sock"
     PID_FILES_PATH = "/tmp"
     USB_MOUNT_POINT = "/media/usb" #/mnt
     ENABLE_LOCAL_LOG = True
