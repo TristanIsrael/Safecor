@@ -435,8 +435,8 @@ class System(metaclass=SingletonMeta):
 
         # If there is no group defined we force the cpu count
         if len(groups) == 0:
-            print(f"There are no groups for {group_name}")
-            print(platform_cpus, reserved_vcpus)
+            #print(f"There is no group for {group_name}")
+            #print(platform_cpus, reserved_vcpus)
             return platform_cpus - reserved_vcpus
 
         if group_name in groups:
@@ -450,7 +450,7 @@ class System(metaclass=SingletonMeta):
                 return max(vcpus, 1)
         else:
             # If there is no group defined we consider using 100% of the remaining cores
-            print(f"default case for {group_name}:{platform_cpus - reserved_vcpus}")
+            #print(f"default case for {group_name}:{platform_cpus - reserved_vcpus}")
             return platform_cpus - reserved_vcpus
 
         return vcpus

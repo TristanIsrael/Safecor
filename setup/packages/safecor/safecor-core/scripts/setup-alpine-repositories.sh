@@ -1,8 +1,8 @@
 #!/bin/sh
 
 SCRIPT_NAME=$(basename "$0")
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
-logger -t "Safecor/$SCRIPT_NAME" -p user.warn "*** Deprecated ***"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.warn "*** Deprecated ***"
 
 
 echo *** Deprecated ***

@@ -1,17 +1,17 @@
 #!/bin/sh
 
 SCRIPT_NAME=$(basename "$0")
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
 
 # Read screen size
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Reading screen size from Xenstore"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Reading screen size from Xenstore"
 screen_size=`xenstore-read /local/domain/system/screen_size`
-logger -t "Safecor/$SCRIPT_NAME" -p user.debug "Screen size is $screen_size"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "Screen size is $screen_size"
 
 # Read screen orientation
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Reading screen rotation from Xenstore"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Reading screen rotation from Xenstore"
 screen_rotation=`xenstore-read /local/domain/system/screen_rotation`
-logger -t "Safecor/$SCRIPT_NAME" -p user.debug "Screen rotation is $screen_rotation"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "Screen rotation is $screen_rotation"
 
 # Compute the resolution with the orientation
 normalized_rotation=$(( (screen_rotation % 360 + 360) % 360 ))
@@ -35,21 +35,21 @@ case $normalized_rotation in
         new_height=$height
         ;;
     *)
-        logger -t "Safecor/$SCRIPT_NAME" -p user.err "Invalid rotation angle: $screen_rotation"
+        logger -s -t "Safecor/$SCRIPT_NAME" -p user.err "Invalid rotation angle: $screen_rotation"
         exit 1
         ;;
 esac
 
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Start the Domain sys-gui"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Start the Domain sys-gui"
 DISPLAY=:0 xl create -f /etc/safecor/xen/sys-gui.conf
 sleep 1
 
 # Resize GTK window to fill the display
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Resize the GTK window"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Resize the GTK window"
 DISPLAY=:0 xdotool windowsize `DISPLAY=:0 xdotool search --name "sys-gui"` $new_width $new_height
 
 # We show the splash back
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Show the splash screen"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Show the splash screen"
 DISPLAY=:0 feh --fullscreen --zoom fill /boot/Splash.png &
 
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "... done"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"

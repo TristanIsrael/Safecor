@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SCRIPT_NAME=$(basename "$0")
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
 
 
 #if [ -n "$OPENRC_RUNLEVEL" ]
@@ -10,14 +10,14 @@ logger -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
 #else
     . /etc/safecor/constants.sh
 
-    logger -t "Safecor/$SCRIPT_NAME" -p user.info "Creating the directories..."
+    logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Creating the directories..."
 
     mkdir -p /usr/lib/safecor/storage
     mkdir -p /usr/lib/safecor/packages
     mkdir -p /etc/safecor/xen
     mkdir -p /var/log/safecor
     
-    logger -t "Safecor/$SCRIPT_NAME" -p user.info "... done"
+    logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"
 
     /usr/lib/safecor/bin/generate-pgp-keys.sh
     /usr/lib/safecor/bin/setup-alpine-repositories.sh
@@ -27,7 +27,6 @@ logger -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
     #echo ... Start initd scripts
     #rc-service setup-pci start
     
-    logger -t "Safecor/$SCRIPT_NAME" -p user.info "Creating the XEN domains..."
     /usr/bin/python3 /usr/lib/safecor/bin/create-domains.py $ALPINE_LOCAL_REPOSITORY/`uname -m`
 
     # Orchestrator will be started on demand

@@ -327,16 +327,19 @@ class SysLogger():
     def critical(self, description:str):
         """ Sends a critical message """
 
+        print(description)
         syslog.syslog(syslog.LOG_EMERG, description)
 
     def error(self, description:str):
         """ Sends an error message """
 
+        print(description)
         syslog.syslog(syslog.LOG_ERR, description)
 
     def warning(self, description:str):
         """ Sends a warning message """
 
+        print(description)
         syslog.syslog(syslog.LOG_WARNING, description)
 
     def warn(self, description:str):
@@ -345,14 +348,17 @@ class SysLogger():
             Synonym of :func:`warning`.
         """
 
+        print(description)
         syslog.syslog(syslog.LOG_WARNING, description)
 
     def info(self, description:str):
         """ Sends an information message """
 
+        print(description)
         syslog.syslog(syslog.LOG_INFO, description)
 
-    def debug(self, description:str, module:str = ""):
+    def debug(self, description:str):
         """ Sends a debugging message """
 
+        print(description)
         syslog.syslog(syslog.LOG_DEBUG, description)

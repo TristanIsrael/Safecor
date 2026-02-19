@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SCRIPT_NAME=$(basename "$0")
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
 
 . /etc/safecor/constants.sh
 
@@ -17,17 +17,17 @@ ALPINE_ARCH_DIR=$ALPINE_LOCAL_REPOSITORY/`uname -m`
 mkdir -p $ALPINE_ARCH_DIR
 cd $ALPINE_LOCAL_REPOSITORY
 ln -s `uname -m` noarch
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "... Created the local repository dir at $ALPINE_LOCAL_REPOSITORY"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Created the local repository dir at $ALPINE_LOCAL_REPOSITORY"
 
 # Construction d'un dépôt local pour les VM domU
 # Le dépôt local sera signé avec sa propre clé
 # Pour converger avec la configuration nomade il faut
 # que les dépôts Alpine et Panoptiscan soient séparés
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "Fetch packages..."
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Fetch packages..."
 cd $ALPINE_ARCH_DIR
 apk fetch -R safecor-lib safecor-sys-usb 
 # Récupération de dépendances supplémentaires
 apk fetch -R libtirpc-conf krb5-conf eudev-openrc udev-init-scripts udev-init-scripts-openrc
-logger -t "Safecor/$SCRIPT_NAME" -p user.info "... done"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"
 
 /usr/lib/safecor/bin/reindex-and-sign-repository.sh

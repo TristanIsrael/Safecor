@@ -11,15 +11,20 @@ echo ---        script post-install.sh        ---
 echo --------------------------------------------
 echo
 
+rc-update del syslog boot
+rc-update add syslog-ng boot
+rc-service syslog-ng restart
+
+logger -t "Safecor/core-post-install" "Setting environment"
 hostname safecor.local
 echo "" >> /etc/profile
 echo "export DISPLAY=:0" >> /etc/profile
 
-echo "**** Resizing shared memory"
+logger -t "Safecor/core-post-install" "Resizing shared memory"
 # Note : non-persistent setting
 mount -o remount,size=16M /dev/shm
 
-echo "**** Creating service accounts"
+logger -t "Safecor/core-post-install" "Creating service accounts"
 addgroup safecor
 adduser -H -D -s /sbin/nologin -G safecor svc-mqtt-tunnels
 adduser -H -D -s /sbin/nologin -G safecor svc-tty-tunnels
@@ -28,20 +33,19 @@ adduser -H -D -s /sbin/nologin -G safecor svc-mqtt-logger
 adduser -H -D -s /sbin/nologin -G safecor svc-orchestrator
 adduser -H -D -s /sbin/nologin -G safecor svc-safecor-controller
 
-echo "**** Adding users to groups"
+logger -t "Safecor/core-post-install" "Adding users to groups"
 addgroup svc-orchestrator mosquitto
 addgroup svc-mqtt-tunnels mosquitto
 
-echo "**** Settings permissions on files"
+logger -t "Safecor/core-post-install" "Settings permissions on files"
 mkdir -p /var/log/safecor
 chown -R nobody:safecor /var/log/safecor
 chown -R nobody:safecor /usr/lib/safecor
 
+logger -t "Safecor/core-post-install" "Reorganizing services"
 rc-update add splash boot
 rc-service splash start
 
-rc-update del syslog boot
-rc-update add syslog-ng boot
 rc-update add apparmor boot
 
 rc-service modules restart
@@ -58,8 +62,11 @@ rc-update add orchestrator
 rc-update add debug
 rc-update add hardening
 rc-update add libvirtd 
+rc-service libvirtd start
 
 # Install new Grub file
+logger -t "Safecor/core-post-install" "Setup grub configuration"
+
 mv /etc/default/grub /etc/default/grub.orig
 if [ -f /etc/default/grub.apk-new ]; then
     mv /etc/default/grub.apk-new /etc/default/grub
@@ -70,6 +77,7 @@ fi
 #mv "/etc/profile.d/color_prompt.sh.disabled" "/etc/profile.d/color_prompt.sh"
 
 # Disable AppArmor unused profiles
+logger -t "Safecor/core-post-install" "Disable AppArmor unused profiles"
 mv /etc/apparmor.d/bin.ping /etc/apparmor.d/disable
 mv /etc/apparmor.d/lsb_release /etc/apparmor.d/disable
 mv /etc/apparmor.d/php-fpm /etc/apparmor.d/disable
@@ -92,7 +100,6 @@ mv /etc/apparmor.d/usr.sbin.smbldap-useradd /etc/apparmor.d/disable
 mv /etc/apparmor.d/usr.sbin.traceroute /etc/apparmor.d/disable
 mv /etc/apparmor.d/usr.sbin.winbindd /etc/apparmor.d/disable
 
-echo Setup system integrity
 # Disabled because not working yet
 #/usr/lib/safecor/bin/integrity-setup.sh
 

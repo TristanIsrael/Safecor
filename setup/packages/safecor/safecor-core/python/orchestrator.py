@@ -98,8 +98,8 @@ def create_virtual_touch(touch_device) -> InputDevice:
 def start_events_listener(virtual_mouse, virtual_keyboard, virtual_touch):
     """ Starts an event listener 
     
-    The events listener monitors the inputs and serializes data (position, button, chars, etc)
-    on the Domain PV channel.
+    The events listener monitors the inputs socket of sys-usb and serializes the events on the 
+    virtual devices created before.
     """
 
     SysLogger("Orchestrator").info("Start input listener")
