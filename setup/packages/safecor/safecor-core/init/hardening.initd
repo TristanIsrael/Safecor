@@ -11,7 +11,7 @@ depend() {
 }
 
 start() {    
-    if grep -q "DEBUG=ON" "/proc/cmdline"; then            
+    if grep -iq "DEBUG=ON" "/proc/cmdline"; then            
         ebegin "Apply hardening (DEBUG mode enabled)"
                         
 

@@ -7,7 +7,7 @@ depend() {
 }
 
 start() {
-    if grep -q "DEBUG=ON" "/proc/cmdline"; then            
+    if grep -iq "DEBUG=ON" "/proc/cmdline"; then            
         ebegin "Create TTY tunnel"
         start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/bin/create-tty-tunnel.sh --pidfile /var/run/$name-tty-tunnel.pid --background --user "svc-tty-tunnels"
         eend $?

@@ -257,7 +257,7 @@ def can_create_domains() -> bool:
     with open("/proc/cmdline", "r") as f:
         cmdline = f.read()
 
-    if "no_autostart" in cmdline.split():
+    if "no_autostart" in cmdline.split() or "NO_AUTOSTART" in cmdline.split():
         SysLogger("Orchesrator").info("The Domains autostart is disabled from the kernel command line")
         return False
     

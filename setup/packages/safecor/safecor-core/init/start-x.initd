@@ -16,6 +16,9 @@ start() {
 
     start-stop-daemon --start --make-pidfile --exec X --pidfile /var/run/$name.pid --background -- -config /etc/X11/xorg.conf
 
+    # Remove boot fbsplash
+    killall fbsplash || true
+
     # Show splash
     bgcolor=`jq -r '.product.splash_bgcolor' /etc/safecor/topology.json`
     DISPLAY=:0 feh --fullscreen -x -B "$bgcolor" /boot/splash.png &
