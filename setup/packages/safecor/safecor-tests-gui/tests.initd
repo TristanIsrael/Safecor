@@ -3,7 +3,6 @@
 name="tests"
 
 depend() {
-    need xenstored udev-trigger
     after *
 }
 
