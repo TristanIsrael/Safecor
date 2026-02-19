@@ -46,7 +46,8 @@ scripts/set-xenstore-permissions.sh
 scripts/integrity-setup.sh
 
 conf/constants.sh
-conf/safecor.conf
+conf/modules-safecor.conf
+conf/syslog-safecor.conf
 conf/10-energy-saving.conf
 conf/topology.json
 conf/mosquitto.conf
