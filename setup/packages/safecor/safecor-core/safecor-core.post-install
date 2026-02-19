@@ -36,6 +36,7 @@ adduser -H -D -s /sbin/nologin -G safecor svc-safecor-controller
 logger -t "Safecor/core-post-install" "Adding users to groups"
 addgroup svc-orchestrator mosquitto
 addgroup svc-mqtt-tunnels mosquitto
+addgroup svc-safecor-controller mosquitto
 
 logger -t "Safecor/core-post-install" "Settings permissions on files"
 mkdir -p /var/log/safecor
