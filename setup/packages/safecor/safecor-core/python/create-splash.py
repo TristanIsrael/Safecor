@@ -2,18 +2,21 @@ from PIL import Image
 import sys
 import os
 import json
-from safecor import topology, SysLogger
+from safecor import SysLogger, System
 
 LOGO_FILEPATH = "/boot/splash.png"
 TOPOLOGY_FILE="/etc/safecor/topology.json"
 
 def create_splash() -> Image:
+    topology = System.get_topology()
     width = topology.screen.width
     height = topology.screen.height
 
     SysLogger("Create splash").info(f"Create splash of size {width}x{height}")
 
-    splash = Image.new("RGB", (width, height), topology.colors["splash_bgcolor"])
+    bgcolor = topology.color_as_rgba("splash_bgcolor")
+    print(bgcolor)
+    splash = Image.new("RGB", (width, height), bgcolor)
     image = Image.open(LOGO_FILEPATH)
     
     image_width, image_height = image.size
