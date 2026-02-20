@@ -23,6 +23,8 @@ start() {
     chown $user:$group $logfile
     chmod 750 $logfile
 
+    chgrp safecor /dev/uinput
+
     screen_size=`cat /sys/class/graphics/fb0/virtual_size`    
     xenstore-write /local/domain/system/screen_size $screen_size > $logfile 2>&1       
     python3 /usr/lib/safecor/bin/write-screen-information-to-xenstore.py > $logfile 2>&1

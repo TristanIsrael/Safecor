@@ -219,8 +219,9 @@ class System(metaclass=SingletonMeta):
             topology.use_usb = topo.get("system", {}).get("use_usb", False)
             topology.use_gui = topo.get("system", {}).get("use_gui", False)
             topology.screen.rotation = topo.get("system", {}).get("screen_rotation", 0)
-            topology.screen.width = System().get_screen_width()
-            topology.screen.height = System().get_screen_height()
+            screen = System.get_framebuffer_dimension()
+            topology.screen.width = screen[0]
+            topology.screen.height = screen[1]
             topology.uuid = System().get_system_uuid()
             topology.gui.app_package = topo.get("system", {}).get("gui_app_package", "error")
             topology.gui.memory = topo.get("system", {}).get("gui_memory", 2000)
@@ -321,7 +322,7 @@ class System(metaclass=SingletonMeta):
         use_gui = gui.get("use", False)
         gui_app_package = gui.get("app-package", "")
         screen_rotation = screen.get("rotation", 0)
-        gui_memory = gui.get("memory", 128)        
+        gui_memory = gui.get("memory", 128)
                 
         topo_struct["system"] = {
             "use_usb": use_usb,
@@ -684,3 +685,48 @@ class System(metaclass=SingletonMeta):
         elif len(cpu_affinity) == 1:
             return str(cpu_affinity[0])
         return f"{cpu_affinity[0]}-{cpu_affinity[-1]}"
+    
+    @staticmethod
+    def get_framebuffer_dimension(fbdev:int = 0) -> tuple[int, int]:
+        """ Returns the framebuffer dimensions as a tuple (width, height) 
+        
+        By default, the framebuffer fb0 is queried. This can be overriden by setting the
+        parameter fbdev
+        """
+        
+        try:
+            with open(f"/sys/class/graphics/fb{fbdev}/virtual_size") as f:
+                data = f.read().strip()
+            width, height = map(int, data.split(","))
+            return width, height
+        except FileNotFoundError:
+            return None
+
+    @staticmethod
+    def get_screen_rotation_from_topology(override_topology_file:str = "") -> int:
+        """ Returns the screen rotation defined in the topology file
+        
+        This function is necessary for treatments that occur before libvirt and xenstore
+        are loaded. The function :func:`get_topology_struct` is one of those.
+        """
+
+        topo_data = System.get_topology_data(override_topology_file)
+        gui = topo_data.get("gui", {})
+        screen = gui.get("screen", {})
+        rotation = screen.get("rotation", 0)
+
+        return rotation
+
+    @staticmethod
+    def get_splash_bgcolor_from_topology(override_topology_file:str = "") -> int:
+        """ Returns the background color for the plash defined in the topology file
+        
+        This function is necessary for treatments that occur before libvirt and xenstore
+        are loaded. The function :func:`get_topology_struct` is one of those.
+        """
+
+        topo_data = System.get_topology_data(override_topology_file)
+        product = topo_data.get("product", {})
+        color = product.get("splash_bgcolor", "#000000")
+
+        return color

@@ -11,6 +11,7 @@ from PySide6.QtGui import QKeyEvent, QGuiApplication, QFont, QFontDatabase
 from PySide6.QtQuick import QQuickView
 from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterType, qmlRegisterSingletonType, qmlRegisterUncreatableType, qmlRegisterSingletonInstance
 from app_controller import AppController
+from safecor import Api
 
 class MyView(QQuickView):
     def keyPressEvent(self, event: QKeyEvent):
@@ -34,7 +35,7 @@ def main():
 
     # Install font Google Material
     font_file = app_root_path / "fonts/MaterialSymbolsOutlined-VariableFont_FILL,GRAD,opsz,wght.ttf"
-    font_id = QFontDatabase.addApplicationFont(font_file)
+    font_id = QFontDatabase.addApplicationFont(font_file.as_posix())
 
     if font_id != -1:
         print("The font Google Material has been correctly installed")
@@ -51,6 +52,8 @@ def main():
         view.showFullScreen()
     else:
         view.show()
+
+    Api().notify_gui_ready()
 
     return app.exec()
 

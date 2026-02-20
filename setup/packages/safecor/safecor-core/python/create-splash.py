@@ -1,29 +1,35 @@
 from PIL import Image
 import sys
 import os
-import json
 from safecor import SysLogger, System
 
 LOGO_FILEPATH = "/boot/splash.png"
 TOPOLOGY_FILE="/etc/safecor/topology.json"
 
 
-def create_splash(width:int, height:int) -> Image:
-    topology = System.get_topology()
+def create_splash() -> Image:
+    screen = System.get_framebuffer_dimension()
+    width = screen[0] if screen is not None else 800
+    height = screen[1] if screen is not None else 600
+    rotation = System.get_screen_rotation_from_topology()
 
     # Calculate new dimensions with the rotation
-    if topology.screen.rotation == 90 or topology.screen.rotation == 270:
-        _width = width
-        _height = height
-        width = _height
-        height = _width
+    #if rotation == 90 or rotation == 270:
+    #    _width = width
+    #    _height = height
+    #    width = _height
+    #    height = _width
 
     SysLogger("Create splash").info(f"Create splash of size {width}x{height}")
 
-    bgcolor = topology.color_as_rgba("splash_bgcolor")
-    print(bgcolor)
+    #bgcolor = topology.color_as_rgba("splash_bgcolor")
+    bgcolor = System.get_splash_bgcolor_from_topology()
     splash = Image.new("RGB", (width, height), bgcolor)
     image = Image.open(LOGO_FILEPATH)
+    
+    if rotation == 90 or rotation == 270:
+        rotated = image.rotate(rotation)
+        image = rotated
     
     image_width, image_height = image.size
     x = (width - image_width) // 2
@@ -52,11 +58,11 @@ if __name__ == "__main__":
         print(f"    {os.path.basename(__file__)} destination_dir")
         sys.exit()
     
-    _width = int(sys.argv[1])
-    _height = int(sys.argv[2])
-    _dest = sys.argv[3]
+    #_width = int(sys.argv[1])
+    #_height = int(sys.argv[2])
+    _dest = sys.argv[1]
 
-    _image = create_splash(_width, _height)
+    _image = create_splash()
     save_splash(_image, _dest)
 
     SysLogger("Create splash").info("... done")
