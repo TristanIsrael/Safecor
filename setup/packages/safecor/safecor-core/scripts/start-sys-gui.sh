@@ -41,7 +41,9 @@ case $normalized_rotation in
 esac
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Start the Domain sys-gui"
-DISPLAY=:0 xl create -f /etc/safecor/xen/sys-gui.conf
+
+umask 007 # With this mask, the sockets will be created with the mode 770
+DISPLAY=:0 /usr/sbin/xl create -f /etc/safecor/xen/sys-gui.conf
 sleep 1
 
 # Resize GTK window to fill the display
@@ -50,6 +52,6 @@ DISPLAY=:0 xdotool windowsize `DISPLAY=:0 xdotool search --name "sys-gui"` $new_
 
 # We show the splash back
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Show the splash screen"
-DISPLAY=:0 feh --fullscreen --zoom fill /boot/Splash.png &
+DISPLAY=:0 feh --fullscreen --zoom fill /boot/splash_fullscreen.png &
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"

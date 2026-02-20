@@ -14,8 +14,12 @@ logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
 
     mkdir -p /usr/lib/safecor/storage
     mkdir -p /usr/lib/safecor/packages
-    mkdir -p /etc/safecor/xen
+    mkdir -p /etc/safecor/xen    
     mkdir -p /var/log/safecor
+    chgrp safecor /etc/safecor
+    chgrp safecor /etc/safecor/xen
+    chmod 2770 /etc/safecor
+    chmod 2770 /etc/safecor/xen
     
     logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"
 

@@ -16,9 +16,9 @@ MOUSE_NAME="Safecor virtual mouse"
 TOUCH_NAME="Safecor virtual touchscreen"
 KEYBOARD_NAME="Safecor virtual keyboard"
 INPUTS_SOCKET="/var/run/safecor/sys-usb-input.sock"
-VIRTUAL_MOUSE_PATH="/dev/input/virtual_mouse"
-VIRTUAL_TOUCH_PATH="/dev/input/virtual_touch"
-VIRTUAL_KEYBOARD_PATH="/dev/input/virtual_keyboard"
+VIRTUAL_MOUSE_PATH="/var/run/safecor/virtual_mouse"
+VIRTUAL_TOUCH_PATH="/var/run/safecor/virtual_touch"
+VIRTUAL_KEYBOARD_PATH="/var/run/safecor/virtual_keyboard"
 
 
 def find_touchscreen() -> InputDevice:
@@ -67,7 +67,7 @@ def create_virtual_mouse():
     }
 
     input = UInput(capabilities, name=MOUSE_NAME)
-    SysLogger("Orchestrator").info(f"Created virtual mouse {input.name}")
+    SysLogger("Orchestrator").info(f"Created device {input.name}")
 
     return input
 
@@ -81,7 +81,7 @@ def create_virtual_keyboard():
     }
 
     input = UInput(capabilities, name=KEYBOARD_NAME)
-    SysLogger("Orchestrator").info(f"Created virtual keyboard {input.name}")
+    SysLogger("Orchestrator").info(f"Created device{input.name}")
 
     return input
 
@@ -90,7 +90,7 @@ def create_virtual_touch(touch_device) -> InputDevice:
     """ Creates a new virtual touchscreen device """
 
     virtual_touch = UInput.from_device(touch_device, name=TOUCH_NAME)
-    SysLogger("Orchestrator").info(f"Created virtual touchscreen {virtual_touch.name}")
+    SysLogger("Orchestrator").info(f"Created device {virtual_touch.name}")
     return virtual_touch
 
 
@@ -219,14 +219,14 @@ def expose_pci_devices():
             SysLogger("Orchestrator").info(f"Device {dev} is ignored because it is blacklisted")
         else:            
             Logger().debug(f"Expose device {dev}")
-            cmd = ["xl", "pci-assignable-add", dev]
+            cmd = ["/usr/bin/doas", "/usr/sbin/xl", "pci-assignable-add", dev]
 
             res = subprocess.run(cmd)
             if res.returncode == 0:
                 SysLogger("Orchestrator").info(f"Device {dev} has been passedthrough to sys-usb")
                 whitelist.append(dev)
             else:
-                SysLogger("Orchestrator").warn(f"There has been a error while exposing the device {dev} to Xen")           
+                SysLogger("Orchestrator").warn(f"There has been an error while exposing the device {dev} to Xen")           
     
     # Append devices to sys-usb.conf
     if len(whitelist) > 0:
@@ -279,7 +279,7 @@ def start_business_domains():
         if domain_name == "":
             continue
 
-        cmd = ["/usr/lib/safecor/bin/start-business-domain.sh", domain_name]
+        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain_name]
         res = subprocess.run(cmd)
 
         if res == 0:
@@ -308,9 +308,16 @@ def on_mqtt_ready():
         SysLogger("Orchestrator").warn("The mouse device path has not been found")
     else:
         if os.path.exists(VIRTUAL_MOUSE_PATH) or os.path.islink(VIRTUAL_MOUSE_PATH):
-            os.remove(VIRTUAL_MOUSE_PATH)
-            time.sleep(0.1)
-        os.symlink(mouse_path, VIRTUAL_MOUSE_PATH)
+            try:
+                os.remove(VIRTUAL_MOUSE_PATH)
+                time.sleep(0.1)
+            except Exception as e:
+                SysLogger("Orchestrator").error(f"Could not remove current virtual mouse device. {e}")
+
+        try:
+            os.symlink(mouse_path, VIRTUAL_MOUSE_PATH)
+        except Exception as e:
+            SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual mouse device. {e}")
 
     virtual_keyboard = create_virtual_keyboard()
     # Create symlinks for the virtual inputs which act as a permalinks
@@ -319,9 +326,16 @@ def on_mqtt_ready():
         SysLogger("Orchestrator").error("The keyboard device path has not been found")
     else:
         if os.path.exists(VIRTUAL_KEYBOARD_PATH) or os.path.islink(VIRTUAL_KEYBOARD_PATH):
-            os.remove(VIRTUAL_KEYBOARD_PATH)
-            time.sleep(0.1)
-        os.symlink(keyboard_path, VIRTUAL_KEYBOARD_PATH)
+            try:
+                os.remove(VIRTUAL_KEYBOARD_PATH)
+                time.sleep(0.1)
+            except Exception as e:
+                SysLogger("Orchestrator").error(f"Could not remove current virtual keyboard device. {e}")
+
+        try:
+            os.symlink(keyboard_path, VIRTUAL_KEYBOARD_PATH)
+        except Exception as e:
+            SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual keyboard device. {e}")
 
     # Find touch screen and keep capabilities
     touch_device = find_touchscreen()
@@ -334,18 +348,25 @@ def on_mqtt_ready():
         touch_path = get_device_path(TOUCH_NAME)
         if touch_path == "":
             SysLogger("Orchestrator").error("The touch device path has not been found")
-        else:
+        else:            
             if os.path.exists(VIRTUAL_TOUCH_PATH) or os.path.islink(VIRTUAL_TOUCH_PATH):
-                os.remove(VIRTUAL_TOUCH_PATH)
-                time.sleep(0.1)
-            os.symlink(touch_path, "/dev/input/virtual_touch")
+                try:
+                    os.remove(VIRTUAL_TOUCH_PATH)
+                    time.sleep(0.1)
+                except Exception as e:
+                    SysLogger("Orchestrator").error(f"Could not remove current virtual touch device. {e}")
+
+            try:
+                os.symlink(touch_path, VIRTUAL_TOUCH_PATH)
+            except Exception as e:
+                SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual touch device. {e}") 
 
     # Attach PCI devices
     expose_pci_devices()
 
     # Start sys-usb
     if can_create_domains():
-        cmd = ["/usr/lib/safecor/bin/start-sys-usb.sh"]
+        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-sys-usb.sh"]
         res = subprocess.run(cmd, check= True)
 
         if res.returncode == 0:
@@ -354,7 +375,7 @@ def on_mqtt_ready():
             SysLogger("Orchestrator").critical("Domain sys-usb did not start")
 
         # Start sys-gui
-        cmd = ["/usr/lib/safecor/bin/start-sys-gui.sh"]
+        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-sys-gui.sh"]
         res = subprocess.run(cmd, check= True)
 
         if res.returncode == 0:
@@ -377,7 +398,7 @@ def on_mqtt_ready():
 
 if __name__ == "__main__":
     SysLogger("Orchestrator").info("Starting Safecor orchestrator...")
-    
+
     mqtt.add_connected_callback(on_mqtt_ready)
     mqtt.start()
 

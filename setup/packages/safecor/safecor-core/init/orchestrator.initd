@@ -30,6 +30,11 @@ start() {
 
     /usr/lib/safecor/bin/set-xenstore-permissions.sh > $logfile 2>&1
 
+    ebegin "Create missing directories"
+    mkdir -p /var/run/safecor
+    chown root:safecor /var/run/safecor
+    chmod 2770 /var/run/safecor
+
     ebegin "Starting Safecor orchestrator"
     start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --pidfile /var/run/$name.pid --background --user "$user" --stdout "$logfile" --stderr "$logfile"  -- /usr/lib/safecor/bin/orchestrator.py
     eend $?

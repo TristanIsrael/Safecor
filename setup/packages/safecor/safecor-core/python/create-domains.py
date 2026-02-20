@@ -47,8 +47,14 @@ class DomainsFactory:
         conf = DomainsFactory.__create_xl_conf_sys_usb()
 
         if conf is not None:
-            with open('/etc/safecor/xen/sys-usb.conf', 'w') as f:
+            filename = '/etc/safecor/xen/sys-usb.conf'
+            with open(filename, 'w') as f:
                 f.write(conf)
+
+            try:
+                os.chmod(filename, 0o770)
+            except Exception as e:
+                SysLogger("DomainsFactory").info(f"Could not set permission on file {filename} : {e}")
 
         SysLogger("DomainsFactory").info("Configuration for Domain sys-usb created successfully")
 
@@ -59,8 +65,14 @@ class DomainsFactory:
         conf = DomainsFactory.__create_xl_conf_sys_gui()
 
         if conf is not None:
-            with open('/etc/safecor/xen/sys-gui.conf', 'w') as f:
+            filename = '/etc/safecor/xen/sys-gui.conf'
+            with open(filename, 'w') as f:
                 f.write(conf)
+
+            try:
+                os.chmod(filename, 0o770)
+            except Exception as e:
+                SysLogger("DomainsFactory").info(f"Could not set permission on file {filename} : {e}")
 
         SysLogger("DomainsFactory").info("Configuration for Domain sys-gui created successfully")
     
@@ -89,8 +101,14 @@ class DomainsFactory:
                     share_system= False
                 )
 
-                with open(f"/etc/safecor/xen/{domain.name}.conf", 'w') as f:
+                filename = f"/etc/safecor/xen/{domain.name}.conf"
+                with open(filename, 'w') as f:
                     f.write(conf)
+
+                try:
+                    os.chmod(filename, 0o770)
+                except Exception as e:
+                    SysLogger("DomainsFactory").info(f"Could not set permission on file {filename} : {e}")
 
                 DomainsFactory.__fetch_alpine_packages(package)
 
@@ -165,9 +183,9 @@ device_model_version = "qemu-xen"
 device_model_args = [
      '-device', 'virtio-gpu-pci',
      '-display', 'gtk,full-screen=on,zoom-to-fit=on,gl=on',
-     '-device', 'virtio-input-host,id=virtio-mouse,evdev=/dev/input/virtual_mouse',
-     '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/dev/input/virtual_keyboard',
-     '-device', 'virtio-input-host,id=virtio-touch,evdev=/dev/input/virtual_touch'
+     '-device', 'virtio-input-host,id=virtio-mouse,evdev=/var/run/safecor/virtual_mouse',
+     '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/var/run/safecor/virtual_keyboard',
+     '-device', 'virtio-input-host,id=virtio-touch,evdev=/var/run/safecor/virtual_touch'
 ]
 usb=0
 vnc=0

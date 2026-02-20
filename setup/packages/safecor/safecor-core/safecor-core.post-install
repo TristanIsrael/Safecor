@@ -37,11 +37,15 @@ logger -t "Safecor/core-post-install" "Adding users to groups"
 addgroup svc-orchestrator mosquitto
 addgroup svc-mqtt-tunnels mosquitto
 addgroup svc-safecor-controller mosquitto
+addgroup svc-orchestrator input
+addgroup svc-safecor-controller input
 
-logger -t "Safecor/core-post-install" "Settings permissions on files"
+logger -t "Safecor/core-post-install" "Settings permissions on system files"
 mkdir -p /var/log/safecor
 chown -R nobody:safecor /var/log/safecor
+chmod 770 /var/log/safecor
 chown -R nobody:safecor /usr/lib/safecor
+chgrp safecor /dev/uinput
 
 logger -t "Safecor/core-post-install" "Reorganizing services"
 rc-update add libvirtd default
@@ -105,9 +109,10 @@ mv /etc/apparmor.d/usr.sbin.winbindd /etc/apparmor.d/disable
 #/usr/lib/safecor/bin/integrity-setup.sh
 
 # Permissions
-logger -t "Safecor/core-post-install" "Set permissions for XEN PV sockets"
+logger -t "Safecor/core-post-install" "Create missing directories..."
 mkdir -p /var/run/safecor
 chown root:safecor /var/run/safecor
 chmod 2770 /var/run/safecor
+logger -t "Safecor/core-post-install" "...done"
 
 exit 0

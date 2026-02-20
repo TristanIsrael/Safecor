@@ -58,6 +58,8 @@ conf/grub/grub.cfg-durabook-r8
 conf/10-stty.sh
 conf/color_prompt.sh
 conf/inittab
+conf/doas-svc-orchestrator.conf
+conf/doas-svc-safecor-controller.conf
 
 python/rotate-screen.py
 python/create-domains.py
@@ -180,4 +182,6 @@ package() {
 
     # Security
     install -D -m755 "$srcdir"/hardening.initd "$pkgdir"/etc/init.d/hardening
+    install -D -m644 "$srcdir"/doas-svc-orchestrator.conf "$pkgdir"/etc/doas.d/svc-orchestrator.conf
+    install -D -m644 "$srcdir"/doas-svc-safecor-controller.conf "$pkgdir"/etc/doas.d/svc-safecor-controller.conf
 }
