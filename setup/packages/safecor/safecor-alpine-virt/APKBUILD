@@ -15,30 +15,10 @@ install="$pkgname.post-install"
 subpackages=""
 replaces=""
 options="!check"  # no tests provided
-source="https://gitlab.alpinelinux.org/alpine/aports/-/archive/v$pkgver.$pkgrel/aports-v$pkgver.$pkgrel.tar.bz2"
-homedir="/home/builder/"
-
-prepare() {
-    default_prepare
-}
-
-build() {
-    # First we build the kernel
-    cd "aports-v$pkgver.$pkgrel/main/linux-lts"
-    
-    # We remove the configs we don't want 
-    sed -i '/[[:space:]]*lts\..*\.config/d' APKBUILD
-    sed -i '/virt\..*\.config/ {/virt\.x86_64\.config/!d}' APKBUILD
-
-    abuild checksum     
-    abuild clean 
-    abuild deps
-    abuild fetch 
-    abuild unpack 
-    abuild prepare    
-
-    # We add the modules we want
-    echo "
+source="
+https://gitlab.alpinelinux.org/alpine/aports/-/archive/v$pkgver.$pkgrel/aports-v$pkgver.$pkgrel.tar.bz2
+"
+modules="
 CONFIG_HID_GENERIC=m
 CONFIG_HID_MULTITOUCH=m
 CONFIG_INPUT_TOUCHSCREEN=y
@@ -51,30 +31,62 @@ CONFIG_USB_SERIAL_CP210X=m
 CONFIG_USB_SERIAL_CH341=m
 CONFIG_USB_SERIAL_KEYSPAN=m
 CONFIG_USB_ACM=m
-" >> virt.x86_64.config
+"
 
-    # Then we build the kernel with the only flavour virt and arch x86_64
+prepare() {
+    # Prepare config files
+    cd "aports-v$pkgver.$pkgrel/main/linux-lts"
+    cp "virt.$arch.config" "safecor-virt.$arch.config"
+
+    # We remove the configs we don't want 
+    sed -i '/[[:space:]]*lts\..*\.config/d' APKBUILD
+    sed -i '/virt\..*\.config/ {/virt\.x86_64\.config/!d}' APKBUILD
+
+    # We replace virt config with our own
+    sed -i 's/virt\.x86_64\.config/safecor-virt.x86_64.config/g' APKBUILD
+
+    ln -s $PWD/safecor-virt.x86_64.config src/safecor-virt.x86_64.config
+
+    abuild checksum     
+    abuild clean 
+    abuild deps
+    abuild fetch 
+    abuild unpack 
+    abuild prepare    
+
+    # We add the modules we want
+    echo "$modules" >> "safecor-virt.$arch.config"
+}
+
+build() {
+    # Now we build the kernel and modules
+    cd "aports-v$pkgver.$pkgrel/main/linux-lts"    
+
     abuild build    
 }
 
 package() {
-    mkdir -p "$HOME"/packages/main
-
-    # Switch to virt for packaging
-    cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
-    sed -i 's/_flavor=lts/_flavor=virt/g' APKBUILD
-    
-    # Remove unnecessary subpackages
-    sed -i "/^subpackages=\"${pkgname}-dev\"/d" APKBUILD
-
+    # We package the kernel into a linux-*.apk package that will
+    # be used after in the process of ISO creation
+    cd "aports-v$pkgver.$pkgrel/main/linux-lts"
     abuild package
-    #abuild rootpkg
-    #abuild index    
 
-    rm -f "$HOME"/iso/alpine-virt*.iso
-    cd "$srcdir/aports-v$pkgver.$pkgrel/scripts"
-    ./mkimage.sh --profile virt --repository "$HOME"/packages/main --repository https://dl-cdn.alpinelinux.org/alpine/v$pkgver/main --arch x86_64 --outdir "$HOME"/iso
+    # At this stage we should have a kernel and a modloop
+    # We build the ISO image with the mkimage.sh script and provide a 
+    # special profile
 
-    mkdir -p "$pkgdir/var/lib/xen/images"    
-    install -D -m644 "$HOME"/iso/alpine-virt*.iso "$pkgdir/var/lib/xen/images/alpine-virt-$pkgver.$pkgrel-$arch.iso"
+    # Clone aports
+    #cp "$srcdir/mkimg.safecort-virt.sh" "$srcdir/aports-v$pkgver.$pkgrel/scripts"
+
+    # Get kernel and modloop
+    #cp "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts/pkg/linux-virt/vmlinuz-virt" "$srcdir/aports-v$pkgver.$pkgrel/scripts"
+
+    # make ISO
+    #rm -f "$HOME"/iso/alpine-virt*.iso
+    #cd "$srcdir/aports-v$pkgver.$pkgrel/scripts"
+    #./mkimage.sh --profile safecor-virt --repository https://dl-cdn.alpinelinux.org/alpine/v$pkgver/main --arch x86_64 --outdir "$HOME"/iso
+
+    # Package ISO
+    #mkdir -p "$pkgdir/var/lib/xen/images"    
+    #install -D -m644 "$HOME"/iso/alpine-virt*.iso "$pkgdir/var/lib/xen/images/alpine-virt-$pkgver.$pkgrel-$arch.iso"
 }

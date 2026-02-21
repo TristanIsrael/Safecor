@@ -7,6 +7,10 @@ inputs:
   artifact-name:
     description: The name of the artifact to publish
     required: true
+  packages-root:
+    description: Override the APK packages root
+    required: false
+    default: "/home/builder/packages/safecor/x86_64/"
 
 runs:
   using: composite  
@@ -24,4 +28,4 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}
-        path: /home/builder/packages/safecor/x86_64/*.apk
+        path: ${{ inputs.packages-root }}/*.apk
