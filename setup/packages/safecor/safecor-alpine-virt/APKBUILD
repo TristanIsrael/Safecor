@@ -65,8 +65,9 @@ build() {
 
 package() {
     # We package the kernel into a linux-*.apk package that will
-    # be used after in the process of ISO creation
+    # be used after in the process of ISO creation    
     cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
+    ln -s "$PWD/src/build-safecor-virt.$arch" "src/build-lts.$arch"
     abuild package
 
     # At this stage we should have a kernel and a modloop
