@@ -35,7 +35,7 @@ CONFIG_USB_ACM=m
 
 prepare() {
     # Prepare config files
-    cd "aports-v$pkgver.$pkgrel/main/linux-lts"
+    cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
     cp "virt.$arch.config" "safecor-virt.$arch.config"
 
     # We remove the configs we don't want 
@@ -58,7 +58,7 @@ prepare() {
 
 build() {
     # Now we build the kernel and modules
-    cd "aports-v$pkgver.$pkgrel/main/linux-lts"    
+    cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
 
     abuild build    
 }
@@ -66,7 +66,7 @@ build() {
 package() {
     # We package the kernel into a linux-*.apk package that will
     # be used after in the process of ISO creation
-    cd "aports-v$pkgver.$pkgrel/main/linux-lts"
+    cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
     abuild package
 
     # At this stage we should have a kernel and a modloop
