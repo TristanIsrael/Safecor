@@ -491,6 +491,13 @@ jobs:
           privkey: ${{ secrets.DEPLOY_KEY }}
           filepath: /home/builder/packages/main/x86_64/
 
+      - name: Build and publish Safecor virt ISO
+        uses: ./.github/actions/build-and-publish-iso
+        with:
+          package-name: safecor-virt
+          privkey: ${{ secrets.DEPLOY_KEY }}
+
+
   build-alpine-iso:
     needs: [ prepare ]
     if: | 

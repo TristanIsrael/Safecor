@@ -45,8 +45,6 @@ prepare() {
     # We replace virt config with our own
     sed -i 's/virt\.x86_64\.config/safecor-virt.x86_64.config/g' APKBUILD
 
-    ln -s $PWD/safecor-virt.x86_64.config src/safecor-virt.x86_64.config
-
     abuild checksum     
     abuild clean 
     abuild deps
