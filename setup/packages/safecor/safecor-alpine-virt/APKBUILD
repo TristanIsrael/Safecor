@@ -34,12 +34,6 @@ CONFIG_USB_ACM=m
 "
 
 prepare() {
-    # We will build 2 packages: linux-safecor-virt (linux-lts) and xtables-addons-safecor-virt (xtables-addons-lts)
-
-    #####
-    # Package linux-safecor-virt
-    ##### 
-
     # Prepare config files
     cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
     cp "virt.$arch.config" "safecor-virt.$arch.config"
@@ -60,18 +54,6 @@ prepare() {
 
     # We add the modules we want
     echo "$modules" >> "safecor-virt.$arch.config"
-
-    ##### 
-    # Package xtables-addons-safecor-virt 
-    #####
-
-    # Patch APKBUILD
-    cd "$srcdir/aports-v$pkgver.$pkgrel/main/xtables-addons-lts" 
-    sed -i \
-    -e 's|^pkgname=xtables-addons-lts$|pkgname=xtables-addons-safecor-virt|' \
-    -e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
-    -e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
-    APKBUILD
 }
 
 build() {
@@ -82,42 +64,12 @@ build() {
     ##### 
     cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
 
-    FLAVOR=safecor-virt abuild build -r
+    FLAVOR=safecor-virt abuild -r
 
     # At this stage we have a kernel in $srcdir/aports-v$pkgver.$pkgrel/main/linux-lts/pkg/linux-safecor-virt/boot
     # but it misses the modloop that is built in the package.
-
-    ##### 
-    # Package xtables-addons-safecor-virt 
-    #####
-    cd "$srcdir/aports-v$pkgver.$pkgrel/main/xtables-addons-lts" 
-
-    abuild -r
 }
 
 package() {    
     mkdir -p "$pkgdir"
-
-    # The packages will be uploaded to the repository and available for mkimage.sh with the profile safecor-virt
-
-    # We package the kernel into a linux-*.apk package that will
-    # be used after in the process of ISO creation    
-    #cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
-
-    #FLAVOR=safecor-virt abuild package
-
-    # Clone aports
-    #cp "$srcdir/mkimg.safecort-virt.sh" "$srcdir/aports-v$pkgver.$pkgrel/scripts"
-
-    # Get kernel and modloop
-    #cp "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts/pkg/linux-virt/vmlinuz-virt" "$srcdir/aports-v$pkgver.$pkgrel/scripts"
-
-    # make ISO
-    #rm -f "$HOME"/iso/alpine-virt*.iso
-    #cd "$srcdir/aports-v$pkgver.$pkgrel/scripts"
-    #./mkimage.sh --profile safecor-virt --repository https://dl-cdn.alpinelinux.org/alpine/v$pkgver/main --arch x86_64 --outdir "$HOME"/iso
-
-    # Package ISO
-    #mkdir -p "$pkgdir/var/lib/xen/images"    
-    #install -D -m644 "$HOME"/iso/alpine-virt*.iso "$pkgdir/var/lib/xen/images/alpine-virt-$pkgver.$pkgrel-$arch.iso"
 }
