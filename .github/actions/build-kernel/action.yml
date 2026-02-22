@@ -40,8 +40,8 @@ runs:
         echo "CONFIG_USB_ACM=m" >> safecor-virt.x86_64.config
 
         # Build the package
-        abuild checksum
-        abuild -r
+        sudo -u builder abuild checksum
+        sudo -u builder abuild -r
 
     - name: Upload the packages
       uses: actions/upload-artifact@v4
