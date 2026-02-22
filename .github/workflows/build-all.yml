@@ -228,7 +228,7 @@ jobs:
         name: check-safecor-alpine-virt-kernel
         env:
           PKG_CHANGED: ${{ needs.detect-changes.outputs.pkg-safecor-alpine-virt-kernel }}
-          FORCE: ${{ github.event.inputs.force-safecor-alpine-virt-kernel }}
+          FORCE: ${{ github.event.inputs.force-safecor-virt-kernel }}
           FORCE_ALL: ${{ github.event.inputs.force-all }}
           FORCE_APPS: ${{ github.event.inputs.force-apps }}
           FORCE_LIBS: ${{ github.event.inputs.force-libs }}
@@ -504,7 +504,7 @@ jobs:
 
   build-alpine-virt-kernel:
     needs: [ prepare ]
-    if: | 
+    if: |     
       needs.prepare.outputs.check-safecor-alpine-virt-kernel == 'true'
     runs-on: ubuntu-latest
  
