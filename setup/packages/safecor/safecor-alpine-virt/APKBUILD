@@ -64,12 +64,15 @@ build() {
     ##### 
     cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
 
-    FLAVOR=safecor-virt abuild -r
+    FLAVOR=safecor-virt abuild build
 
     # At this stage we have a kernel in $srcdir/aports-v$pkgver.$pkgrel/main/linux-lts/pkg/linux-safecor-virt/boot
     # but it misses the modloop that is built in the package.
 }
 
 package() {    
-    mkdir -p "$pkgdir"
+    cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
+    
+    FLAVOR=safecor-virt abuild package
+    FLAVOR=safecor-virt abuild rootpkg
 }
