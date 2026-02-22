@@ -28,8 +28,8 @@ on:
         required: false
         type: 'boolean'
         default: 'false'
-      force-safecor-alpine-virt:
-        description: "Build alpine-virt"
+      force-safecor-alpine-virt-kernel:
+        description: "Build alpine-virt kernel"
         required: false
         type: 'boolean'
         default: 'false'
@@ -112,7 +112,7 @@ jobs:
     outputs:
       pkg-py3-paho-mqtt2: ${{ steps.detect.outputs.py3-paho-mqtt2 }}
       pkg-safecor-alpine-iso: ${{ steps.detect.outputs.safecor-alpine-iso }}
-      pkg-safecor-alpine-virt: ${{ steps.detect.outputs.safecor-alpine-virt }}
+      pkg-safecor-alpine-virt-kernel: ${{ steps.detect.outputs.safecor-alpine-virt-kernel }}
       pkg-safecor-container-debian: ${{ steps.detect.outputs.safecor-container-debian }}
       pkg-safecor-core: ${{ steps.detect.outputs.safecor-core }}
       pkg-safecor-diag: ${{ steps.detect.outputs.safecor-diag }}
@@ -135,8 +135,8 @@ jobs:
           echo "Detecting changes..."
           declare -A paths=(
             [py3-paho-mqtt2]="setup/packages/safecor/py3-paho-mqtt2/"
-            [safecor-alpine-iso]="setup/packages/safecor/py3-paho-mqtt2/"
-            [safecor-alpine-virt]="setup/packages/safecor/py3-paho-mqtt2/"
+            [safecor-alpine-iso]="setup/packages/safecor/safecor-alpine-iso/"
+            [safecor-alpine-virt-kernel]="setup/packages/safecor/safecor-alpine-virt/"
             [safecor-container-debian]="setup/packages/safecor/py3-paho-mqtt2/"
             [safecor-core]="setup/packages/safecor/safecor-core/"
             [safecor-diag]="setup/packages/safecor/safecor-diag/"
@@ -167,7 +167,7 @@ jobs:
     outputs:
       check-py3-paho-mqtt2: ${{ steps.check-py3-paho-mqtt2.outputs.do_build }}
       check-safecor-lib: ${{ steps.check-safecor-lib.outputs.do_build }}
-      check-safecor-alpine-virt: ${{ steps.check-safecor-alpine-virt.outputs.do_build }}
+      check-safecor-alpine-virt-kernel: ${{ steps.check-safecor-alpine-virt-kernel.outputs.do_build }}
       check-safecor-alpine-iso: ${{ steps.check-safecor-alpine-iso.outputs.do_build }}
       check-safecor-container-debian: ${{ steps.check-safecor-container-debian.outputs.do_build }}
       check-safecor-core: ${{ steps.check-safecor-core.outputs.do_build }}
@@ -210,11 +210,11 @@ jobs:
           else 
             echo "do_build=false" >> $GITHUB_OUTPUT
           fi
-      - id: check-safecor-alpine-virt
-        name: check-safecor-alpine-virt
+      - id: check-safecor-alpine-virt-kernel
+        name: check-safecor-alpine-virt-kernel
         env:
-          PKG_CHANGED: ${{ needs.detect-changes.outputs.pkg-safecor-alpine-virt }}
-          FORCE: ${{ github.event.inputs.force-safecor-alpine-virt }}
+          PKG_CHANGED: ${{ needs.detect-changes.outputs.pkg-safecor-alpine-virt-kernel }}
+          FORCE: ${{ github.event.inputs.force-safecor-alpine-virt-kernel }}
           FORCE_ALL: ${{ github.event.inputs.force-all }}
           FORCE_APPS: ${{ github.event.inputs.force-apps }}
           FORCE_LIBS: ${{ github.event.inputs.force-libs }}
@@ -461,10 +461,10 @@ jobs:
           privkey: ${{ secrets.DEPLOY_KEY }}
           filepath: /home/builder/packages/safecor/x86_64/
 
-  build-alpine-virt:
+  build-alpine-virt-kernel:
     needs: [ prepare ]
     if: | 
-      needs.prepare.outputs.check-safecor-alpine-virt == 'true'
+      needs.prepare.outputs.check-safecor-alpine-virt-kernel == 'true'
     runs-on: ubuntu-latest
  
     container:
@@ -489,13 +489,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/main/x86_64/
-
-      - name: Build and publish Safecor virt ISO
-        uses: ./.github/actions/build-and-publish-iso
-        with:
-          package-name: safecor-virt
-          privkey: ${{ secrets.DEPLOY_KEY }}
+          filepath: /home/builder/packages/main/x86_64/ # The package comes from aports      
 
 
   build-alpine-iso:
