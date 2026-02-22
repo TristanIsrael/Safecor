@@ -48,12 +48,12 @@ prepare() {
     # We add the modules we want
     echo "$modules" >> "safecor-virt.$arch.config"
 
-    abuild checksum     
-    abuild clean 
-    abuild deps
-    abuild fetch 
-    abuild unpack 
-    abuild prepare    
+    #abuild checksum     
+    #abuild clean 
+    #abuild deps
+    #abuild fetch 
+    #abuild unpack 
+    #abuild prepare    
 }
 
 build() {
@@ -64,7 +64,7 @@ build() {
     ##### 
     cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
 
-    FLAVOR=safecor-virt abuild build
+    FLAVOR=safecor-virt abuild -r
 
     # At this stage we have a kernel in $srcdir/aports-v$pkgver.$pkgrel/main/linux-lts/pkg/linux-safecor-virt/boot
     # but it misses the modloop that is built in the package.
@@ -73,6 +73,6 @@ build() {
 package() {    
     cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
     
-    FLAVOR=safecor-virt abuild package
-    FLAVOR=safecor-virt abuild rootpkg
+    #FLAVOR=safecor-virt abuild package
+    #FLAVOR=safecor-virt abuild rootpkg
 }
