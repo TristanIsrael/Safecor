@@ -39,11 +39,12 @@ runs:
         echo "CONFIG_USB_SERIAL_KEYSPAN=m" >> safecor-virt.x86_64.config
         echo "CONFIG_USB_ACM=m" >> safecor-virt.x86_64.config
 
-
         # Update permissions
-        sudo chown -R builder:builder *
+        cd "$GITHUB_WORKSPACE/"
+        sudo chown -R builder:builder "aports-v${{ inputs.aports-version }}"
 
         # Build the package
+        cd "aports-v${{ inputs.aports-version }}/main/linux-lts"
         sudo -u builder abuild checksum
         sudo -u builder abuild -r
 
