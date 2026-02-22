@@ -1,10 +1,5 @@
 name: Build linux-virt kernel
 
-inputs:
-  aports-version:
-    description: The version of aports sources the kernel comes from 
-    required: true  
-
 runs:
   using: composite  
 
@@ -13,16 +8,16 @@ runs:
       shell: sh
       run: |
         # Download aports sources
-        wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/v${{ inputs.aports-version }}/aports-v${{ inputs.aports-version }}.tar.bz2
-        tar xjf aports-v${{ inputs.aports-version }}.tar.bz2
+        wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2
+        tar xjf aports-master.tar.bz2
 
-        cd "aports-v${{ inputs.aports-version }}/main/linux-lts"
+        cd "aports-master/main/linux-lts"
 
-        # Patch the config file 
+        # Patch the config file (remove undesired archs)
         cp "virt.x86_64.config" "safecor-virt.x86_64.config"
         sed -i '/[[:space:]]*lts\..*\.config/d' APKBUILD
-        sed -i '/virt\..*\.config/ {/virt\.x86_64\.config/!d}' APKBUILD
-        sed -i 's/virt\.x86_64\.config/safecor-virt.x86_64.config/g' APKBUILD
+        sed -i '/virt\..*\.config/d' APKBUILD
+        #sed -i 's/virt\.x86_64\.config/safecor-virt.x86_64.config/g' APKBUILD
 
         echo "CONFIG_HID_GENERIC=m" >> safecor-virt.x86_64.config
         echo "CONFIG_HID_MULTITOUCH=m" >> safecor-virt.x86_64.config
@@ -39,26 +34,25 @@ runs:
 
         # Update permissions
         cd "$GITHUB_WORKSPACE/"
-        sudo chown -R builder:builder "aports-v${{ inputs.aports-version }}"
+        sudo chown -R builder:builder "aports-master"
 
         # Build the package
-        cd "aports-v${{ inputs.aports-version }}/main/linux-lts"
-        sudo -u builder abuild checksum
-        sudo -u builder abuild -r
-
-        # After building the kernel we have to build the xtables-addons-safecor-virt
-        cd "aports-v${{ inputs.aports-version }}/main/xtables-addons-lts"
-
-        # Patch APKBUILD
-        cd "$srcdir/aports-v$pkgver.$pkgrel/main/xtables-addons-lts" 
-        sed -i \
-        -e 's|^pkgname=xtables-addons-lts$|pkgname=xtables-addons-safecor-virt|' \
-        -e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
-        -e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
-        APKBUILD
-
+        cd "aports-master/main/linux-lts"
         sudo -u builder FLAVOR=safecor-virt abuild checksum
         sudo -u builder FLAVOR=safecor-virt abuild -r
+
+        # After building the kernel we have to build the xtables-addons-safecor-virt
+        #cd "$GITHUB_WORKSPACE/aports-master/main/xtables-addons-lts"
+
+        # Patch APKBUILD
+        #sed -i \
+        #-e 's|^pkgname=xtables-addons-lts$|pkgname=xtables-addons-safecor-virt|' \
+        #-e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
+        #-e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
+        #APKBUILD
+
+        #sudo -u builder FLAVOR=safecor-virt abuild checksum
+        #sudo -u builder FLAVOR=safecor-virt abuild -r
 
     - name: Upload the packages
       uses: actions/upload-artifact@v4

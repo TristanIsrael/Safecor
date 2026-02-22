@@ -521,9 +521,7 @@ jobs:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
  
       - name: Build kernel package
-        uses: ./.github/actions/build-kernel 
-        with:
-          aports-version: 3.21.3
+        uses: ./.github/actions/build-kernel         
 
       - name: Publish kernel package
         uses: ./.github/actions/publish
