@@ -63,7 +63,8 @@ build() {
     # Package linux-safecor-virt
     ##### 
     cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
-
+    
+    FLAVOR=safecor-virt abuild checksum
     FLAVOR=safecor-virt abuild -r
 
     # At this stage we have a kernel in $srcdir/aports-v$pkgver.$pkgrel/main/linux-lts/pkg/linux-safecor-virt/boot
