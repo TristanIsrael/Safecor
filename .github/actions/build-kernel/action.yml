@@ -16,9 +16,9 @@ runs:
       run: |
         # Download aports sources
         wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/v${{ inputs.aports-version }}/aports-v${{ inputs.aports-version }}.tar.bz2
-        tar xvjf aports-v${{ inputs.aports-version }}.tar.bz2
+        tar xjf aports-v${{ inputs.aports-version }}.tar.bz2
 
-        cd "aports-v${{ inputs.aports-version }}"
+        cd "aports-v${{ inputs.aports-version }}/main/linux-lts"
 
         # Patch the config file 
         cp "virt.x86_64.config" "safecor-virt.x86_64.config"
