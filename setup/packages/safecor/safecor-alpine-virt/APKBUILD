@@ -45,15 +45,15 @@ prepare() {
     # We replace virt config with our own
     sed -i 's/virt\.x86_64\.config/safecor-virt.x86_64.config/g' APKBUILD
 
+    # We add the modules we want
+    echo "$modules" >> "safecor-virt.$arch.config"
+
     abuild checksum     
     abuild clean 
     abuild deps
     abuild fetch 
     abuild unpack 
     abuild prepare    
-
-    # We add the modules we want
-    echo "$modules" >> "safecor-virt.$arch.config"
 }
 
 build() {
