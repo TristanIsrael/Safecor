@@ -1,0 +1,50 @@
+name: Build linux-virt kernel
+
+inputs:
+  aports-version:
+    description: The version of aports sources the kernel comes from 
+    required: true  
+
+runs:
+  using: composite  
+
+  steps:
+    - name: Prepare the environment and build
+      shell: sh
+      env:
+        FLAVOR: safecor-virt
+      run: |
+        # Download aports sources
+        wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/v${{ inputs.aports-version }}/aports-v${{ inputs.aports-version }}.tar.bz2
+        tar xvjf aports-v${{ inputs.aports-version }}.tar.bz2
+
+        cd "aports-v${{ inputs.aports-version }}"
+
+        # Patch the config file 
+        cp "virt.x86_64.config" "safecor-virt.x86_64.config"
+        sed -i '/[[:space:]]*lts\..*\.config/d' APKBUILD
+        sed -i '/virt\..*\.config/ {/virt\.x86_64\.config/!d}' APKBUILD
+        sed -i 's/virt\.x86_64\.config/safecor-virt.x86_64.config/g' APKBUILD
+
+        echo "CONFIG_HID_GENERIC=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_HID_MULTITOUCH=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_INPUT_TOUCHSCREEN=y" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_HID=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_SERIAL=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_SERIAL_GENERIC=y" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_SERIAL_FTDI_SIO=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_SERIAL_PL2303=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_SERIAL_CP210X=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_SERIAL_CH341=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_SERIAL_KEYSPAN=m" >> safecor-virt.x86_64.config
+        echo "CONFIG_USB_ACM=m" >> safecor-virt.x86_64.config
+
+        # Build the package
+        abuild checksum
+        abuild -r
+
+    - name: Upload the packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: safecor-virt-x86_64
+        path: /home/builder/packages/main/x86_64/*.apk

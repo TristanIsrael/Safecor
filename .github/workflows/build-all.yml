@@ -510,8 +510,8 @@ jobs:
  
     container:
       image: alpine:3.21
- 
-    steps:      
+
+    steps:
       - name: Checkout sources
         uses: actions/checkout@v4
  
@@ -520,11 +520,10 @@ jobs:
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
  
-      - name: Build kernel APK
-        uses: ./.github/actions/build-apk
+      - name: Build kernel package
+        uses: ./.github/actions/build-kernel 
         with:
-          working-dir: setup/packages/safecor/safecor-alpine-virt
-          artifact-name: safecor-alpine-virt
+          aports-version: 3.21.3
 
       - name: Publish kernel package
         uses: ./.github/actions/publish
