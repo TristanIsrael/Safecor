@@ -72,9 +72,6 @@ prepare() {
     -e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
     -e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
     APKBUILD
-
-    # Build the package
-    abuild -r
 }
 
 build() {
