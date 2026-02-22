@@ -72,6 +72,8 @@ build() {
 
 package() {    
     cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
+
+    ls src
     
     #FLAVOR=safecor-virt abuild package
     #FLAVOR=safecor-virt abuild rootpkg
