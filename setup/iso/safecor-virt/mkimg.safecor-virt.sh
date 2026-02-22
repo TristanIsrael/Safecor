@@ -1,4 +1,4 @@
-profile_safecor() {
+profile_safecor-virt() {
     profile_standard
 
     title="Kernel alpine-virt customized for Safecor"
