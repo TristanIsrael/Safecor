@@ -1,0 +1,109 @@
+# Contributor:
+# Maintainer: Tristan Israël <tristan.israel@alefbet.net>
+pkgname=safecor-alpine-virt
+pkgver=3.21
+pkgrel=3
+pkgdesc="Safecor - Alpine virt distribution for HVM Domains"
+url="https://www.alefbet.net/"
+arch="x86_64"
+license="MIT"
+depends=""
+makedepends="alpine-sdk alpine-conf abuild git ncurses-dev build-base bc linux-headers elfutils-dev mtools xorriso squashfs-tools grub"
+builddir="$srcdir/$pkgname-$pkgver"
+checkdepends=""
+install="$pkgname.post-install"
+subpackages=""
+replaces=""
+options="!check"  # no tests provided
+source="
+https://gitlab.alpinelinux.org/alpine/aports/-/archive/v$pkgver.$pkgrel/aports-v$pkgver.$pkgrel.tar.bz2
+"
+
+prepare() {
+    # We will build 2 packages: linux-safecor-virt (linux-lts) and xtables-addons-safecor-virt (xtables-addons-lts)
+
+    #####
+    # Package linux-safecor-virt
+    ##### 
+
+    # Prepare config files
+    cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
+    cp "virt.$arch.config" "safecor-virt.$arch.config"
+
+    # We remove the configs we don't want 
+    sed -i '/[[:space:]]*lts\..*\.config/d' APKBUILD
+    sed -i '/virt\..*\.config/ {/virt\.x86_64\.config/!d}' APKBUILD
+
+    # We replace virt config with our own
+    sed -i 's/virt\.x86_64\.config/safecor-virt.x86_64.config/g' APKBUILD
+
+    abuild checksum     
+    abuild clean 
+    abuild deps
+    abuild fetch 
+    abuild unpack 
+    abuild prepare    
+
+    # We add the modules we want
+    echo "$modules" >> "safecor-virt.$arch.config"
+
+    ##### 
+    # Package xtables-addons-safecor-virt 
+    #####
+
+    # Patch APKBUILD
+    cd "$srcdir/aports-v$pkgver.$pkgrel/main/xtables-addons-lts" 
+    sed -i \
+    -e 's|^pkgname=xtables-addons-lts$|pkgname=xtables-addons-safecor-virt|' \
+    -e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
+    -e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
+    APKBUILD
+}
+
+build() {
+    # Now we build the kernel and modules
+
+    #####
+    # Package linux-safecor-virt
+    ##### 
+    cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
+
+    FLAVOR=safecor-virt abuild build -r
+
+    # At this stage we have a kernel in $srcdir/aports-v$pkgver.$pkgrel/main/linux-lts/pkg/linux-safecor-virt/boot
+    # but it misses the modloop that is built in the package.
+
+    ##### 
+    # Package xtables-addons-safecor-virt 
+    #####
+    cd "$srcdir/aports-v$pkgver.$pkgrel/main/xtables-addons-lts" 
+
+    abuild -r
+}
+
+package() {    
+    mkdir -p "$pkgdir"
+
+    # The packages will be uploaded to the repository and available for mkimage.sh with the profile safecor-virt
+
+    # We package the kernel into a linux-*.apk package that will
+    # be used after in the process of ISO creation    
+    #cd "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts"
+
+    #FLAVOR=safecor-virt abuild package
+
+    # Clone aports
+    #cp "$srcdir/mkimg.safecort-virt.sh" "$srcdir/aports-v$pkgver.$pkgrel/scripts"
+
+    # Get kernel and modloop
+    #cp "$srcdir/aports-v$pkgver.$pkgrel/main/linux-lts/pkg/linux-virt/vmlinuz-virt" "$srcdir/aports-v$pkgver.$pkgrel/scripts"
+
+    # make ISO
+    #rm -f "$HOME"/iso/alpine-virt*.iso
+    #cd "$srcdir/aports-v$pkgver.$pkgrel/scripts"
+    #./mkimage.sh --profile safecor-virt --repository https://dl-cdn.alpinelinux.org/alpine/v$pkgver/main --arch x86_64 --outdir "$HOME"/iso
+
+    # Package ISO
+    #mkdir -p "$pkgdir/var/lib/xen/images"    
+    #install -D -m644 "$HOME"/iso/alpine-virt*.iso "$pkgdir/var/lib/xen/images/alpine-virt-$pkgver.$pkgrel-$arch.iso"
+}

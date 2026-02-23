@@ -24,7 +24,6 @@ MAIN_PACKAGE=$2
 ALPINE_BRANCH=$3
 ALPINE_BRANCH=${ALPINE_BRANCH:-virt}
 BLACKLIST_CONF=$4
-CONFIG_IMG="$WORKDIR/$DOMAIN-config.img"
 
 # Vérifier la valeur de $ALPINE_BRANCH et définir $BOOTISO_FILENAME en conséquence
 case "$ALPINE_BRANCH" in
@@ -41,17 +40,28 @@ case "$ALPINE_BRANCH" in
     ;;
 esac
 
+export BOOTISO_FILENAME="bootiso-$DOMAIN.iso"
+
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Create new XEN User Domain $DOMAIN"
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "  main package : $MAIN_PACKAGE"
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "  Alpine branch : $ALPINE_BRANCH"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "  Alpine ISO comes from : $ALPINE_ISO_LOCAL"
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "  Kernel modules blacklist : $BLACKLIST_CONF"
 
-rm -rf /mnt/config_img
-mkdir -p /mnt/config_img
+modprobe isofs
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Prepare"
 rm -rf $WORKDIR 
+mkdir -p $WORKDIR/iso
 mkdir -p $WORKDIR/apkovl
+umount /mnt/bootiso
+mkdir -p /mnt/bootiso
+
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Mount original ISO"
+mount -o loop $ALPINE_ISO_LOCAL /mnt/bootiso
+
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Copy original ISO"
+cp -r /mnt/bootiso/* $WORKDIR/iso
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Uncompress APK overlay template"
 tar xzf $APKOVL_TEMPLATE -C $WORKDIR/apkovl
@@ -62,6 +72,18 @@ logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Configure main package"
 echo "
 safecor-lib
 $MAIN_PACKAGE" >> $WORKDIR/apkovl/etc/apk/world
+
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Configure Safecor library"
+mkdir -p $WORKDIR/apkovl/etc/safecor
+echo "{
+    \"identifiant_domaine\": \"$DOMAIN\",
+    \"chemin_journal\": \"/var/log/safecor/safecor-lib.log\",
+    \"niveau_debug\": \"DEBUG\",
+    \"chemin_journal_local\": \"/var/log/safecor/safecor-lib.log\",
+    \"chemin_socket_messagerie_locale\": \"/var/run/safecor-api.sock\",
+    \"nom_domaine_gui\": \"sys-gui\"
+}
+" > $WORKDIR/apkovl/etc/safecor/global.conf
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Configure hostname"
 echo "$DOMAIN" > $WORKDIR/apkovl/etc/hostname
@@ -81,23 +103,11 @@ fi
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Create new APK overlay"
 cd $WORKDIR/apkovl
-tar czf $WORKDIR/$DOMAIN.apkovl.tar.gz .
+tar czf $WORKDIR/iso/domu.apkovl.tar.gz .
 
-#logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Create new ISO"
-#xorriso -as mkisofs -r -V "BOOT" -cache-inodes -J -l -b boot/syslinux/isolinux.bin -c boot/syslinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o /usr/lib/safecor/tmp/$BOOTISO_FILENAME $WORKDIR/iso
-#mv /usr/lib/safecor/tmp/$BOOTISO_FILENAME /usr/lib/safecor/system/
-
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Create config disk for $DOMAIN"
-rm -rf "$CONFIG_IMG"
-dd if=/dev/zero of="$CONFIG_IMG" bs=1M count=1
-mkfs.ext4 "$CONFIG_IMG"
-
-mount -o loop $CONFIG_IMG /mnt/config_img
-cp $WORKDIR/$DOMAIN.apkovl.tar.gz /mnt/config_img
-umount /mnt/config_img
-
-mv "$CONFIG_IMG" "/usr/lib/safecor/system"
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Create new ISO"
+xorriso -as mkisofs -r -V "BOOT" -cache-inodes -J -l -b boot/syslinux/isolinux.bin -c boot/syslinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o /usr/lib/safecor/tmp/$BOOTISO_FILENAME $WORKDIR/iso
+mv /usr/lib/safecor/tmp/$BOOTISO_FILENAME /usr/lib/safecor/system/
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Clean"
-rm -rf /mnt/bootiso
-rm -rf $WORKDIR
+umount /mnt/bootiso

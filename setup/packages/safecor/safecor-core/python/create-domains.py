@@ -5,12 +5,14 @@ import tempfile
 import os
 from safecor import System, Domain, DomainType, SysLogger
 
+DEFAULT_SAFECOR_VIRT_ISO_FILEPATH = "/var/lib/xen/images/alpine-virt.iso"
+
 class DomainsFactory:
     """ This class is designed to orchestrate the Domains creation during the
     setup process of a system based on Safecor.
     
     The Domains are defined in the file /etc/safecor/topology.json.
-    """
+    """    
 
     @staticmethod
     def create_domains():
@@ -117,7 +119,7 @@ class DomainsFactory:
             SysLogger("DomainsFactory").info("There are not business domains to create")
 
     @staticmethod
-    def __create_xl_conf_sys_usb() -> None:        
+    def __create_xl_conf_sys_usb() -> None:
         topology = System.get_topology()
 
         sys_usb = topology.domain("sys-usb")
@@ -130,7 +132,8 @@ memory= { sys_usb.memory }
 vcpus = { sys_usb.vcpus }
 cpus = "{ System.cpu_affinity_to_string(sys_usb.cpu_affinity) }"
 disk = [
-	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target=/usr/lib/safecor/system/bootiso-sys-usb.iso'
+	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
+    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-usb-config.img'
 ]
 p9 = [
 'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none',
@@ -166,7 +169,8 @@ memory={ sys_gui.memory }
 vcpus = { sys_gui.vcpus }
 cpus = "{ System.cpu_affinity_to_string(sys_gui.cpu_affinity) }"
 disk = [
-	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target=/usr/lib/safecor/system/bootiso-sys-gui.iso'
+	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
+    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-gui-config.img'
 ]
 p9 = [
     'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none',
@@ -208,7 +212,8 @@ memory = { domain.memory }
 vcpus = { domain.vcpus }
 cpus = "{ System.cpu_affinity_to_string(dom.cpu_affinity) }"
 disk = [
-	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target=/usr/lib/safecor/system/{boot_iso_location}'
+	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
+    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain}-config.img'
 ]
 device_model_override = "/usr/bin/qemu-system-x86_64"
 device_model_version = "qemu-xen"
