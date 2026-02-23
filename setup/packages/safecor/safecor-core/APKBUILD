@@ -188,5 +188,5 @@ package() {
     install -D -m644 "$srcdir"/doas-svc-safecor-controller.conf "$pkgdir"/etc/doas.d/svc-safecor-controller.conf
 
     # ISO images for Domains
-    install -D -m644 "$src/safecor-safecor-virt-x86_64.iso" "$pkgdir/var/lib/xen/images/safecor-safecor-virt-x86_64.iso"
+    install -D -m644 "$srcdir/safecor-safecor-virt-x86_64.iso" "$pkgdir/var/lib/xen/images/safecor-safecor-virt-x86_64.iso"
 }
