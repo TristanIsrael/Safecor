@@ -193,7 +193,7 @@ jobs:
       check-iso-tests: ${{ steps.check-app-tests.outputs.do_build }}
       check-app-diag: ${{ steps.check-app-diag.outputs.do_build }}      
       check-iso-diag: ${{ steps.check-app-diag.outputs.do_build }}
-      check-xtables-addons-safecor-virt: ${{ steps.check-xtables-addons-safecor-virt.outpus.do_build }}
+      check-xtables-addons-safecor-virt: ${{ steps.check-xtables-addons-safecor-virt.outputs.do_build }}
     steps:
       - id: check-py3-paho-mqtt2 
         name: check-py3-paho-mqtt2 
