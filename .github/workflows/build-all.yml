@@ -581,7 +581,8 @@ jobs:
   build-safecor-virt-iso:
     needs: [ prepare ]
     if: |
-      needs.prepare.outputs.check-safecor-virt-iso == 'true'
+      needs.prepare.outputs.check-safecor-alpine-virt-iso == 'true'
+      
     runs-on: ubuntu-latest
  
     container:
