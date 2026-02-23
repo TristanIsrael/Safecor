@@ -54,5 +54,5 @@ runs:
 
     - shell: sh 
       run: |
-        echo "Update the repository information"
+        echo "Update the repositories information"
         apk update
