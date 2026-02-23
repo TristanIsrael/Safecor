@@ -11,5 +11,5 @@ done
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "The socket sys-usb-tty-sock is ready"
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Creating a tunnel between the socket sys-usb-tty-sock and the device tty-admin..."
-socat UNIX-CONNECT:/var/run/safecor/sys-usb-tty.sock PTY,link=/dev/tty-admin,raw,echo=0,ctty
+socat UNIX-CONNECT:/var/run/safecor/sys-usb-tty.sock PTY,link=/var/run/safecor/tty-admin,raw,echo=0,ctty
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... the tunnel is now closed"

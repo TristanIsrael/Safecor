@@ -12,7 +12,7 @@ except ImportError as e:
     print("The package evdev is not available. Functionalities will be missing.")
     class InputDevice:
         """ This is a fake InputDevice due to missing dependancy"""
-from . import Logger, Mouse, SingletonMeta, InputType
+from . import SysLogger, Mouse, SingletonMeta, InputType
 from . import MqttClient, Constants
 
 INPUT_EVENT_FORMAT = "HHI"  # HH = type, code, I = value (unsigned int)
@@ -54,7 +54,7 @@ class InputsDaemon(metaclass=SingletonMeta):
         """
 
         self.__mqtt_client = mqtt_client
-        Logger().info("Starting input daemon", "Input daemon")
+        SysLogger("Input Daemon").info("Starting input daemon")
         self.__can_run = True
 
         # Start XenBus messaging
@@ -75,7 +75,7 @@ class InputsDaemon(metaclass=SingletonMeta):
 
     def __find_mouse(self):
         # This function is ran in a specific thread
-        Logger().info("Looking for a mouse...", "Input daemon")
+        SysLogger("Input Daemon").info("Looking for a mouse...")
 
         while True:
             inputs = glob.glob("/dev/input/event*")
@@ -94,23 +94,23 @@ class InputsDaemon(metaclass=SingletonMeta):
             time.sleep(0.5)
 
     def __find_touchscreen(self):
-        Logger().info("Looking for a touchscreen...", "Input daemon")
+        SysLogger("Input Daemon").info("Looking for a touchscreen...")
 
         while self.__can_run:
             inputs = glob.glob("/dev/input/event*")
 
             for input_ in inputs:
-                #Logger().debug("Fichier {}".format(input))
+                SysLogger("Input Daemon").debug(f"File {input}")
                 
                 try:          
                     dev = InputDevice(input_)
                     type_input = self.__input_type(dev)
 
                     if type_input == InputType.TOUCH and input_ not in self.__monitored_inputs:
-                        # On récupère les valeurs max x et y pour connaître la résolution
+                        # We get min and max horizontal values to determine the resolution
                         caps = dev.capabilities()
 
-                        # On filtre au cas où le périphérique n'aurait pas les capacités nécessaires
+                        # We filter in cas the device does not have the required capabilities
                         if not any(t[0] == ecodes.ABS_MT_POSITION_X for t in caps[ecodes.EV_ABS]):
                             continue
 
@@ -136,7 +136,7 @@ class InputsDaemon(metaclass=SingletonMeta):
         return payload +b'\n'
 
     def __monitor_mouse(self, mouse):
-        Logger().info(f"Monitor the mouse {mouse.name}", "Input daemon")
+        SysLogger("Input Daemon").info(f"Monitor the mouse {mouse.name}")
 
         try:
             for event in mouse.read_loop():  
@@ -148,11 +148,11 @@ class InputsDaemon(metaclass=SingletonMeta):
                 if not self.__can_run:
                     return
         except Exception:
-            Logger().debug(f"The mouse {mouse.name} is not available anymore", "Input daemon")
+            SysLogger("Input Daemon").warn(f"The mouse {mouse.name} is not available anymore")
             self.__monitored_inputs.remove(mouse.path)
 
     def __monitor_touchscreen(self, touch):
-        Logger().info(f"Monitor the touchscreen {touch.name}", "Input daemon")
+        SysLogger("Input Daemon").info(f"Monitor the touchscreen {touch.name}")
 
         """ filtered_events = [
             ecodes.EV_KEY,
@@ -174,12 +174,12 @@ class InputsDaemon(metaclass=SingletonMeta):
                 if not self.__can_run:
                     return
         except Exception:
-            Logger().debug(f"The touchscreen {touch.name} is not available anymore", "Input daemon")
+            SysLogger("Input Daemon").warn(f"The touchscreen {touch.name} is not available anymore")
             self.__monitored_inputs.remove(touch.path)
 
     def __find_keyboard(self):
         # This function is ran in a specific thread
-        Logger().info("Looking for a keyboard...", "Input daemon")
+        SysLogger("Input Daemon").info("Looking for a keyboard...")
 
         while True:
             inputs = glob.glob("/dev/input/event*")
@@ -198,7 +198,7 @@ class InputsDaemon(metaclass=SingletonMeta):
             time.sleep(0.5)
     
     def __monitor_keyboard(self, keyboard):
-        Logger().info(f"Monitor the keyboard {keyboard.name}")
+        SysLogger("Input Daemon").info(f"Monitor the keyboard {keyboard.name}")
 
         for event in keyboard.read_loop():
             if (event.type == ecodes.EV_KEY and event.code in [ ecodes.KEY_ESC, ecodes.KEY_1, ecodes.KEY_2, ecodes.KEY_3, ecodes.KEY_4, ecodes.KEY_5, ecodes.KEY_6, ecodes.KEY_7, ecodes.KEY_8, ecodes.KEY_9, ecodes.KEY_0, ecodes.KEY_MINUS, ecodes.KEY_EQUAL, ecodes.KEY_BACKSPACE, ecodes.KEY_TAB, ecodes.KEY_Q, ecodes.KEY_W, ecodes.KEY_E, ecodes.KEY_R, ecodes.KEY_T, ecodes.KEY_Y, ecodes.KEY_U, ecodes.KEY_I, ecodes.KEY_O, ecodes.KEY_P, ecodes.KEY_LEFTBRACE, ecodes.KEY_RIGHTBRACE, ecodes.KEY_ENTER, ecodes.KEY_LEFTCTRL, ecodes.KEY_A, ecodes.KEY_S, ecodes.KEY_D, ecodes.KEY_F, ecodes.KEY_G, ecodes.KEY_H, ecodes.KEY_J, ecodes.KEY_K, ecodes.KEY_L, ecodes.KEY_SEMICOLON, ecodes.KEY_APOSTROPHE, ecodes.KEY_GRAVE, ecodes.KEY_LEFTSHIFT, ecodes.KEY_BACKSLASH, ecodes.KEY_Z, ecodes.KEY_X, ecodes.KEY_C, ecodes.KEY_V, ecodes.KEY_B, ecodes.KEY_N, ecodes.KEY_M, ecodes.KEY_COMMA, ecodes.KEY_DOT, ecodes.KEY_SLASH, ecodes.KEY_RIGHTSHIFT, ecodes.KEY_KPASTERISK, ecodes.KEY_LEFTALT, ecodes.KEY_SPACE, ecodes.KEY_CAPSLOCK, ecodes.KEY_F1, ecodes.KEY_F2, ecodes.KEY_F3, ecodes.KEY_F4, ecodes.KEY_F5, ecodes.KEY_F6, ecodes.KEY_F7, ecodes.KEY_F8, ecodes.KEY_F9, ecodes.KEY_F10, ecodes.KEY_NUMLOCK, ecodes.KEY_SCROLLLOCK, ecodes.KEY_KP7, ecodes.KEY_KP8, ecodes.KEY_KP9, ecodes.KEY_KPMINUS, ecodes.KEY_KP4, ecodes.KEY_KP5, ecodes.KEY_KP6, ecodes.KEY_KPPLUS, ecodes.KEY_KP1, ecodes.KEY_KP2, ecodes.KEY_KP3, ecodes.KEY_KP0, ecodes.KEY_KPDOT, ecodes.KEY_ZENKAKUHANKAKU, ecodes.KEY_102ND, ecodes.KEY_F11, ecodes.KEY_F12, ecodes.KEY_RO, ecodes.KEY_KATAKANA, ecodes.KEY_HIRAGANA, ecodes.KEY_HENKAN, ecodes.KEY_KATAKANAHIRAGANA, ecodes.KEY_MUHENKAN, ecodes.KEY_KPJPCOMMA, ecodes.KEY_KPENTER, ecodes.KEY_RIGHTCTRL, ecodes.KEY_KPSLASH, ecodes.KEY_SYSRQ, ecodes.KEY_RIGHTALT, ecodes.KEY_HOME, ecodes.KEY_UP, ecodes.KEY_PAGEUP, ecodes.KEY_LEFT, ecodes.KEY_RIGHT, ecodes.KEY_END, ecodes.KEY_DOWN, ecodes.KEY_PAGEDOWN, ecodes.KEY_INSERT, ecodes.KEY_DELETE, ecodes.KEY_MUTE, ecodes.KEY_VOLUMEDOWN, ecodes.KEY_VOLUMEUP, ecodes.KEY_POWER, ecodes.KEY_KPEQUAL, ecodes.KEY_PAUSE, ecodes.KEY_KPCOMMA, ecodes.KEY_HANGUEL, ecodes.KEY_HANJA, ecodes.KEY_YEN, ecodes.KEY_LEFTMETA, ecodes.KEY_RIGHTMETA, ecodes.KEY_COMPOSE, ecodes.KEY_STOP, ecodes.KEY_AGAIN, ecodes.KEY_PROPS, ecodes.KEY_UNDO, ecodes.KEY_FRONT, ecodes.KEY_COPY, ecodes.KEY_OPEN, ecodes.KEY_PASTE, ecodes.KEY_FIND, ecodes.KEY_CUT, ecodes.KEY_HELP, ecodes.KEY_CALC, ecodes.KEY_SLEEP, ecodes.KEY_WWW, ecodes.KEY_SCREENLOCK, ecodes.KEY_BACK, ecodes.KEY_FORWARD, ecodes.KEY_EJECTCD, ecodes.KEY_NEXTSONG, ecodes.KEY_PLAYPAUSE, ecodes.KEY_PREVIOUSSONG, ecodes.KEY_STOPCD, ecodes.KEY_REFRESH, ecodes.KEY_EDIT, ecodes.KEY_SCROLLUP, ecodes.KEY_SCROLLDOWN, ecodes.KEY_KPLEFTPAREN, ecodes.KEY_KPRIGHTPAREN, ecodes.KEY_F13, ecodes.KEY_F14, ecodes.KEY_F15, ecodes.KEY_F16, ecodes.KEY_F17, ecodes.KEY_F18, ecodes.KEY_F19, ecodes.KEY_F20, ecodes.KEY_F21, ecodes.KEY_F22, ecodes.KEY_F23, ecodes.KEY_F24 ]
@@ -227,21 +227,21 @@ class InputsDaemon(metaclass=SingletonMeta):
     
     def __connect_xenbus(self) -> bool:
         #Ouvre le flux avec la socket
-        Logger().debug(f"Open Xenbus I/O channel {self.__xenbus_socket_path}", "Input daemon")
+        SysLogger("Input Daemon").debug(f"Open Xenbus I/O channel {self.__xenbus_socket_path}")
 
         try:
             self.__xenbus_socket = serial.Serial(port= self.__xenbus_socket_path)
             self.__xenbus_iface_ready = True
-            Logger().info("I/O channel is open", "Input daemon")
+            SysLogger("Input Daemon").info("I/O channel is open")
             return True
         except serial.SerialException as e:
             self.__xenbus_socket = None            
-            Logger().error(f"Impossible to open the serial port {self.__xenbus_socket_path}", "Input daemon")
-            Logger().error(str(e), "Input daemon")
+            SysLogger("Input Daemon").error(f"Impossible to open the serial port {self.__xenbus_socket_path}")
+            SysLogger("Input Daemon").error(str(e))
             return False
         
     def __disconnect_xenbus(self):
         if self.__xenbus_socket is not None:
-            Logger().debug("Close Xenbus I/O socket", "Input daemon")
+            SysLogger("Input Daemon").info("Close Xenbus I/O socket")
             self.__xenbus_socket.close()
         
