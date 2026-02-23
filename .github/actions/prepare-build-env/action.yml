@@ -51,3 +51,8 @@ runs:
         echo "Copy abuild public key"
         cp certs/safecor.rsa.pub /home/builder/.abuild
         cp certs/safecor.rsa.pub /etc/apk/keys
+
+    - shell: sh 
+      run: |
+        echo "Update the repository information"
+        apk update
