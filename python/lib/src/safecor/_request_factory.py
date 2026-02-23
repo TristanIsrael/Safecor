@@ -176,3 +176,20 @@ class RequestFactory():
             "disk": disk,
             "filename": filename
         }
+    
+    @staticmethod
+    def create_request_mount_file(disk:str, filepath:str):
+        """ Create a request to mount a file """
+
+        return {
+            "disk": disk,
+            "filepath": filepath
+        }
+    
+    @staticmethod
+    def create_request_unmount(disk:str):
+        """ Create a request to unmount a disk """
+
+        return {
+            "disk": disk
+        }

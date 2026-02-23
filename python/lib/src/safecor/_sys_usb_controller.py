@@ -5,11 +5,13 @@ import threading
 import os
 import base64
 import zlib
+import unicodedata
+import subprocess
 from pathlib import Path
 from queue import Queue
 from . import Constants, MqttClient, Topics, MqttHelper
 from . import FileHelper, ResponseFactory, ComponentState
-from . import Logger, DiskMonitor, NotificationFactory
+from . import Logger, DiskMonitor, NotificationFactory, DiskState
 try:
     from . import InputsDaemon
     NO_INPUTS_MONITORING = False
@@ -63,6 +65,8 @@ class SysUsbController():
         self.mqtt_client.subscribe(f"{Topics.COPY_FILE}/request")
         self.mqtt_client.subscribe(f"{Topics.READ_FILE}/request")
         self.mqtt_client.subscribe(f"{Topics.DELETE_FILE}/request")
+        self.mqtt_client.subscribe(f"{Topics.MOUNT_FILE}/request")
+        self.mqtt_client.subscribe(f"{Topics.UNMOUNT}/request")
         #self.mqtt_client.subscribe(f"{Topics.BENCHMARK}/request")
         self.mqtt_client.subscribe(f"{Topics.FILE_FINGERPRINT}/request")
         self.mqtt_client.subscribe(f"{Topics.CREATE_FILE}/request")
@@ -147,6 +151,10 @@ class SysUsbController():
             self.__handle_ping(payload)
         elif topic == Topics.SYS_USB_CLEAR_QUEUES:
             self.__handle_clear_queue()
+        elif topic == Topics.MOUNT_FILE:
+            self.__handle_mount_file(payload)
+        elif topic == Topics.UNMOUNT:
+            self.__handle_unmount(payload)
 
     def __handle_list_disks(self, topic:str) -> None:
         Logger().debug("Disks list requested")
@@ -436,6 +444,68 @@ class SysUsbController():
 
         while not self.__read_files_queue.empty():
             self.__read_files_queue.get()
+
+    def __handle_mount_file(self, payload):
+        if not MqttHelper.check_payload(payload, ["disk", "filepath"]):
+            Logger().error(f"The command {Topics.MOUNT_FILE} misses argument(s)", "sys-usb")
+            return
+
+        disk = payload["disk"]
+        filepath = payload["filepath"]
+        filename = self.sanitize_filename(os.path.basename(filepath))
+        file_ext = os.path.splitext(filename)[1]
+        source_mount_point = Constants.USB_MOUNT_POINT
+        file_mount_point = f"/media/loop/{filename}"
+
+        if file_ext == ".iso":
+            cmd = f"mount -o loop -t isofs {source_mount_point}/{disk}/{source_mount_point} {file_mount_point}"
+            res = subprocess.run(cmd, check=False)
+
+            if res.returncode != 0:
+                # Mount succeeded, double check
+                if not os.path.exists(file_mount_point):
+                    Logger().error(f"The file {filepath} has not been mounted")
+                
+                payload = NotificationFactory.create_notification_disk_state(filename, DiskState.CONNECTED)
+                self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
+        else:
+            Logger().error(f"The file type {file_ext} is not handled for mounting")
+
+    def __handle_unmount(self, payload):
+        if not MqttHelper.check_payload(payload, ["disk"]):
+            Logger().error(f"The command {Topics.MOUNT_FILE} misses argument(s)", "sys-usb")
+            return
+
+        disk = payload["disk"]
+        file_mount_point = f"/media/loop/{disk}"
+
+        if not os.path.exists(file_mount_point):
+            Logger().error(f"The disk {disk} is not mounted")
+            return
+
+        cmd = f"umount -f {file_mount_point}"
+        res = subprocess.run(cmd, check=False)
+
+        if res.returncode != 0:
+            # Mount succeeded, double check
+            if not os.path.exists(file_mount_point):
+                Logger().error(f"The disk {disk} has not been unmounted")
+            
+            payload = NotificationFactory.create_notification_disk_state(disk, DiskState.DISCONNECTED)
+            self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
+        
+
+    def sanitize_filename(self, s: str) -> str:
+        """ Replaces all non-printable chars of a filename with '_' """
+
+        result = []
+        for c in s:
+            if unicodedata.category(c)[0] == 'C':
+                result.append('_')
+            else:
+                result.append(c)
+                
+        return ''.join(result).replace(" ", "_")
 
     ######## 
     ## Special functions

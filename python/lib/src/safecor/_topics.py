@@ -25,6 +25,8 @@ class Topics():
     CREATE_FILE = f"{DISKS}/create_file"
     NEW_FILE = f"{DISKS}/new_file"
     DISK_STATE = f"{DISKS}/state"
+    MOUNT_FILE = f"{DISKS}/mount_file"
+    UNMOUNT = f"{DISKS}/unmount"
 
     # Workflow management
     SHUTDOWN = f"{WORKFLOW}/shutdown"

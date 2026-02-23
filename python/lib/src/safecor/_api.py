@@ -215,7 +215,7 @@ class Api(metaclass=SingletonMeta):
         """
         if callback_fn is not None:
             if callback_fn not in self.__shutdown_callbacks:
-                self.__shutdown_callbacks.append(callback_fn)            
+                self.__shutdown_callbacks.append(callback_fn)
         else:
             print("WARNING: shutdown callback function is None")
 
@@ -229,7 +229,7 @@ class Api(metaclass=SingletonMeta):
         """
         if callback_fn is not None:
             if callback_fn not in self.__restart_callbacks:
-                self.__restart_callbacks.append(callback_fn)            
+                self.__restart_callbacks.append(callback_fn)
         else:
             print("WARNING: shutdown callback function is None")
 
@@ -336,7 +336,7 @@ class Api(metaclass=SingletonMeta):
 
         The response is provided on the topic :attr:`Topic.LIST_DISKS`.
         """
-        self.__mqtt_client.publish("{}/request".format(Topics.LIST_DISKS), {})
+        self.__mqtt_client.publish(f"{Topics.LIST_DISKS}/request", {})
 
 
     def get_files_list(self, disk: str, recursive:bool = False, from_dir:str = ""):
@@ -376,7 +376,7 @@ class Api(metaclass=SingletonMeta):
             from_dir(str, optional): The starting directory for the listing.
         """
         payload = RequestFactory.create_request_files_list(disk, recursive, from_dir)
-        self.__mqtt_client.publish("{}/request".format(Topics.LIST_FILES), payload)
+        self.__mqtt_client.publish(f"{Topics.LIST_FILES}/request", payload)
 
 
     def read_file(self, disk:str, filepath:str):
@@ -390,7 +390,7 @@ class Api(metaclass=SingletonMeta):
             filepath(str): The full path of the file to be copied.
         """
         payload = RequestFactory.create_request_read_file(disk, filepath)
-        self.__mqtt_client.publish("{}/request".format(Topics.READ_FILE), payload)
+        self.__mqtt_client.publish(f"{Topics.READ_FILE}/request", payload)
 
 
     def copy_file(self, source_disk:str, filepath:str, destination_disk:str):
@@ -405,7 +405,7 @@ class Api(metaclass=SingletonMeta):
             destination_disk(str): The destination disk.
         """
         payload = RequestFactory.create_request_copy_file(source_disk, filepath, destination_disk)
-        self.__mqtt_client.publish("{}/request".format(Topics.COPY_FILE), payload)
+        self.__mqtt_client.publish(f"{Topics.COPY_FILE}/request", payload)
 
 
     def delete_file(self, filepath:str, disk:str):
@@ -417,7 +417,7 @@ class Api(metaclass=SingletonMeta):
         In case of an error, the :attr:`Topic.ERROR` notification is sent.
         """
         payload = RequestFactory.create_request_delete_file(filepath, disk)
-        self.__mqtt_client.publish("{}/request".format(Topics.DELETE_FILE), payload)
+        self.__mqtt_client.publish(f"{Topics.DELETE_FILE}/request", payload)
 
 
     def get_file_fingerprint(self, filepath:str, disk:str):
@@ -431,7 +431,7 @@ class Api(metaclass=SingletonMeta):
             disk(str): The disk on which the file is located.
         """
         payload = RequestFactory.create_request_get_file_fingerprint(filepath, disk)
-        self.__mqtt_client.publish("{}/request".format(Topics.FILE_FINGERPRINT), payload)
+        self.__mqtt_client.publish(f"{Topics.FILE_FINGERPRINT}/request", payload)
 
 
     def create_file(self, filepath:str, disk:str, contents:bytes, binary=False):
@@ -455,9 +455,39 @@ class Api(metaclass=SingletonMeta):
             contents(bytes): The data to write in the file.
             binary(bool, optional): If True, it means that the data provided are binary.
         """
+
         data = contents if not binary else zlib.compress(contents, level=1)
         payload = RequestFactory.create_request_create_file(filepath, disk, base64.b64encode(data), binary)
-        self.__mqtt_client.publish("{}/request".format(Topics.CREATE_FILE), payload)
+        self.__mqtt_client.publish(f"{Topics.CREATE_FILE}/request", payload)
+
+
+    def mount_file(self, disk:str, filepath:str):
+        """
+        Tries to mount a virtual disk (ISO, VMDK, etc).
+
+        If the mount succeeded, a disk state notification will be sent.
+
+        Args:
+            disk(str): The disk on which the file is located.
+            filepath(str): The path of the file to mount.
+        """
+
+        payload = RequestFactory.create_request_mount_file(disk, filepath)
+        self.__mqtt_client.publish(f"{Topics.MOUNT_FILE}/request", payload)
+    
+
+    def unmount(self, disk:str):
+        """
+        Unmounts a disk that has been previously mounted
+
+        If the unmount succeeded, a disk state notification will be sent.
+
+        Args:
+            disk(str): The disk name.
+        """
+
+        payload = RequestFactory.create_request_unmount(disk)
+        self.__mqtt_client.publish(f"{Topics.UNMOUNT}/request", payload)
 
 
     def discover_components(self) -> None:
@@ -466,7 +496,7 @@ class Api(metaclass=SingletonMeta):
 
         The response is provided on the topic :attr:`Topic.DISCOVER_COMPONENTS`
         """
-        self.__mqtt_client.publish("{}/request".format(Topics.DISCOVER_COMPONENTS), {})
+        self.__mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/request", {})
 
 
     def publish_components(self, components:list) -> None:
@@ -493,7 +523,7 @@ class Api(metaclass=SingletonMeta):
         payload = {
             "components": components
         }
-        self.__mqtt_client.publish("{}/response".format(Topics.DISCOVER_COMPONENTS), payload)
+        self.__mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", payload)
 
 
     def request_energy_state(self) -> None:
@@ -502,7 +532,7 @@ class Api(metaclass=SingletonMeta):
 
         The response is provided on the topic :attr:`Topic.ENERGY_STATE`
         """
-        self.__mqtt_client.publish("{}/request".format(Topics.ENERGY_STATE), {})
+        self.__mqtt_client.publish(f"{Topics.ENERGY_STATE}/request", {})
 
 
     def request_system_info(self) -> None:
@@ -559,12 +589,14 @@ class Api(metaclass=SingletonMeta):
 
         The response is provided on the topic :attr:`Topic.SYSTEM_INFO`
         """
-        self.__mqtt_client.publish("{}/request".format(Topics.SYSTEM_INFO), {})
+
+        self.__mqtt_client.publish(f"{Topics.SYSTEM_INFO}/request", {})
 
 
     def clear_sys_usb_queues(self):
         """ Queries sys-usb to clear its queues.
         """
+
         Api().publish(f"{Topics.SYS_USB_CLEAR_QUEUES}/request", {})
 
 
@@ -578,7 +610,7 @@ class Api(metaclass=SingletonMeta):
         **This notification is for internal use only**
         """
         payload = NotificationFactory.create_notification_disk_state(disk, "connected")
-        self.__mqtt_client.publish("{}".format(Topics.DISK_STATE), payload)
+        self.__mqtt_client.publish(Topics.DISK_STATE, payload)
     
 
     def notify_disk_removed(self, disk):
@@ -588,7 +620,7 @@ class Api(metaclass=SingletonMeta):
         **This notification is for internal use only**
         """
         payload = NotificationFactory.create_notification_disk_state(disk, "diconnected")
-        self.__mqtt_client.publish("{}".format(Topics.DISK_STATE), payload)
+        self.__mqtt_client.publish(Topics.DISK_STATE, payload)
 
 
     def notify_gui_ready(self) -> None:
@@ -598,7 +630,7 @@ class Api(metaclass=SingletonMeta):
         **This notification is mandatory to make the splash screen disappear when the GUI is ready, otherwise
         the GUI of the system would remain behind the splash screen**
         """
-        self.__mqtt_client.publish("{}".format(Topics.GUI_READY), {})
+        self.__mqtt_client.publish(Topics.GUI_READY, {})
 
 
     ####
