@@ -33,11 +33,6 @@ on:
         required: false
         type: 'boolean'
         default: 'false'
-      force-safecor-virt-kernel-addons:
-        description: "Build safecor-virt kernel addons"
-        required: false
-        type: 'boolean'
-        default: 'false'
       force-safecor-virt-iso:
         description: "Build safecor-virt ISO"
         required: false
@@ -184,7 +179,6 @@ jobs:
       check-py3-paho-mqtt2: ${{ steps.check-py3-paho-mqtt2.outputs.do_build }}
       check-safecor-lib: ${{ steps.check-safecor-lib.outputs.do_build }}
       check-safecor-alpine-virt-kernel: ${{ steps.check-safecor-alpine-virt-kernel.outputs.do_build }}
-      check-safecor-alpine-virt-kernel-addons: ${{ steps.check-safecor-alpine-virt-kernel-addons.outputs.do_build }}
       check-safecor-alpine-virt-iso: ${{ steps.check-safecor-alpine-virt-iso.outputs.do_build }}
       check-safecor-alpine-iso: ${{ steps.check-safecor-alpine-iso.outputs.do_build }}
       check-safecor-container-debian: ${{ steps.check-safecor-container-debian.outputs.do_build }}
@@ -538,7 +532,8 @@ jobs:
     needs: [ prepare ]
     if: | 
       needs.prepare.outputs.check-safecor-alpine-virt-kernel == 'true' ||
-      needs.prepare.outputs.check-xtables-addons-safecor-virt == 'true'
+      needs.prepare.outputs.check-xtables-addons-safecor-virt == 'true' 
+    
     runs-on: ubuntu-latest
  
     container:
