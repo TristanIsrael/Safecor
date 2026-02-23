@@ -1,0 +1,5 @@
+#!gpxe
+kernel http://{{ http_server }}/xen dom0_mem=1500M nomodeset pax_noudered 
+module http://{{ http_server }}/vmlinuz-virt apkovl=http://{{ http_server }}/configs/default.tar.gz ip=dhcp modloop=http://{{ http_server }}/modloop-virt modules=loop,squashfs,sd-mod,usb-storage alpine_repo={{ depot_alpine }}main/ ipv6.disable=1 PANOPTISCAN_CONFIG=xl 
+initrd http://{{ http_server }}/initramfs-virt
+boot

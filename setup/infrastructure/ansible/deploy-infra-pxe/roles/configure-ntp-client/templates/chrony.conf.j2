@@ -1,0 +1,5 @@
+server {{ ntp_server }} iburst
+initstepslew 10 {{ ntp_server }}
+driftfile /var/lib/chrony/chrony.drift 
+rtcsync
+cmdport 0

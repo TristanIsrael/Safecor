@@ -1,0 +1,84 @@
+---
+
+- name: Installation du serveur HTTP 
+  apk: 
+    name: lighttpd
+    state: present
+
+- name: Installation de GNU tar
+  apk: 
+    name: tar
+    state: present
+
+- name: Vérification du répertoire de données
+  stat:
+    path: /var/www/pxe
+  register: rep_donnees
+    
+- name: Contrôle du répertoire de données
+  debug:
+    msg: "Le répertoire existe"
+  when: rep_donnees.stat.exists
+  
+- name: Création du répertoire de données
+  file:
+    path: /var/www/pxe
+    state: directory
+    mode: 0777
+    group: lighttpd
+    owner: lighttpd
+  when: not rep_donnees.stat.exists
+    
+- name: Création du répertoire configs
+  file:
+    path: /var/www/pxe/configs
+    state: directory
+    mode: 0777
+    group: lighttpd
+    owner: lighttpd
+  when: not rep_donnees.stat.exists
+
+- name: Création d'un fichier témoin dans le dossier configs
+  file:
+    path: /var/www/pxe/configs/montage.ok
+    state: touch
+    mode: 0700    
+
+- name: Création du répertoire data
+  file:
+    path: /var/www/pxe/data
+    state: directory
+    mode: 0777
+    group: lighttpd
+    owner: lighttpd
+  when: not rep_donnees.stat.exists
+
+- name: Configuration du service HTTP
+  template:
+    src: lighttpd.conf.j2    
+    dest: "/etc/lighttpd/lighttpd.conf"
+    owner: root
+    group: root 
+    mode: 0644
+    
+- name: Redémarrage du service HTTP
+  service:
+    name: "lighttpd"
+    state: restarted
+    enabled: true    
+
+- name: Création du script de sauvegarde des profils
+  template:
+    src: save-config.sh.j2
+    dest: /var/www/pxe/save-config.sh
+    mode: 0750
+    owner: lighttpd
+    group: lighttpd
+
+- name: Installation de la configuration S Raspberry Pi 4B
+  include_tasks: s_raspi_4b.yml
+  when: configurations.s_raspi_4b|bool
+
+- name: Installation de la configuration XL 
+  include_tasks: xl.yml
+  when: configurations.xl|bool

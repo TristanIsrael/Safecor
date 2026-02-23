@@ -1,0 +1,43 @@
+all:
+  vars:    
+    install_dhcp: yes     
+    install_tftp: yes     
+    install_http: yes     
+    install_nfs: yes      
+    depot_alpine: "http://192.168.10.3/alpine/latest-stable/"
+    depot_noyaux: "http://192.168.10.3/alpine/releases/"
+    alpine_version: "3.21.3"
+    dhcp_domain: safecor.lan    
+    lan_subnet: 192.168.10.0
+    lan_netmask: 255.255.255.0
+    lan_ip_start: 192.168.10.10
+    lan_ip_end: 192.168.10.253
+    lan_ip_broadcast: 192.168.10.255
+    http_server: 192.168.10.2
+    nfs_server: 192.168.10.2
+    tftp_server: 192.168.10.2 
+    dhcp_server: 192.168.10.1 
+      
+hote_dhcp:
+  hosts:
+    192.168.10.1:
+      ansible_user: "ansible"
+      ansible_password: "ansible"    
+
+hote_http:
+  hosts:
+    192.168.10.2:
+      ansible_user: "ansible"
+      ansible_password: "ansible"
+
+hote_nfs:
+  hosts:
+    192.168.10.2:
+      ansible_user: "ansible"
+      ansible_password: "ansible"
+
+hote_tftp:
+  hosts:
+    192.168.10.2:
+      ansible_user: "ansible"
+      ansible_password: "ansible"

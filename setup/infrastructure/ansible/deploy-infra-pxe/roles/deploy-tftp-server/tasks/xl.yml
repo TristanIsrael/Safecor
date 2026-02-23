@@ -1,0 +1,75 @@
+---
+
+- name: Création du répertoire de travail pour le noyau iPXE
+  file:
+    path: /var/tftpboot/pxe/src
+    state: directory
+    mode: 0755
+
+- name: Installation des outils de build
+  apk:
+    name: 
+      - g++
+      - xz-dev
+      - git
+      - gzip
+      - make
+      - perl
+    state: present
+
+- name: Décompression des sources du noyau iPXE
+  unarchive:
+    src: files/src/ipxe.tar.bz2
+    dest: /var/tftpboot/pxe/src
+    mode: 0750
+
+- name: Modification des droits sur les répertoires de sources 
+  file: 
+    dest: /var/tftpboot/pxe/src
+    owner: root 
+    group: root 
+    mode: 0750 
+    recurse: yes
+
+- name: Configuration du noyau iPXE
+  template:
+    src: boot.ipxe.j2    
+    dest: /var/tftpboot/pxe/src/ipxe/src/boot.ipxe
+    mode: 0750
+
+# Documentation : https://ipxe.org/appnote/buildtargets
+- name: Compilation du noyau iPXE /\ Opération longue /\
+  make:
+    chdir: /var/tftpboot/pxe/src/ipxe/src
+    #Sur architecture x86_64, utiliser la ligne suivante
+    #target: bin/undionly.kpxe
+    #Sur architecture arm64, utiliser la ligne suivante
+    target: bin-arm64-efi/snponly.kpxe
+    params:
+      EMBED: boot.ipxe
+      ARCH: arm64
+
+- name: Publication du noyau iPXE
+  copy:
+    #Sur architecture x86_64, utiliser la ligne suivante
+    #src: /var/tftpboot/pxe/src/ipxe/src/bin/undionly.kpxe
+    #Sur architecture arm64, utiliser la ligne suivante
+    src: /var/tftpboot/pxe/src/ipxe/src/bin/snponly.kpxe
+    dest: /var/tftpboot/gpxe.kpxe
+    remote_src: yes 
+
+- name: Suppression du répertoire de travail
+  file:
+    path: /var/tftpboot/pxe
+    state: absent  
+
+- name: Désinstallation des outils de build
+  apk:
+    name: 
+      - g++
+      - xz-dev
+      - git
+      - gzip
+      - make
+      - perl
+    state: absent

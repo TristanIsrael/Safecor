@@ -1,0 +1,20 @@
+---
+
+- name: Installation du serveur DHCP 
+  apk: 
+    name: dhcp
+    state: present
+ 
+- name: Configuration du service
+  template:
+    src: dhcpd.conf.j2
+    dest: "/etc/dhcp/dhcpd.conf"
+    mode: 0750
+    owner: root
+    group: root
+
+- name: Redémarrage du service
+  service:
+    name: "dhcpd"
+    state: restarted
+    enabled: true    

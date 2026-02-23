@@ -1,0 +1,53 @@
+---
+
+- name: "Installation du serveur DHCP pour le boot PXE"
+  hosts: hote_dhcp
+  become: yes
+  become_user: root
+  
+  roles:
+    - role: deploy-dhcp-server
+      when: install_dhcp | bool
+
+- name: "Installation du serveur TFTP pour le boot PXE"
+  hosts: hote_tftp
+  become: yes
+  become_user: root
+  
+  roles:
+    - role: deploy-tftp-server
+      when: install_tftp | bool
+
+- name: "Installation du serveur HTTP pour le boot PXE"
+  hosts: hote_http
+  become: yes
+  become_user: root
+  
+  roles:
+    - role: deploy-http-server
+      when: install_http | bool
+
+- name: "Installation du serveur NFS pour le boot PXE"
+  hosts: hote_nfs
+  become: yes
+  become_user: root
+  
+  roles:
+    - role: deploy-nfs-server
+      when: install_nfs | bool 
+
+- name: "Configuration des clients NTP"
+  hosts: all:!localhost
+  become: yes
+  become_user: root
+
+  roles:
+    - role: configure-ntp-client
+
+- name: "Vérification de l'infrastructure"
+  hosts: 127.0.0.1
+  become: yes
+  become_user: root
+
+  roles: 
+    - validate-infra
