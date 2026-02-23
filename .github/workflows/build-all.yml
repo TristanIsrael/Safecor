@@ -467,7 +467,7 @@ jobs:
           filepath: /home/builder/packages/safecor/x86_64/
           
   build-safecor-lib:
-    needs: [ prepare, build-py3-paho-mqtt2 ]
+    needs: [ prepare ]
     if: | 
       needs.prepare.outputs.check-safecor-lib == 'true' || 
       needs.prepare.outputs.check-safecor-core == 'true' ||     
@@ -840,7 +840,7 @@ jobs:
           filepath: /home/builder/packages/safecor/x86_64/
 
   build-safecor-sys-gui:
-    needs: [ prepare, build-safecor-lib ]
+    needs: [ prepare ]
     if: |
       needs.prepare.outputs.check-safecor-sys-gui == 'true' ||
       needs.prepare.outputs.check-safecor-app-tests == 'true'
@@ -871,7 +871,7 @@ jobs:
           filepath: /home/builder/packages/safecor/x86_64/
 
   build-safecor-sys-usb:
-    needs: [ prepare, build-safecor-lib ]
+    needs: [ prepare ]
     if: |
       needs.prepare.outputs.check-safecor-sys-usb == 'true' ||
       needs.prepare.outputs.check-safecor-app-tests == 'true'
@@ -902,7 +902,7 @@ jobs:
           filepath: /home/builder/packages/safecor/x86_64/
 
   build-safecor-gui-base:
-    needs: [ prepare, build-safecor-lib ]
+    needs: [ prepare ]
     if: |
       needs.prepare.outputs.check-safecor-gui-base == 'true' ||
       needs.prepare.outputs.check-safecor-app-tests == 'true'
