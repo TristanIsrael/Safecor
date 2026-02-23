@@ -33,6 +33,11 @@ on:
         required: false
         type: 'boolean'
         default: 'false'
+      force-safecor-virt-kernel-addons:
+        description: "Build safecor-virt kernel addons"
+        required: false
+        type: 'boolean'
+        default: 'false'
       force-safecor-virt-iso:
         description: "Build safecor-virt ISO"
         required: false
@@ -122,7 +127,6 @@ jobs:
     outputs:
       pkg-py3-paho-mqtt2: ${{ steps.detect.outputs.py3-paho-mqtt2 }}
       pkg-safecor-alpine-iso: ${{ steps.detect.outputs.safecor-alpine-iso }}
-      pkg-safecor-alpine-virt-kernel: ${{ steps.detect.outputs.safecor-alpine-virt-kernel }}
       pkg-safecor-container-debian: ${{ steps.detect.outputs.safecor-container-debian }}
       pkg-safecor-core: ${{ steps.detect.outputs.safecor-core }}
       pkg-safecor-diag: ${{ steps.detect.outputs.safecor-diag }}
@@ -180,6 +184,7 @@ jobs:
       check-py3-paho-mqtt2: ${{ steps.check-py3-paho-mqtt2.outputs.do_build }}
       check-safecor-lib: ${{ steps.check-safecor-lib.outputs.do_build }}
       check-safecor-alpine-virt-kernel: ${{ steps.check-safecor-alpine-virt-kernel.outputs.do_build }}
+      check-safecor-alpine-virt-kernel-addons: ${{ steps.check-safecor-alpine-virt-kernel-addons.outputs.do_build }}
       check-safecor-alpine-virt-iso: ${{ steps.check-safecor-alpine-virt-iso.outputs.do_build }}
       check-safecor-alpine-iso: ${{ steps.check-safecor-alpine-iso.outputs.do_build }}
       check-safecor-container-debian: ${{ steps.check-safecor-container-debian.outputs.do_build }}
@@ -429,7 +434,7 @@ jobs:
             echo "do_build=true" >> $GITHUB_OUTPUT
           else 
             echo "do_build=false" >> $GITHUB_OUTPUT
-          fi
+          fi      
           
 
   build-py3-paho-mqtt2:
@@ -527,11 +532,12 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/main/x86_64/ # The package comes from aports      
+          filepath: /home/builder/packages/main/x86_64/ # The package comes from aports    
 
   build-xtables-addons-safecor-virt:
     needs: [ prepare ]
     if: | 
+      needs.prepare.outputs.check-safecor-alpine-virt-kernel == 'true' ||
       needs.prepare.outputs.check-xtables-addons-safecor-virt == 'true'
     runs-on: ubuntu-latest
  
@@ -547,13 +553,26 @@ jobs:
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
  
-      - name: Build APK
-        uses: ./.github/actions/build-apk
-        with:
-          working-dir: setup/packages/safecor/xtables-addons-safecor-virt
-          artifact-name: xtables-addons-safecor-virt
+      - name: Build the package
+        shell: sh
+        run: |
+          # Download aports sources
+          wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2
+          tar xjf aports-master.tar.bz2
 
-      - name: Publish package
+          cd "aports-master/main/xtables-addons-lts"    
+
+          # Patch APKBUILD
+          sed -i \
+          -e 's|^pkgname=xtables-addons-lts$|pkgname=xtables-addons-safecor-virt|' \
+          -e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
+          -e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
+          APKBUILD
+
+          sudo -u builder FLAVOR=safecor-virt abuild checksum
+          sudo -u builder FLAVOR=safecor-virt abuild -r  
+
+      - name: Publish kernel addons package
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}

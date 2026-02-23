@@ -39,20 +39,7 @@ runs:
         # Build the package
         cd "aports-master/main/linux-lts"
         sudo -u builder FLAVOR=safecor-virt abuild checksum
-        sudo -u builder FLAVOR=safecor-virt abuild -r
-
-        # After building the kernel we have to build the xtables-addons-safecor-virt
-        #cd "$GITHUB_WORKSPACE/aports-master/main/xtables-addons-lts"
-
-        # Patch APKBUILD
-        #sed -i \
-        #-e 's|^pkgname=xtables-addons-lts$|pkgname=xtables-addons-safecor-virt|' \
-        #-e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
-        #-e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
-        #APKBUILD
-
-        #sudo -u builder FLAVOR=safecor-virt abuild checksum
-        #sudo -u builder FLAVOR=safecor-virt abuild -r
+        sudo -u builder FLAVOR=safecor-virt abuild -r        
 
     - name: Upload the packages
       uses: actions/upload-artifact@v4
