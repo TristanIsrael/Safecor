@@ -3,21 +3,22 @@
 echo Clean system
 rm -rf /etc/safecor
 rm -rf /usr/lib/safecor
+rm -rf /var/lib/xen/images/*
 
 # Restore QEMU binary files
 rm /usr/bin/qemu-system-x86_64 /usr/bin/qemu-system-x86_64.cmd
 mv /usr/bin/qemu-system-x86_64.real /usr/bin/qemu-system-x86_64
 
 # Restore Grub file
-rm /etc/default/grub
-mv /etc/default/grub.orig /etc/default/grub
+rm /etc/default/grub || true
+mv /etc/default/grub.orig /etc/default/grub || true
 update-grub
 
 # Restore /etc/inittab
 rm /etc/inittab || true 
-cp mv /etc/inittab.orig /etc/inittab
+cp /etc/inittab.orig /etc/inittab || true
 
 # Remove created files
-rm /boot/splash_*
+rm -f /boot/splash_*
 
 exit 0

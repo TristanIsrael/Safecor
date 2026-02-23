@@ -22,7 +22,7 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     exit 0
 fi
 
-# Expect exactly one argument
+# Expect exactly two arguments
 if [ "$#" -ne 2 ]; then
     echo "Error: missing argument" >&2
     show_help
@@ -37,11 +37,6 @@ if [ ! -d "$DIR" ]; then
     exit 1
 fi
 
-if [ "$#" -ne 2 ]; then 
-    echo "Error: missing argument" >&2
-    show_help
-    exit 1
-fi
 
 ARCH="$2"
 

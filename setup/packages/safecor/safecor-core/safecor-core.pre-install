@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Backup /etc/inittab for future restauration
+rm -f /etc/inittab.orig
 cp /etc/inittab /etc/inittab.orig
 
 rc-service xenstored start
