@@ -555,7 +555,7 @@ jobs:
           wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2
           tar xjf aports-master.tar.bz2
 
-          cd "aports-master/main/xtables-addons-lts"    
+          cd "aports-master/main/xtables-addons-lts"                        
 
           # Patch APKBUILD
           sed -i \
@@ -563,6 +563,10 @@ jobs:
           -e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
           -e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
           APKBUILD
+
+          # Update permissions
+          cd "$GITHUB_WORKSPACE/"
+          sudo chown -R builder:builder "aports-master"
 
           sudo -u builder FLAVOR=safecor-virt abuild checksum
           sudo -u builder FLAVOR=safecor-virt abuild -r  
