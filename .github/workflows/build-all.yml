@@ -241,7 +241,7 @@ jobs:
         name: check-safecor-alpine-virt-iso
         env:
           PKG_CHANGED: ${{ needs.detect-changes.outputs.pkg-safecor-alpine-virt-iso }}
-          FORCE: ${{ github.event.inputs.force-safecor-alpine-virt-iso }}
+          FORCE: ${{ github.event.inputs.force-safecor-virt-iso }}
           FORCE_ALL: ${{ github.event.inputs.force-all }}
           FORCE_APPS: ${{ github.event.inputs.force-apps }}
           FORCE_LIBS: ${{ github.event.inputs.force-libs }}
