@@ -559,9 +559,9 @@ jobs:
 
           # Patch APKBUILD
           sed -i \
-          -e 's|^pkgname=xtables-addons-lts$|pkgname=xtables-addons-safecor-virt|' \
-          -e 's|^_name=${pkgname%-*}$|_name=xtables-addons|' \
-          -e 's|^_flavor=${pkgname##*-}$|_flavor=safecor-virt|' \
+          -e 's|^pkgname=.*|pkgname=xtables-addons-safecor-virt|' \
+          -e 's|^_name=.*|_name=xtables-addons|' \
+          -e 's|^_flavor=.*|_flavor=safecor-virt|' \
           APKBUILD
 
           # Update permissions
