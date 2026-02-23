@@ -87,14 +87,7 @@ class SysUsbController():
         self.__disk_monitor = DiskMonitor(Constants.USB_MOUNT_POINT, self.mqtt_client)
         threading.Thread(target=self.__disk_monitor.start).start()
 
-        payload = ResponseFactory.create_response_component_state(
-            Constants.SAFECOR_DISK_CONTROLLER,
-            "System Disk controller",
-            "sys-usb",
-            ComponentState.READY
-        )
-        
-        self.mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", payload)
+        self.__handle_discover_components()
 
 
     def __on_mqtt_message(self, topic:str, payload:dict):
@@ -106,6 +99,7 @@ class SysUsbController():
         # These tasks should only be small tasks, otherwise they go in the queue
         if base_topic in self.__high_priority_messages:
             threading.Thread(target=self.__handle_message(base_topic, payload)).start()
+            return
 
         self.__messages_queue.put((base_topic, payload))
 
@@ -144,7 +138,7 @@ class SysUsbController():
         elif topic == Topics.CREATE_FILE:
             self.__handle_create_file(topic, payload)
         elif topic == Topics.DISCOVER_COMPONENTS:
-            self.__handle_discover_components(topic, payload)
+            self.__handle_discover_components()
         elif topic == Topics.DELETE_FILE:
             self.__handle_delete_file(payload)
         elif topic == Topics.PING:
@@ -337,16 +331,14 @@ class SysUsbController():
         response = ResponseFactory.create_response_create_file(complete_filepath, disk, fingerprint, True)
         self.mqtt_client.publish(f"{topic}/response", response)
 
-    def __handle_discover_components(self, topic:str, payload:dict) -> None:
-        response = {
-            "components": [
-                { "id": Constants.SAFECOR_DISK_CONTROLLER, "domain_name": "sys-usb", "label": "System disk controller", "type": "core", "state": ComponentState.READY },
-                { "id": Constants.SAFECOR_INPUT_CONTROLLER, "domain_name": "sys-usb", "label": "Input controller", "type": "core", "state": ComponentState.READY },
-                { "id": Constants.IO_BENCHMARK, "domain_name": "sys-usb", "label": "System I/O benchmark", "type": "core", "state": ComponentState.READY }
-            ]
-        }
+    def __handle_discover_components(self) -> None:
+        comp1 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_DISK_CONTROLLER, "sys-usb", "System disk controller", ComponentState.READY, "core")
+        comp2 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_INPUT_CONTROLLER, "sys-usb", "Input controller", ComponentState.READY, "core")
+        #comp3 = ResponseFactory.create_entry_component_state(Constants.IO_BENCHMARK, "sys-usb", "System I/O benchmark", ComponentState.READY, "core")        
 
-        self.mqtt_client.publish(f"{topic}/response", response)
+        payload = ResponseFactory.create_response_component_state([comp1, comp2])
+
+        self.mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", payload)
     
     def __handle_delete_file(self, payload):
         if not MqttHelper.check_payload(payload, ["disk", "filepath"]):

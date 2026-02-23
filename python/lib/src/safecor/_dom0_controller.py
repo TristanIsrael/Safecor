@@ -92,7 +92,7 @@ class Dom0Controller():
         self.mqtt_client.subscribe(f"{Topics.SYSTEM_INFO}/request")
         self.mqtt_client.subscribe(f"{Topics.ENERGY_STATE}/request")
         self.mqtt_client.subscribe(f"{Topics.DELETE_FILE}/request")
-        self.mqtt_client.subscribe(Topics.DISCOVER_COMPONENTS)
+        self.mqtt_client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/request")
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
 
 
@@ -267,12 +267,13 @@ class Dom0Controller():
             Logger().info(f"Removed file {filepath} from repository")
         
     def __handle_discover_components(self):
-        payload = ResponseFactory.create_response_component_state(
-            Constants.SAFECOR_SYSTEM_CONTROLLER,
-            "System main controller",
+        comp = ResponseFactory.create_entry_component_state(Constants.SAFECOR_SYSTEM_CONTROLLER,
+            "Core controller",
             "Dom0",
             ComponentState.READY
         )
+
+        payload = ResponseFactory.create_response_component_state([comp])
 
         self.mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", payload)
 

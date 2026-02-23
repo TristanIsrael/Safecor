@@ -11,6 +11,8 @@ echo ---        script post-install.sh        ---
 echo --------------------------------------------
 echo
 
+ln -s /var/lib/xen/images/safecor-safecor-virt-x86_64.iso /var/lib/xen/images/alpine-virt.iso
+
 rc-update del syslog boot
 rc-update add syslog-ng boot
 rc-service syslog-ng restart

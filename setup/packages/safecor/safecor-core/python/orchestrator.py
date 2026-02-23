@@ -137,11 +137,13 @@ def create_virtual_mouse() -> InputDevice:
         ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y, ecodes.REL_WHEEL, ecodes.REL_WHEEL_HI_RES],
     }
 
-    input = UInput(capabilities, name=MOUSE_NAME)
-    SysLogger("Orchestrator").info(f"Created device {input.name}")
-
-    return input
-
+    try:
+        input = UInput(capabilities, name=MOUSE_NAME)
+        SysLogger("Orchestrator").info(f"Created device {input.name}")
+        return input
+    except Exception as e:
+        SysLogger("Orchestrator").error(f"Error while creating the virtual mouse: {e}")    
+    
 
 def create_virtual_keyboard() -> InputDevice:
     """ Creates a new virtual keyboard device 
@@ -155,10 +157,12 @@ def create_virtual_keyboard() -> InputDevice:
         ecodes.EV_MSC: [ ecodes.MSC_SCAN ],
     }
 
-    input = UInput(capabilities, name=KEYBOARD_NAME)
-    SysLogger("Orchestrator").info(f"Created device{input.name}")
-
-    return input
+    try:
+        input = UInput(capabilities, name=KEYBOARD_NAME)
+        SysLogger("Orchestrator").info(f"Created device{input.name}")
+        return input
+    except Exception as e:
+        SysLogger("Orchestrator").error(f"Error while creating the virtual keyboard: {e}")        
 
 
 def create_virtual_touch() -> InputDevice:
@@ -175,9 +179,12 @@ def create_virtual_touch() -> InputDevice:
         ecodes.EV_MSC: [ ecodes.ABS_MT_POSITION_X, ecodes.ABS_MT_POSITION_Y ]
     }
 
-    input = UInput(capabilities, name=TOUCH_NAME)
-    SysLogger("Orchestrator").info(f"Created device {input.name}")
-    return input
+    try:
+        input = UInput(capabilities, name=TOUCH_NAME)
+        SysLogger("Orchestrator").info(f"Created device {input.name}")
+        return input
+    except Exception as e:
+        SysLogger("Orchestrator").error(f"Error while creating the virtual touchscreen: {e}")    
 
 
 #def wait_for_file(filepath):

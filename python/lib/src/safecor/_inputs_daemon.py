@@ -33,17 +33,17 @@ class InputsDaemon(metaclass=SingletonMeta):
     
     """    
 
-    __mouse = Mouse()
+    #__mouse = Mouse()
     __xenbus_socket_path = None
-    __xenbus_iface_ready = False
+    #__xenbus_iface_ready = False
     __xenbus_socket = None
     __monitored_inputs = []
-    __mouse_max_x = 1
-    __mouse_max_y = 1
-    __last_x = 0
-    __last_y = 0
+    #__mouse_max_x = 1
+    #__mouse_max_y = 1
+    #__last_x = 0
+    #__last_y = 0
     __can_run = True
-    __mqtt_client = None
+    #__mqtt_client = None
 
     def start(self, mqtt_client: MqttClient):
         """ Starts the inputs daemon 
@@ -53,7 +53,7 @@ class InputsDaemon(metaclass=SingletonMeta):
             input events on the pv channel ``inputs``.
         """
 
-        self.__mqtt_client = mqtt_client
+        #self.__mqtt_client = mqtt_client
         SysLogger("Input Daemon").info("Starting input daemon")
         self.__can_run = True
 
@@ -100,9 +100,7 @@ class InputsDaemon(metaclass=SingletonMeta):
             inputs = glob.glob("/dev/input/event*")
 
             for input_ in inputs:
-                SysLogger("Input Daemon").debug(f"File {input}")
-                
-                try:          
+                try:
                     dev = InputDevice(input_)
                     type_input = self.__input_type(dev)
 
@@ -114,14 +112,15 @@ class InputsDaemon(metaclass=SingletonMeta):
                         if not any(t[0] == ecodes.ABS_MT_POSITION_X for t in caps[ecodes.EV_ABS]):
                             continue
 
-                        self.__mouse_max_x = caps[ecodes.EV_ABS][ecodes.ABS_X][1].max
-                        self.__mouse_max_y = caps[ecodes.EV_ABS][ecodes.ABS_Y][1].max
+                        #self.__mouse_max_x = caps[ecodes.EV_ABS][ecodes.ABS_X][1].max
+                        #self.__mouse_max_y = caps[ecodes.EV_ABS][ecodes.ABS_Y][1].max
 
                         #print("max_x={}, max_y={}".format(self.mouse.max_x, self.mouse.max_y))
 
                         threading.Thread(target= self.__monitor_touchscreen, args=(dev,)).start()
                         self.__monitored_inputs.append(input_)
-                except:
+                except Exception as e:
+                    SysLogger("Input Daemon").warn(f"Error during touchscreen search. {e}")
                     pass # Ignore all errors silently
 
             # Wait a little and start over
@@ -139,7 +138,7 @@ class InputsDaemon(metaclass=SingletonMeta):
         SysLogger("Input Daemon").info(f"Monitor the mouse {mouse.name}")
 
         try:
-            for event in mouse.read_loop():  
+            for event in mouse.read_loop():
                 if event.type in [ecodes.EV_KEY, ecodes.EV_REL, ecodes.EV_ABS, ecodes.EV_SYN]:
                     serialized = self.__serialize_event(InputType.MOUSE, event)
                     self.__xenbus_socket.write(serialized)
@@ -231,11 +230,11 @@ class InputsDaemon(metaclass=SingletonMeta):
 
         try:
             self.__xenbus_socket = serial.Serial(port= self.__xenbus_socket_path)
-            self.__xenbus_iface_ready = True
+            #self.__xenbus_iface_ready = True
             SysLogger("Input Daemon").info("I/O channel is open")
             return True
         except serial.SerialException as e:
-            self.__xenbus_socket = None            
+            self.__xenbus_socket = None
             SysLogger("Input Daemon").error(f"Impossible to open the serial port {self.__xenbus_socket_path}")
             SysLogger("Input Daemon").error(str(e))
             return False

@@ -213,7 +213,7 @@ vcpus = { domain.vcpus }
 cpus = "{ System.cpu_affinity_to_string(dom.cpu_affinity) }"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain}-config.img'
+    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img'
 ]
 device_model_override = "/usr/bin/qemu-system-x86_64"
 device_model_version = "qemu-xen"

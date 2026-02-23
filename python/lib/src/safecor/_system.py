@@ -225,8 +225,8 @@ class System(metaclass=SingletonMeta):
             topology.use_gui = topo.get("system", {}).get("use_gui", False)
             topology.screen.rotation = topo.get("system", {}).get("screen_rotation", 0)
             screen = System.get_framebuffer_dimension()
-            topology.screen.width = screen[0]
-            topology.screen.height = screen[1]
+            topology.screen.width = screen[0] if screen is not None else 0
+            topology.screen.height = screen[1] if screen is not None else 0
             topology.uuid = System().get_system_uuid()
             topology.gui.app_package = topo.get("system", {}).get("gui_app_package", "error")
             topology.gui.memory = topo.get("system", {}).get("gui_memory", 2000)
@@ -705,7 +705,7 @@ class System(metaclass=SingletonMeta):
             width, height = map(int, data.split(","))
             return width, height
         except FileNotFoundError:
-            return None
+            return (1100, 750)
 
     @staticmethod
     def get_screen_rotation_from_topology(override_topology_file:str = "") -> int:

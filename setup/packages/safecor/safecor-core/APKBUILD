@@ -10,6 +10,7 @@ license="MIT"
 depends="openrc xorriso safecor-lib xen xen-hypervisor qemu-system-x86_64 qemu-ui-gtk seabios abuild pciutils xorg-server 
 gtk+3.0 sdl2 sdl2_image mosquitto mosquitto-openrc mosquitto-clients socat py3-evdev py3-udev feh jq xdotool syslog-ng xrandr font-terminus 
 qemu-hw-display-virtio-gpu-pci qemu-hw-display-virtio-gpu apparmor apparmor-profiles py3-pillow fsverity-utils py3-libvirt libvirt libvirt-xen
+py3-rich
 "
 makedepends=""
 builddir="$srcdir/$pkgname-$pkgver"
@@ -72,9 +73,10 @@ python/get-total-memory.py
 python/create-mqtt-tunnels.py
 python/orchestrator.py
 python/create-splash.py
+python/check-system.py
+python/inputs_proxy.py
 
 misc/splash_ng.png
-
 misc/qemu-system-x86_64.cmd
 
 scripts/create-tty-tunnel.sh
@@ -155,12 +157,14 @@ package() {
     install -D -m640 "$srcdir"/write-screen-information-to-xenstore.py "$pkgdir/$BINDIR"/write-screen-information-to-xenstore.py
     install -D -m640 "$srcdir"/get-total-memory.py "$pkgdir/$BINDIR"/get-total-memory.py    
     install -D -m640 "$srcdir"/orchestrator.py "$pkgdir/$BINDIR"/orchestrator.py
+    install -D -m640 "$srcdir"/inputs_proxy.py "$pkgdir/$BINDIR"/inputs_proxy.py
     install -D -m640 "$srcdir"/rotate-screen.py "$pkgdir/$BINDIR"/rotate-screen.py
     install -D -m640 "$srcdir"/generate-x-config.py "$pkgdir/$BINDIR"/generate-x-config.py
     install -D -m640 "$srcdir"/create-domains.py "$pkgdir/$BINDIR"/create-domains.py
     install -D -m750 "$srcdir"/start-safecor-core-controller.py "$pkgdir/$BINDIR"/start-safecor-core-controller.py 
     install -D -m750 "$srcdir"/create-mqtt-tunnels.py "$pkgdir/$BINDIR"/create-mqtt-tunnels.py 
     install -D -m755 "$srcdir"/create-splash.py "$pkgdir/$BINDIR"/create-splash.py 
+    install -D -m755 "$srcdir"/check-system.py "$pkgdir/$BINDIR"/check-system
 
     # Misc
     #install -D -m644 "$srcdir"/Splash_800_1280.ppm "$pkgdir"/boot/Splash_800_1280.ppm

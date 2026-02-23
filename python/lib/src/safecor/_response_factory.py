@@ -77,17 +77,19 @@ class ResponseFactory():
         return payload
 
     @staticmethod
-    def create_response_component_state(component_id:str, component_label:str, domain_name:str, state:ComponentState, component_type = "core") -> dict:
+    def create_entry_component_state(component_id:str, component_label:str, domain_name:str, state:ComponentState, component_type = "core") -> dict:
+        return {
+            "id": component_id,
+            "domain_name": domain_name,
+            "label": component_label,
+            "type": component_type,
+            "state": state.value
+        }
+
+    @staticmethod
+    def create_response_component_state(components:list[dict]) -> dict:
         payload = {
-            "components": [
-                {
-                "id": component_id,
-                "domain_name": domain_name,
-                "label": component_label,
-                "type": component_type,
-                "state": state.value
-                }
-            ]
+            "components": components
         }
 
         return payload
