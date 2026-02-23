@@ -8,6 +8,12 @@
         },
         {
             "path": "../AlpineLinux.nosync/aports_fork/scripts"
+        },
+        {
+            "path": "../AlpineLinux.nosync/aports_fork"
+        },
+        {
+            "path": "../Python-mqtt"
         }
     ],    
     "settings": {

@@ -4,6 +4,7 @@ import subprocess
 import platform
 import os
 import json
+import threading
 try:
     import psutil
 except ImportError:
@@ -14,6 +15,10 @@ try:
     from . import LibvirtHelper
 except ImportError:
     print("Not using Libvirt")
+try:
+    import inotify.adapters
+except Exception:
+    print("The inotify library is not available on this system")
 
 topology = Topology()
 
@@ -730,3 +735,42 @@ class System(metaclass=SingletonMeta):
         color = product.get("splash_bgcolor", "#000000")
 
         return color
+
+    def monitor_file(self, path:str, filename:str, fn_callback):
+        """
+        Starts the monitoring of a single file or a whole directory.
+         
+        When a file is created or removed, the callback function is called with the following parameters:
+        - path:str - The directory path
+        - filename:str - The file name 
+        - exists:bool - True if the file has been created, else False
+
+        This function is uninterruptible.
+        
+        :param path: The directory to monitor
+        :type path: str
+        :param filename: A file name to monitor, set to None if the whole directory should be monitored
+        :type filename: str
+        :param fn_callback: The callback function
+        """
+        
+        if fn_callback is None:
+            print("Monitoring of file called without callback. Aborted.")
+            return
+
+        thread = threading.Thread(target=self.__monitor_file_worker, args=(path, filename, fn_callback,))
+        thread.start()
+
+    def __monitor_file_worker(self, path:str, filename:str, fn_callback):        
+        i = inotify.adapters.Inotify()
+        i.add_watch(path)
+
+        for event in i.event_gen(yield_nones=False):
+            (_, _type_names, _path, _filename) = event
+            if filename is not None:
+                if filename != _filename:
+                    continue
+            
+            present = "IN_CREATE" in _type_names
+            threading.Thread(target=fn_callback, args=(path, filename, present,)).start()
+            

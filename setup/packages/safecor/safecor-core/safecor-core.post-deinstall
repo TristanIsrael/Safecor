@@ -17,4 +17,7 @@ update-grub
 rm /etc/inittab || true 
 cp mv /etc/inittab.orig /etc/inittab
 
+# Remove created files
+rm /boot/splash_*
+
 exit 0
