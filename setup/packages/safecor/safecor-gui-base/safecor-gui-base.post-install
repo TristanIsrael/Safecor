@@ -13,8 +13,8 @@ ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
 echo "Europe/Paris" > /etc/timezone
 
 echo "**** Resizing shared memory"
-mount -o remount,size=16M /dev/shm
-mount -o remount,size=16M /run
+mount -o remount,size=1M /dev/shm
+mount -o remount,size=1M /run
 mount -o remount,size=100% /
 
 #/usr/lib/safecor/bin/hardening.sh

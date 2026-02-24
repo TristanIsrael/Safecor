@@ -2,7 +2,7 @@ import threading
 import socket
 import msgpack
 from evdev import InputDevice, ecodes, UInput
-from safecor import SysLogger
+from safecor import SysLogger, InputType
 
 class InputsProxy:
     """ The inputs proxy monitors the inputs socket of sys-usb and serializes the events on the 
@@ -26,7 +26,7 @@ class InputsProxy:
         self.__can_run = True
 
         SysLogger("Inputs proxy").info("The inputs proxy is going to start")
-        self.__thread = threading.Thread(target= self.events_proxy_worker)
+        self.__thread = threading.Thread(target= self.events_proxy_worker, daemon=True)
         self.__thread.start()
 
     def stop(self):
@@ -39,6 +39,8 @@ class InputsProxy:
 
         SysLogger("Input proxy").info("Start input proxy")
         buffer = bytearray()
+
+        self.__is_running = True
 
         while self.__can_run and self.__is_running:
             # If the connection is lost accidentaly we have to recreate it
@@ -85,7 +87,11 @@ class InputsProxy:
 
                         if device is not None:
                             device.write(event_type, event_code, event_value)
-                            #device.syn()
+
+                            if device_type == InputType.KEYBOARD:
+                                device.syn()
 
                     except Exception as e:
                         SysLogger("Input proxy").error(f"Erreur in the frame: {e}")
+                        
+            self.__is_running = False

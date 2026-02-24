@@ -434,12 +434,7 @@ jobs:
   build-py3-paho-mqtt2:
     needs: [ prepare ]
     if: |
-      needs.prepare.outputs.check-py3-paho-mqtt2 == 'true' ||
-      needs.prepare.outputs.check-safecor-lib == 'true' ||
-      needs.prepare.outputs.check-safecor-core == 'true' ||
-      needs.prepare.outputs.check-safecor-sys-gui == 'true' ||
-      needs.prepare.outputs.check-safecor-sys-usb == 'true' ||
-      needs.prepare.outputs.check-safecor-app-tests == 'true'
+      needs.prepare.outputs.check-py3-paho-mqtt2 == 'true'
     runs-on: ubuntu-latest
  
     container:

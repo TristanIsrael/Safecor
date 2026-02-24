@@ -13,7 +13,7 @@ start() {
     X :0 -nolisten tcp -ac & 
 
     # Wait for X to be ready
-    until xdpyinfo >/dev/null 2>&1; do
+    until [ -e /tmp/.X11-unix/X0 ]; do
         sleep 0.2
     done
 

@@ -5,7 +5,7 @@ import time
 import threading
 import json
 import evdev
-from evdev import InputDevice, ecodes, UInput
+from evdev import InputDevice, ecodes, UInput, AbsInfo
 from safecor import MqttFactory, Logger, InputType, SysLogger, ConfigurationReader, System
 from inputs_proxy import InputsProxy
 
@@ -62,28 +62,28 @@ def create_virtual_devices() -> tuple[InputDevice, InputDevice, InputDevice]:
             SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual keyboard device. {e}")
 
     # Find touch screen and keep capabilities
-    touch_device = find_touchscreen()
-    if touch_device is None:
-        SysLogger("Orchestrator").info("No touchscreen found on the system")
-        virtual_touch = None
-    else:
+    #touch_device = find_touchscreen()
+    #if touch_device is None:
+    #    SysLogger("Orchestrator").info("No touchscreen found on the system")
+    #    virtual_touch = None
+    #else:
         #print(touch_caps)
-        virtual_touch = create_virtual_touch()
-        touch_path = get_device_path(TOUCH_NAME)
-        if touch_path == "":
-            SysLogger("Orchestrator").error("The touch device path has not been found")
-        else:            
-            if os.path.exists(VIRTUAL_TOUCH_PATH) or os.path.islink(VIRTUAL_TOUCH_PATH):
-                try:
-                    os.remove(VIRTUAL_TOUCH_PATH)
-                    time.sleep(0.1)
-                except Exception as e:
-                    SysLogger("Orchestrator").error(f"Could not remove current virtual touch device. {e}")
-
+    virtual_touch = create_virtual_touch()
+    touch_path = get_device_path(TOUCH_NAME)
+    if touch_path == "":
+        SysLogger("Orchestrator").error("The touch device path has not been found")
+    else:
+        if os.path.exists(VIRTUAL_TOUCH_PATH) or os.path.islink(VIRTUAL_TOUCH_PATH):
             try:
-                os.symlink(touch_path, VIRTUAL_TOUCH_PATH)
+                os.remove(VIRTUAL_TOUCH_PATH)
+                time.sleep(0.1)
             except Exception as e:
-                SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual touch device. {e}") 
+                SysLogger("Orchestrator").error(f"Could not remove current virtual touch device. {e}")
+
+        try:
+            os.symlink(touch_path, VIRTUAL_TOUCH_PATH)
+        except Exception as e:
+            SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual touch device. {e}")
 
     return virtual_mouse, virtual_keyboard, virtual_touch
 
@@ -98,7 +98,7 @@ def find_touchscreen() -> InputDevice:
             caps = dev.capabilities()
             
             if ecodes.EV_ABS in caps:
-                # On filtre au cas où le périphérique n'aurait pas les capacités nécessaires
+                # Filter to exclude non-capable devices
                 if not any(t[0] == ecodes.ABS_MT_POSITION_X for t in caps[ecodes.EV_ABS]):
                     continue
                 
@@ -106,7 +106,7 @@ def find_touchscreen() -> InputDevice:
                 SysLogger("Orchestrator").info(f"Found a touchscreen: {dev.name}")
                 return dev
         except Exception as e:
-            print(e)
+            SysLogger("Orchestrator").error(f"Error while searching a touch device. {e}")
             continue
 
     return None
@@ -173,14 +173,35 @@ def create_virtual_touch() -> InputDevice:
         - EV_ABS: ABS_MT_POSITION_X, ABS_MT_POSITION_Y
     """
 
-    #virtual_touch = UInput.from_device(touch_device, name=TOUCH_NAME)
-    capabilities = {
-        ecodes.EV_KEY: [ ecodes.BTN_LEFT, ecodes.BTN_RIGHT ],
-        ecodes.EV_MSC: [ ecodes.ABS_MT_POSITION_X, ecodes.ABS_MT_POSITION_Y ]
+    # Default values
+    default_caps = {
+        ecodes.EV_KEY: [ ecodes.BTN_TOUCH ],
+        ecodes.EV_ABS: [
+            (ecodes.ABS_X,              AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90)),
+            (ecodes.ABS_Y,              AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90)),
+            (ecodes.ABS_MT_SLOT,        AbsInfo(value=0, min=0, max=10, fuzz=0, flat=0, resolution=0)),
+            (ecodes.ABS_MT_POSITION_X,  AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90)),
+            (ecodes.ABS_MT_POSITION_Y,  AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90)),
+            (ecodes.ABS_MT_TRACKING_ID, AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=0))
+        ]
     }
 
+    touch_caps = default_caps
+
+    # The virtual touch screen must have the same characteristics as the original
+    # in particular the values max and min
+    original_touch = find_touchscreen()
+    if original_touch is None:
+        SysLogger("Orchestrator").warn("No touch device found")
+    else:
+        touch_caps = {
+            ecodes.EV_KEY: [ ecodes.BTN_TOUCH ],
+            ecodes.EV_ABS: original_touch.capabilities().get(ecodes.EV_ABS, default_caps[ecodes.EV_ABS])
+        }
+        original_touch.close()
+
     try:
-        input = UInput(capabilities, name=TOUCH_NAME)
+        input = UInput(touch_caps, name=TOUCH_NAME)
         SysLogger("Orchestrator").info(f"Created device {input.name}")
         return input
     except Exception as e:
@@ -321,7 +342,7 @@ def start_business_domains():
         cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain_name]
         res = subprocess.run(cmd)
 
-        if res == 0:
+        if res.returncode == 0:
             SysLogger("Orchestrator").info(f"Started Domain {domain_name}")
         else:
             SysLogger("Orchestrator").critical(f"Domain {domain_name} did not start")
@@ -335,11 +356,10 @@ def on_inputs_socket_file_changed(path:str, filename:str, exists:bool):
     """ This function is a callback for the file monitor that monitors the inputs socket file """
 
     if exists:
-        SysLogger("Orchestrator").info("The inputs socket file is ready. Start the event listener")
+        SysLogger("Orchestrator").info("The inputs socket file is ready. Start the input proxy")
         inputs_proxy.start()
-
     else:
-        SysLogger("Orchestrator").info("The inputs socket file has disappeared. Stop the event listener")
+        SysLogger("Orchestrator").info("The inputs socket file has disappeared. Stop the input proxy")
         inputs_proxy.stop()
 
 def on_mqtt_ready():
@@ -360,6 +380,12 @@ def on_mqtt_ready():
 
     # Start sys-usb
     if can_create_domains():
+        # The monitor will look at the inputs file fomr sys-usb
+        # and when sys-usb is rebooted, the events listener will stop and start
+        # back after the reboor
+        SysLogger("Orchesrtrator").info("Wait for the input socket to be ready")
+        System().monitor_file(INPUTS_SOCKET_PATH, INPUTS_SOCKET_FILENAME, on_inputs_socket_file_changed)
+
         cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-sys-usb.sh"]
         res = subprocess.run(cmd, check= True)
 
@@ -379,11 +405,7 @@ def on_mqtt_ready():
 
         # Start all other domains
         start_business_domains()
-
-        # The monitor will look at the inputs file fomr sys-usb
-        # and when sys-usb is rebooted, the events listener will stop and start
-        # back after the reboor
-        System().monitor_file(INPUTS_SOCKET_PATH, INPUTS_SOCKET_FILENAME, on_inputs_socket_file_changed)
+        
 
         # When the domain sys-usb is rebooted, the socket is list
         # so we need to loop

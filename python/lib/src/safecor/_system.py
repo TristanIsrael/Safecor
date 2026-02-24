@@ -16,7 +16,7 @@ try:
 except ImportError:
     print("Not using Libvirt")
 try:
-    import inotify.adapters
+    from inotify_simple import INotify, flags 
 except Exception:
     print("The inotify library is not available on this system")
 
@@ -758,19 +758,19 @@ class System(metaclass=SingletonMeta):
             print("Monitoring of file called without callback. Aborted.")
             return
 
-        thread = threading.Thread(target=self.__monitor_file_worker, args=(path, filename, fn_callback,))
+        thread = threading.Thread(target=self.__monitor_file_worker, daemon=True, args=(path, filename, fn_callback,))
         thread.start()
 
-    def __monitor_file_worker(self, path:str, filename:str, fn_callback):        
-        i = inotify.adapters.Inotify()
-        i.add_watch(path)
+    def __monitor_file_worker(self, path:str, filename:str, fn_callback):
+        i = INotify()
+        i.add_watch(path, flags.CREATE | flags.DELETE)
 
-        for event in i.event_gen(yield_nones=False):
-            (_, _type_names, _path, _filename) = event
-            if filename is not None:
-                if filename != _filename:
+        while True:
+            for event in i.read():
+                (_, mask, _path, _filename) = event
+                if filename is not None and filename != _filename:
                     continue
-            
-            present = "IN_CREATE" in _type_names
-            threading.Thread(target=fn_callback, args=(path, filename, present,)).start()
+                
+                present = flags.CREATE in flags.from_mask(mask)
+                threading.Thread(target=fn_callback, args=(path, _filename, present,)).start()
             

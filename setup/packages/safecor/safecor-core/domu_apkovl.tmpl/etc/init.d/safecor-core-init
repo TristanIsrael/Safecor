@@ -9,6 +9,9 @@ depend() {
 start() {
     ebegin "Finalizing Safecor initialization"
 
+    mount -o remount,size=5% /dev/shm
+    mount -o remount,size=95% /
+
     apk update
     apk upgrade
     apk add
