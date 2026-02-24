@@ -13,7 +13,7 @@ builddir="$srcdir/$pkgname-$pkgver"
 checkdepends=""
 install="$pkgname.post-install"
 subpackages=""
-replaces=""
+replaces="xinit"
 options="!check"  # no tests provided
 source="
 xorg.conf.d/10-energy-saving.conf

@@ -2,6 +2,7 @@
 
 echo "" >> /etc/profile
 echo "export DISPLAY=:0" >> /etc/profile
+export DISPLAY=:0
 
 rc-service udev start
 rc-service udev-postmount start
@@ -18,7 +19,7 @@ mount -o remount,size=100% /
 
 echo "Initialization finished"
 
-startx
+xinit /etc/X11/xinit/xinitrc -- :0 -nolisten tcp -ac
 #/usr/lib/safecor/bin/hardening.sh
 
 exit 0
