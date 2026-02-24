@@ -41,6 +41,8 @@ addgroup svc-mqtt-tunnels mosquitto
 addgroup svc-safecor-controller mosquitto
 addgroup svc-orchestrator input
 addgroup svc-safecor-controller input
+addgroup svc-tty-tunnels tty
+addgroup svc-tty-terminal tty
 
 logger -t "Safecor/core-post-install" "Settings permissions on system files"
 mkdir -p /var/log/safecor

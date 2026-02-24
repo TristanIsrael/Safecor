@@ -13,7 +13,7 @@ start() {
         eend $?
 
         ebegin "Create TTY terminal"
-        start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/bin/create-tty-terminal.sh --pidfile /var/run/$name-tty-terminal.pid --background --user "svc-tty-terminal"
+        start-stop-daemon --start --make-pidfile --exec /usr/lib/safecor/bin/create-tty-terminal.sh --pidfile /var/run/$name-tty-terminal.pid --background
         eend $?
 
         ebegin "Log MQTT messages"

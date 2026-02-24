@@ -286,7 +286,7 @@ def expose_pci_devices():
                 SysLogger("Orchestrator").info(f"Device {dev} has been passedthrough to sys-usb")
                 whitelist.append(dev)
             else:
-                SysLogger("Orchestrator").warn(f"There has been an error while exposing the device {dev} to Xen")           
+                SysLogger("Orchestrator").warn(f"There has been an error while exposing the device {dev} to Xen")
     
     # Append devices to sys-usb.conf
     if len(whitelist) > 0:
