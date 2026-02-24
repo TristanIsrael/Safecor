@@ -50,6 +50,8 @@ chown -R nobody:safecor /usr/lib/safecor
 chgrp safecor /dev/uinput
 
 logger -t "Safecor/core-post-install" "Reorganizing services"
+rc-service xenstored start
+rc-update add xenstored boot
 rc-update add libvirtd default
 rc-service libvirtd start
 rc-update add splash boot
@@ -61,12 +63,10 @@ rc-service modules restart
 
 rc-service xenconsoled start
 rc-update add xenconsoled
-rc-service xenstored start
-rc-update add xenstored
 rc-update add mosquitto
 rc-update add create-mqtt-tunnels
 rc-update add safecor-core-controller
-rc-update add start-x
+rc-update add xserver
 rc-update add orchestrator
 rc-update add debug
 rc-update add hardening

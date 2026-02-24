@@ -53,8 +53,6 @@ def main():
     else:
         view.show()
 
-    Api().notify_gui_ready()
-
     return app.exec()
 
 if __name__ == '__main__':

@@ -37,6 +37,7 @@ class AppController(QObject):
 
     def __on_api_ready(self):
         self.__messages_model.add_message(self.tr("Safecor API is ready"))
+        Api().notify_gui_ready()
         self.__ready = True
         self.readyChanged.emit()
         self.__messages_model.add_message(self.tr("Waiting for user action..."), MessageLevel.User)

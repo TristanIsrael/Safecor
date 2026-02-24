@@ -72,7 +72,7 @@ def check_kernel_parameter(param_name:str) -> bool:
 def make_report_services() -> Table:
     """ Create a report for all services status """
 
-    services = [ "orchestrator", "sysfs", "devfs", "dmesg", "mdev", "modules", "hwdrivers", "fsck", "root", "swap", "localmount", "hostname", "sysctl", "bootmisc", "syslog-ng", "xenstored", "mosquitto", "safecor-core-controller", "chronyd", "virtlogd", "xenconsoled", "libvirtd", "create-mqtt-tunnels", "splash", "start-x", "apparmor", "seedrng", "crond", "acpid", "hardening" ]
+    services = [ "orchestrator", "sysfs", "devfs", "dmesg", "mdev", "modules", "hwdrivers", "fsck", "root", "swap", "localmount", "hostname", "sysctl", "bootmisc", "syslog-ng", "xenstored", "mosquitto", "safecor-core-controller", "chronyd", "virtlogd", "xenconsoled", "libvirtd", "create-mqtt-tunnels", "splash", "xserver", "apparmor", "seedrng", "crond", "acpid", "hardening" ]
 
     table = Table(show_lines=True, box=None)
     table.add_column("Service")

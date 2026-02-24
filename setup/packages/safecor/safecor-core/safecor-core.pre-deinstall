@@ -3,9 +3,23 @@
 rc-service safecor-core-controller stop
 rc-service create-mqtt-tunnels stop
 rc-service mosquitto stop
-rc-service start-x stop
+rc-service xserver stop
 rc-service orchestrator stop
 rc-service debug stop
+
+rc-update del syslog-ng boot
+rc-update del xenstored boot
+rc-update del libvirtd default
+rc-update del splash boot
+rc-update del apparmor boot
+rc-update del xenconsoled
+rc-update del mosquitto
+rc-update del create-mqtt-tunnels
+rc-update del safecor-core-controller
+rc-update del xserver
+rc-update del orchestrator
+rc-update del debug
+rc-update del hardening
 
 # Stop all domains
 xl list | tail -n +3 | awk '{print $1}' | while read -r dom; do
@@ -17,3 +31,5 @@ mv /usr/bin/qemu-system-x86_64 /usr/bin/qemu-system-x86_64.cmd
 mv /usr/bin/qemu-system-x86_64.real /usr/bin/qemu-system-x86_64
 
 exit 0
+
+

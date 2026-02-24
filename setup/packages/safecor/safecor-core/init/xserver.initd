@@ -1,6 +1,6 @@
 #!/sbin/openrc-run
 
-name="start-x"
+name="xserver"
 
 depend() {
     after sysctl splash

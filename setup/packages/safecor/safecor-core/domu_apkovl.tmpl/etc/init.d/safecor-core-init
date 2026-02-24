@@ -10,6 +10,7 @@ start() {
     ebegin "Finalizing Safecor initialization"
 
     mount -o remount,size=5% /dev/shm
+    mount -o remount,size=1M /run
     mount -o remount,size=95% /
 
     apk update

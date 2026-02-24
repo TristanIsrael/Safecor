@@ -8,7 +8,7 @@ group="safecor"
 logfile="/var/log/safecor/orchestrator.log"
 
 depend() {    
-    after start-x libvirtd
+    after xserver libvirtd
 }
 
 start() {

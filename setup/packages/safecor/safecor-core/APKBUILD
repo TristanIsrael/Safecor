@@ -26,7 +26,7 @@ https://alefbet.net/github/safecor/iso/safecor-safecor-virt-x86_64.iso
 init/safecor-core-controller.initd
 init/splash.initd
 init/orchestrator.initd
-init/start-x.initd
+init/xserver.initd
 init/create-mqtt-tunnels.initd
 init/debug.initd
 init/hardening.initd
@@ -114,7 +114,7 @@ package() {
     # Openrc
     install -D -m755 "$srcdir"/splash.initd "$pkgdir"/etc/init.d/splash
     install -D -m755 "$srcdir"/safecor-core-controller.initd "$pkgdir"/etc/init.d/safecor-core-controller
-    install -D -m755 "$srcdir"/start-x.initd "$pkgdir"/etc/init.d/start-x
+    install -D -m755 "$srcdir"/xserver.initd "$pkgdir"/etc/init.d/xserver
     install -D -m755 "$srcdir"/orchestrator.initd "$pkgdir"/etc/init.d/orchestrator
     
     # Configuration
