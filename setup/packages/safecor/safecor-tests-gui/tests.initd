@@ -3,6 +3,7 @@
 name="tests"
 
 depend() {
+    need xserver
     after *
 }
 
