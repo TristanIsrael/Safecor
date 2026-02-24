@@ -27,8 +27,15 @@ if [ "$ACTION" = "remove" ]; then
 fi 
 
 # If the device was added
-if [ "$ACTION" = "add" ]; then 
+if [ "$ACTION" = "add" ] || [ "$ACTION" = "change" ] ; then 
     echo "Debugging is enabled. Creating a tunnel on serial port $DEVNAME"
+
+    SOCAT_PID=$(pgrep -f "socat.*$DEVNAME")
+
+    if [ $SOCAT_PID -gt 0 ]; then 
+        echo "Another tunnel already exists. Aborting."
+        exit 0
+    fi
 
     if [ -e "$DEVNAME" ]; then 
         echo Create TTY tunnel for "$DEVNAME"
