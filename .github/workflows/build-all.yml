@@ -464,12 +464,7 @@ jobs:
   build-safecor-lib:
     needs: [ prepare ]
     if: | 
-      needs.prepare.outputs.check-safecor-lib == 'true' || 
-      needs.prepare.outputs.check-safecor-core == 'true' ||     
-      needs.prepare.outputs.check-safecor-sys-gui == 'true' ||
-      needs.prepare.outputs.check-safecor-sys-usb == 'true' ||
-      needs.prepare.outputs.check-safecor-gui-base == 'true' ||
-      needs.prepare.outputs.check-safecor-app-tests == 'true'
+      needs.prepare.outputs.check-safecor-lib == 'true'
     runs-on: ubuntu-latest
  
     container:
