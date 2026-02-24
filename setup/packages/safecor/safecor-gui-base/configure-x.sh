@@ -1,7 +1,7 @@
 #!/bin/sh
 
-xset -dpms
-xset s off
+xset -display :0 -dpms
+xset -display :0 s off
 
 echo "**** Set mouse pointer ****"
 xsetroot -display :0 -cursor_name left_ptr

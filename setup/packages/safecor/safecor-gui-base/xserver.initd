@@ -10,6 +10,9 @@ start() {
     export DISPLAY=:0
     export HOME=/root
 
+    # Remove splash
+    killall fbsplash || true
+
     X :0 -nolisten tcp -ac & 
 
     # Wait for X to be ready
