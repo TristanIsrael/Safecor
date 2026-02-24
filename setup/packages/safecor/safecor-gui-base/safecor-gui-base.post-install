@@ -17,9 +17,8 @@ mount -o remount,size=16M /dev/shm
 mount -o remount,size=16M /run
 mount -o remount,size=100% /
 
-echo "Initialization finished"
-
-xinit /etc/X11/xinit/xinitrc -- :0 -nolisten tcp -ac
 #/usr/lib/safecor/bin/hardening.sh
+
+echo "Safecor GUI base package installed"
 
 exit 0

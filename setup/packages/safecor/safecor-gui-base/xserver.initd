@@ -1,0 +1,23 @@
+#!/sbin/openrc-run
+
+description="X server"
+
+depend() {
+    need localmount
+}
+
+start() {
+    export DISPLAY=:0
+    export HOME=/root
+
+    X :0 -nolisten tcp -ac vt1 & 
+
+    # Wait for X to be ready
+    until xdpyinfo >/dev/null 2>&1; do
+        sleep 0.2
+    done
+
+    ebegin "Configure X session"
+    /usr/lib/safecor/bin/configure-x.sh
+    eend $?
+}
