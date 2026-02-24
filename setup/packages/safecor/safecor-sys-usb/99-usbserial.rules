@@ -1,1 +1,2 @@
 KERNEL=="ttyUSB[0-9]*", GROUP="dialout", MODE="0660"
+ACTION=="add", KERNEL=="ttyUSB0", RUN+="/usr/lib/safecor/bin/create-tty-tunnel.sh"

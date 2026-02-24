@@ -29,8 +29,9 @@ rc-update add udev boot
 rc-service udev start
 udevadm control --reload-rules
 
-rc-update add tty-tunnel
-rc-service tty-tunnel start
+# Replaced with udev rule
+#rc-update add tty-tunnel
+#rc-service tty-tunnel start
 
 /usr/lib/safecor/bin/hardening.sh
 
