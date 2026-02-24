@@ -15,12 +15,15 @@ start() {
 
     X :0 -nolisten tcp -ac & 
 
-    # Wait for X to be ready
-    until [ -e /tmp/.X11-unix/X0 ]; do
-        sleep 0.2
-    done
+    # Wait for X to be ready (5 seconds)
+    timeout 5 sh -c "until [ -e /tmp/.X11-unix/X0 ]; do sleep 0.2; done"
+    
+    [ -e /tmp/.X11-unix/X0 ] || {
+        echo "Timeout waiting for X server..."
+        exit 1
+    }
 
     ebegin "Configure X session"
-    /usr/lib/safecor/bin/configure-x.sh
+    /usr/lib/safecor/bin/configure-x.sh    
     eend $?
 }
