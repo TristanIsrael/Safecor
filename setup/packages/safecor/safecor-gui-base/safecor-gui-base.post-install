@@ -7,7 +7,18 @@ rc-service udev start
 rc-service udev-postmount start
 rc-service udev-trigger start
 
-/usr/lib/safecor/bin/init-gui-base.sh
-/usr/lib/safecor/bin/hardening.sh
+echo "**** Setting timezone ****"
+ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
+echo "Europe/Paris" > /etc/timezone
+
+echo "**** Resizing shared memory"
+mount -o remount,size=16M /dev/shm
+mount -o remount,size=16M /run
+mount -o remount,size=100% /
+
+echo "Initialization finished"
+
+startx
+#/usr/lib/safecor/bin/hardening.sh
 
 exit 0

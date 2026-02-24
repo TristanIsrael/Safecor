@@ -1,11 +1,7 @@
 #!/bin/sh
 
-echo "**** Setting timezone ****"
-ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
-echo "Europe/Paris" > /etc/timezone
-
-echo "**** Starting X server ****"
-X &
+xset -dpms
+xset s off
 
 echo "**** Set mouse pointer ****"
 xsetroot -display :0 -cursor_name left_ptr
@@ -49,10 +45,3 @@ esac
 # Apply the resolution
 resolution="$new_width"x"$new_height"
 xrandr --output Virtual-1 --display :0 --mode $resolution
-
-echo "**** Resizing shared memory"
-mount -o remount,size=16M /dev/shm
-mount -o remount,size=16M /run
-mount -o remount,size=100% /
-
-echo "Initialization finished"

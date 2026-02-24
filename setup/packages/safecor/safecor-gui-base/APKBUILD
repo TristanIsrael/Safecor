@@ -7,7 +7,7 @@ pkgdesc="Safecor - Base package for GUI domain"
 url="https://www.alefbet.net/"
 arch="noarch"
 license="MIT"
-depends="xorg-server xrandr xe-guest-utilities mesa-dri-gallium xf86-input-libinput xsetroot eudev"
+depends="xorg-server xrandr xe-guest-utilities mesa-dri-gallium xf86-input-libinput xsetroot eudev xinit"
 makedepends=""
 builddir="$srcdir/$pkgname-$pkgver"
 checkdepends=""
@@ -25,8 +25,8 @@ xorg.conf.d/30-touchscreen.conf
 xorg.conf.d/40-monitor.conf
 xorg.conf.d/50-card.conf
 xorg.conf.d/60-screen.conf
-init-gui-base.sh
 hardening.sh
+xinitrc
 "
 
 package() {
@@ -41,7 +41,9 @@ package() {
     install -D -m644 "$srcdir"/50-card.conf "$pkgdir"/etc/X11/xorg.conf.d/50-card.conf
     install -D -m644 "$srcdir"/60-screen.conf "$pkgdir"/etc/X11/xorg.conf.d/60-screen.conf
 
-    install -D -m755 "$srcdir"/init-gui-base.sh "$pkgdir"/usr/lib/safecor/bin/init-gui-base.sh
+    #install -D -m755 "$srcdir"/init-gui-base.sh "$pkgdir"/usr/lib/safecor/bin/init-gui-base.sh
 
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
+
+    install -D -m750 "$srcdir"/xinitrc "$pkgdir"/etc/X11/xinit/xinitrc
 }
