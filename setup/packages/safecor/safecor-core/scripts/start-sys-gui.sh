@@ -52,6 +52,6 @@ DISPLAY=:0 xdotool windowsize `DISPLAY=:0 xdotool search --name "sys-gui"` $new_
 
 # We show the splash back
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Show the splash screen"
-DISPLAY=:0 feh --fullscreen --zoom fill /boot/splash_fullscreen.png &
+DISPLAY=:0 feh --fullscreen /boot/splash_fullscreen_rotated.png &
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"

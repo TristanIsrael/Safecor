@@ -7,46 +7,42 @@ LOGO_FILEPATH = "/boot/splash.png"
 TOPOLOGY_FILE="/etc/safecor/topology.json"
 
 
-def create_splash() -> Image:
+def create_splash(rotate:bool, filepath_pattern:str) -> Image:
     screen = System.get_framebuffer_dimension()
-    width = screen[0] if screen is not None else 800
-    height = screen[1] if screen is not None else 600
-    rotation = System.get_screen_rotation_from_topology()
-
-    # Calculate new dimensions with the rotation
-    #if rotation == 90 or rotation == 270:
-    #    _width = width
-    #    _height = height
-    #    width = _height
-    #    height = _width
-
-    SysLogger("Create splash").info(f"Create splash of size {width}x{height}")
-
-    #bgcolor = topology.color_as_rgba("splash_bgcolor")
+    screen_width = screen[0] if screen is not None else 800
+    screen_height = screen[1] if screen is not None else 600
+    screen_rotation = System.get_screen_rotation_from_topology()
     bgcolor = System.get_splash_bgcolor_from_topology()
-    splash = Image.new("RGB", (width, height), bgcolor)
-    image = Image.open(LOGO_FILEPATH)
+
+    SysLogger("Create splash").info(f"Create splash of size {screen_width}x{screen_height} {"rotated" if rotate else ""} width background color {bgcolor}")
+
+    splash = Image.new("RGB", (screen_width, screen_height) if not rotate else (screen_height, screen_width), bgcolor)
+    original = Image.open(LOGO_FILEPATH)
     
-    if rotation == 90 or rotation == 270:
-        rotated = image.rotate(rotation)
-        image = rotated
+    if not rotate and (screen_rotation == 90 or screen_rotation == 270):
+        rotated = original.rotate(screen_rotation)
+        original = rotated
     
-    image_width, image_height = image.size
-    x = (width - image_width) // 2
-    y = (height - image_height) // 2
+    image_width, image_height = original.size
+    if not rotate:
+        x = (screen_width - image_width) // 2
+        y = (screen_height - image_height) // 2
+    else:
+        x = (screen_height - image_width) // 2
+        y = (screen_width - image_height) // 2
 
-    splash.paste(image, (x,y), image)
+    splash.paste(original, (x,y), original)
 
-    return splash
+    save_splash(splash, filepath_pattern, rotate)
 
-def save_splash(splash:Image, dest:str):
+def save_splash(splash:Image, dest:str, rotate:bool):
     # dest does not contain the extension
 
     SysLogger("Create splash").info("Create PNG file")
-    splash.save(f"{dest}.png")
+    splash.save(f"{dest}{"_rotated" if rotate else ""}.png")
     
     SysLogger("Create splash").info("Create PPM file")
-    splash.save(f"{dest}.ppm", format="PPM")
+    splash.save(f"{dest}{"_rotated" if rotate else ""}.ppm", format="PPM")
 
 if __name__ == "__main__":
     SysLogger("Create splash").info("Starting...")
@@ -58,11 +54,9 @@ if __name__ == "__main__":
         print(f"    {os.path.basename(__file__)} destination_dir")
         sys.exit()
     
-    #_width = int(sys.argv[1])
-    #_height = int(sys.argv[2])
     _dest = sys.argv[1]
 
-    _image = create_splash()
-    save_splash(_image, _dest)
+    create_splash(False, _dest)
+    create_splash(True, _dest)
 
     SysLogger("Create splash").info("... done")

@@ -180,7 +180,7 @@ class Dom0Controller():
         time.sleep(5)
 
         # Then we shut the system down
-        cmd = ["poweroff"]
+        cmd = ["/usr/bin/doas", "/sbin/poweroff"]
         subprocess.run(cmd)
 
 
@@ -195,7 +195,7 @@ class Dom0Controller():
 
     def __handle_gui_ready(self, payload:dict):
         # When GUI is ready we hide the splash screen
-        cmd = ["killall", "feh"]
+        cmd = ["/usr/bin/doas", "/usr/bin/killall", "feh"]
         subprocess.run(cmd)
 
 
