@@ -10,7 +10,7 @@ start() {
     export DISPLAY=:0
     export HOME=/root
 
-    X :0 -nolisten tcp -ac vt1 & 
+    X :0 -nolisten tcp -ac & 
 
     # Wait for X to be ready
     until xdpyinfo >/dev/null 2>&1; do
