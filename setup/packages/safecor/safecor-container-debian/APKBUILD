@@ -84,3 +84,7 @@ package() {
     echo "Create the package"
     install -D -m644 "$srcdir/$pkgname".tar.bz2 "$pkgdir"/var/lib/lxc/"$pkgname".tar.bz2
 }
+
+sha512sums="
+ce575450cdd6a73ece1ab4a0f12690d68bc4a50301b9fb88e88893b4bbc9c5303690cc836834ea40b34686b0e935be22a524754195f288b01001bb64910fc625  config
+"
