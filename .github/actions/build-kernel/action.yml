@@ -38,7 +38,7 @@ runs:
 
         # Build the package
         cd "aports-master/main/linux-lts"
-        sudo -u builder FLAVOR=safecor-virt abuild checksum
+        #sudo -u builder FLAVOR=safecor-virt abuild checksum
         sudo -u builder FLAVOR=safecor-virt abuild -r        
 
     - name: Upload the packages
