@@ -49,6 +49,7 @@ package() {
     install -D -m750 "$srcdir"/xserver.initd "$pkgdir"/etc/init.d/xserver
     install -D -m750 "$srcdir"/configure-x.sh "$pkgdir"/usr/lib/safecor/bin/configure-x.sh
 }
+
 sha512sums="
 5fbc7a80ab746b753767092d7905b76967ed3d024ef5f82ad6159c1a56a2983b47e278bf2ff329eb4521916ec560d9734270a98c9b773dd08e9ac00bff9b5f13  10-energy-saving.conf
 44bd216ee34a3ffa83961b8fcb52fcf3012dc06419aadf38e01e4ee988e4e995f45bb4bf9346290562d83e5aafa12c192e2591d5e227ecea7ac27d4f63c23f02  10-layout.conf

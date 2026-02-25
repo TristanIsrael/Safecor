@@ -196,6 +196,7 @@ package() {
     # ISO images for Domains
     install -D -m644 "$srcdir/safecor-safecor-virt-x86_64.iso" "$pkgdir/var/lib/xen/images/safecor-safecor-virt-x86_64.iso"
 }
+
 sha512sums="
 6c490a50a2a12ed7339cca5475af57bbb0fe02438eacffbc8b0a0f84aad149f63e880c8df0f22b5919228b536ae940fba6a22bdcd6528f82e36ed0a4f6321dcc  safecor-safecor-virt-x86_64.iso
 ca6ba885c939c41c90c2c9f82cd4e61e3252f28aaf474165d1ab96ee5445e8408a6e0d3c1454e3312b528327135f2ff570e7745f88e814ac4d069f13744724f6  safecor-core-controller.initd

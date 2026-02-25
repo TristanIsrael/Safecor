@@ -41,6 +41,7 @@ package() {
 
     install -D -m755 "$srcdir"/start-gui.initd "$pkgdir"/etc/init.d/start-gui
 }
+
 sha512sums="
 84dfe5891579aec84a6bba9bf631c6cceecc8b55833bb00bb79d2e04d512f2c5bbbe3c7fe919d09603b1bd9a7c9ba6dc74e1403ec848edefc8783169feca0fa9  safecor-demo-gui.zip
 4c61bffd6da9df886b6734fe6478b9a68aec94e65f13052ce97454210cfad7b2d95e1462cdf1b8f3f1b0521d1be238cd744d6f6aa22e4d2343fe106078176ad1  start-gui.initd

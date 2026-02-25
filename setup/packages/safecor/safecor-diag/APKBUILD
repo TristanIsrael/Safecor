@@ -52,6 +52,7 @@ package() {
     install -D -m644 "$srcdir"/inittab "$pkgdir/etc/inittab"
     install -D -m644 "$srcdir"/rc.conf "$pkgdir/etc/rc.conf"
 }
+
 sha512sums="
 52171d2417ebe97338c2bee9013664ca8fb7d280cc4b9e9e574b2bdac3807d35c6a3d647aa5317ed43394ee30f91d3cc40edd5f8eef623ec8e64caa2e9e48335  safecor-diag.zip
 36695f64ddaddc71de6a07ef3c5596a05f019ead4efd015de7da8ef201d2130216c4431d4e0ba61e684760360ea7d5383b2d708c7cbf0e1d5a69658edf04a75b  start-debug.sh
