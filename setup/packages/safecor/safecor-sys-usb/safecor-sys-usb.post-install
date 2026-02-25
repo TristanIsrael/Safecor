@@ -28,6 +28,7 @@ echo Start udev service
 rc-update add udev boot
 rc-service udev start
 udevadm control --reload-rules
+udevadm trigger
 
 # Replaced with udev rule
 #rc-update add tty-tunnel

@@ -39,7 +39,7 @@ if [ "$ACTION" = "add" ] || [ "$ACTION" = "change" ] ; then
 
     if [ -e "$DEVNAME" ]; then 
         echo Create TTY tunnel for "$DEVNAME"
-        socat $DEVNAME,raw,echo=0 /dev/hvc3,raw,echo=0 &        
+        socat $DEVNAME,raw,echo=0,b115200 /dev/hvc3,raw,echo=0,b115200 &
     else
         echo "The device $DEVNAME does not exist"
         exit 1
