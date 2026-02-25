@@ -27,3 +27,8 @@ package() {
     install -D -m755 "$srcdir"/safecor-syslog.conf "$pkgdir"/etc/rsyslog.d/safecor.conf
     install -D -m755 "$srcdir"/safecor-logger-daemon.py "$pkgdir"/usr/lib/safecor/bin/safecor-logger-daemon.py
 }
+sha512sums="
+c89f1a5ffed0dba49a207e639f1505580498ac7d8c72ed2fbef7afcecd3624daf7ec9f9b99d5a6fb598108c4e2ae2fa78a37c4138a61a37240177d73b38b6728  safecor-syslog.conf
+73d5a28a72606e70d594f7d0c780c81dceed349900018098433ec5087df8d128ceade275181e8d227cb8efadad2b9fd959e50f26c8f63636511d00cb3d51336e  safecor-logger-daemon.py
+3347becc97bfe63e9a6e9052930f7bc1483160f5e644ff665ae9ddc21871164263da92a3b03d87548f3d70bdc651e4e6cf3cd8ab3ca65d1198e126e871810b51  safecor-logger-daemon.initd
+"

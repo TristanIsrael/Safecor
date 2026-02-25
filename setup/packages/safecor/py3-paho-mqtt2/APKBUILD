@@ -23,3 +23,6 @@ package() {
 	cd "$builddir"/dist
 	python3 -m pip install --root="$pkgdir" "paho_mqtt-$pkgver-py3-none-any.whl"
 }
+sha512sums="
+50e7222de62d49975e6d34136357df6e95c34034768f06e7f1d39fac280aecfb366da134f8349e7e3f358f69840ee4707ba7567955bd70bb78c737ff3959e7f3  paho-mqtt-2.1.0.tar.gz
+"

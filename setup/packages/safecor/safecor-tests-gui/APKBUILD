@@ -39,3 +39,7 @@ package() {
 
     install -D -m755 "$srcdir"/tests.initd "$pkgdir/etc/init.d/tests"
 }
+sha512sums="
+84dfe5891579aec84a6bba9bf631c6cceecc8b55833bb00bb79d2e04d512f2c5bbbe3c7fe919d09603b1bd9a7c9ba6dc74e1403ec848edefc8783169feca0fa9  safecor-tests-gui.zip
+8b0370ee5ba7d9ec66927f0e71d31ac1336ec14cb0caf67532f27df5b67ac84b4298145fed0b1e4b658312b59d2efe61743e5777af41d8912a420466debec4d5  tests.initd
+"

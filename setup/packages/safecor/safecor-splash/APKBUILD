@@ -36,3 +36,8 @@ package() {
     install -D -m755 "$srcdir"/show-splash.sh "$pkgdir"/usr/lib/safecor/bin/show-splash.sh
     install -D -m755 "$srcdir"/hide-splash.sh "$pkgdir"/usr/lib/safecor/bin/hide-splash.sh   
 }
+sha512sums="
+fdbd9347e7b04d5e60095e8985a0ae24924dc23d3617cb0ff04a356b4ef09f4a3f84b008105a4c70fc1157f88e396a81e10f3c7877bc74d5da158c287beaf389  splash_ng_nobg.png
+82bfe2b01c1ef2e75936cbcf9fea9b44c9dfbc756b4cf3680ceaee8adf049bb2fa9f7ffe0ed107e417d2a07e6d32d0716756fb6b6cf64635fef342c3a2b8478a  show-splash.sh
+1203a6251c22978dad406bf718bce798d0518a76992416a86b643f524acb234eb3c87b0fde08ac40d6bca8759566f7ba1ee25cf8269e731b96064fd5b05be12f  hide-splash.sh
+"

@@ -25,3 +25,7 @@ package() {
     install -D -m644 "$srcdir/alpine-virt-$pkgver.$pkgrel-$arch.iso" "$pkgdir/var/lib/xen/images/alpine-virt-$pkgver.$pkgrel-$arch.iso"    
 }
 
+sha512sums="
+7f06d99e9c212bad281e6dd1e628f582c446d912d4711f3d8a6cbccc18834d3d0d40dd8ca9eda82bff41bde616c8b9fcc23d47a4a56dc12863c5681d69578495  alpine-standard-3.21.3-x86_64.iso
+996229779f5d98e5518e51719be8a2f251492989b904bc1c42be7f8f8c642a05e37e8d3b2b8bb40a8c236064c5e470a0f851f095789c7f898d02475f6d91e6dc  alpine-virt-3.21.3-x86_64.iso
+"

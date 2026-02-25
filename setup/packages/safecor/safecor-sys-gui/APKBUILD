@@ -20,3 +20,6 @@ source="modules"
 package() {  
     install -D -m644 "$srcdir"/modules "$pkgdir/etc/modules"    
 }
+sha512sums="
+be6562adc40ace2422f9d4091685b2404d6b3f610df02df907cf3ab152207498fd5400e2f373f34e9a170312f18ead5439712001e309f876bb012b2d76facd15  modules
+"

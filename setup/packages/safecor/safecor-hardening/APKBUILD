@@ -22,3 +22,6 @@ hardening.sh
 package() {
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
 }
+sha512sums="
+3a1ce34ad194b044ec72a45b6e78a47507388b9370880300f41145b7fb1ef2d95bcae6498ac9093e2217dbfe76673e9faf33f3a0bf8ccd5da2a8322835d37558  hardening.sh
+"

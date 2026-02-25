@@ -21,3 +21,6 @@ package() {
     install -D -m644 "$srcdir"/topology.json "$pkgdir/etc/safecor/topology.json"
 }
 
+sha512sums="
+0d3281b8813cd54e5b70bb847df5e01cc38c87179dc9f981028df1d26bcc9a0d80583e94e2f4d5cc4e38c9be6eff132d565c7cc1be5c38b77cd9990b45a047f9  topology.json
+"
