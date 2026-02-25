@@ -33,16 +33,16 @@ ROOTDIR="/usr/lib/safecor"
 BINDIR="$ROOTDIR/bin"
 
 package() {
-    install -D -m644 "$srcdir"/modules "$pkgdir/etc/modules"
-    install -D -m644 "$srcdir"/notify-disk-added.py "$pkgdir/$BINDIR/notify-disk-added.py"
-    install -D -m644 "$srcdir"/notify-disk-removed.py "$pkgdir/$BINDIR/notify-disk-removed.py"
-    install -D -m755 "$srcdir"/mdev-usb-storage.sh "$pkgdir/$BINDIR/mdev-usb-storage.sh"
+    install -D -m644 "$srcdir"/modules "$pkgdir"/etc/modules
+    install -D -m644 "$srcdir"/notify-disk-added.py "$pkgdir"/$BINDIR/notify-disk-added.py
+    install -D -m644 "$srcdir"/notify-disk-removed.py "$pkgdir"/$BINDIR/notify-disk-removed.py
+    install -D -m755 "$srcdir"/mdev-usb-storage.sh "$pkgdir"/$BINDIR/mdev-usb-storage.sh
     install -D -m644 "$srcdir"/99-usbdisks.rules "$pkgdir"/etc/udev/rules.d/99-usbdisks.rules
     install -D -m644 "$srcdir"/99-usbserial.rules "$pkgdir"/etc/udev/rules.d/99-usbserial.rules
     install -D -m755 "$srcdir"/safecor-sys-usb-controller.initd "$pkgdir"/etc/init.d/safecor-sys-usb-controller
-    install -D -m644 "$srcdir"/safecor-sys-usb-controller.py "$pkgdir/$BINDIR/safecor-sys-usb-controller.py"
+    install -D -m644 "$srcdir"/safecor-sys-usb-controller.py "$pkgdir"/$BINDIR/safecor-sys-usb-controller.py
     #install -D -m755 "$srcdir"/tty-tunnel.initd "$pkgdir"/etc/init.d/tty-tunnel
-    install -D -m755 "$srcdir"/create-tty-tunnel.sh "$pkgdir/$BINDIR/create-tty-tunnel.sh"
+    install -D -m755 "$srcdir"/create-tty-tunnel.sh "$pkgdir"/$BINDIR/create-tty-tunnel.sh
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
-    install -D -m755 "$srcdir"/doas-svc-sys-usb-controller.conf" "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf"
+    install -D -m755 "$srcdir"/doas-svc-sys-usb-controller.conf "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf
 }
