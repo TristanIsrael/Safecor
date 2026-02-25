@@ -82,8 +82,7 @@ class Dom0Controller():
         self.__mqtt_lock.wait()
     
 
-    def __on_mqtt_connected(self):
-        Logger().debug("Starting Dom0 controller")
+    def __on_mqtt_connected(self):        
         self.mqtt_client.subscribe(f"{Topics.LIST_FILES}/request")
         self.mqtt_client.subscribe(f"{Topics.FILE_FINGERPRINT}/request")
         self.mqtt_client.subscribe(f"{Topics.SHUTDOWN}/request")
@@ -94,6 +93,8 @@ class Dom0Controller():
         self.mqtt_client.subscribe(f"{Topics.DELETE_FILE}/request")
         self.mqtt_client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/request")
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
+
+        Logger().debug("Safecor Dom0 controller is ready")
 
 
     def __on_mqtt_message(self, topic:str, payload:dict):
@@ -181,7 +182,7 @@ class Dom0Controller():
 
         # Then we shut the system down
         cmd = ["/usr/bin/doas", "/sbin/poweroff"]
-        subprocess.run(cmd)
+        subprocess.run(cmd, check=False)
 
 
     def __handle_restart_domain(self, payload:dict):
@@ -196,7 +197,7 @@ class Dom0Controller():
     def __handle_gui_ready(self, payload:dict):
         # When GUI is ready we hide the splash screen
         cmd = ["/usr/bin/doas", "/usr/bin/killall", "feh"]
-        subprocess.run(cmd)
+        subprocess.run(cmd, check=False)
 
 
     def __is_storage_request(self, payload:dict) -> bool:
@@ -207,23 +208,13 @@ class Dom0Controller():
 
 
     def __reboot_domain(self, domain_name:str):
-        if LIBVIRT_UNAVAILABLE:
-            print("Libvirt is unavailable. Cannot reboot domain")
-            return
-        
-        if LibvirtHelper.reboot_domain(domain_name):
-            Logger().info(f"Rebooting domain {domain_name}")
-            response = ResponseFactory.create_response_restart_domain(domain_name, True)
-            self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
-        else:
-            Logger().error(f"The domain {domain_name} won't reboot")
-            response = ResponseFactory.create_response_restart_domain(domain_name, False)
-            self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
-
-        #cmd = ["xl", "reboot", domain_name]
-        #res = subprocess.run(cmd)
-
-        #if res.returncode == 0:
+        # The reboot vie libvirt requires that the Domains are created
+        # by libvirt. This is a coming feature...
+        #if LIBVIRT_UNAVAILABLE:
+        #    Logger().error("Libvirt is unavailable. Cannot reboot domain")
+        #    return
+        #
+        #if LibvirtHelper.reboot_domain(domain_name):
         #    Logger().info(f"Rebooting domain {domain_name}")
         #    response = ResponseFactory.create_response_restart_domain(domain_name, True)
         #    self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
@@ -231,6 +222,18 @@ class Dom0Controller():
         #    Logger().error(f"The domain {domain_name} won't reboot")
         #    response = ResponseFactory.create_response_restart_domain(domain_name, False)
         #    self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
+
+        cmd = ["doas", "/usr/lib/safecor/bin/reboot_domain.sh", domain_name]
+        res = subprocess.run(cmd, check=False)
+
+        if res.returncode == 0:
+            Logger().info(f"Rebooting domain {domain_name}")
+            response = ResponseFactory.create_response_restart_domain(domain_name, True, "")
+            self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
+        else:
+            Logger().error(f"The domain {domain_name} won't reboot")
+            response = ResponseFactory.create_response_restart_domain(domain_name, False, f"{res.stdout}\n{res.stderr}")
+            self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
 
 
     def __handle_energy_state(self):

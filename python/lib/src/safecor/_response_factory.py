@@ -115,11 +115,11 @@ class ResponseFactory():
     
 
     @staticmethod
-    def create_response_restart_domain(domain_name:str, accepted:bool):
+    def create_response_restart_domain(domain_name:str, accepted:bool, reason:str):
         payload = {
             "domain_name": domain_name,
             "state": "accepted" if accepted else "refused",
-            "reason": ""
+            "reason": reason
         }
 
         return payload

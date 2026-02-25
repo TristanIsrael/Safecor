@@ -13,7 +13,7 @@ class LibvirtHelper():
         domains = {}
 
         conn = LibvirtHelper.__open_readonly()
-        if conn is False:
+        if conn is None:
             return domains
 
         for dom_id in conn.listDomainsID():
@@ -41,7 +41,7 @@ class LibvirtHelper():
         """ @brief Returns the number of domains """
 
         conn = LibvirtHelper.__open_readonly()
-        if conn is False:
+        if conn is None:
             return 0
 
         cnt = conn.numOfDomains()
@@ -57,7 +57,7 @@ class LibvirtHelper():
         """
         
         conn = LibvirtHelper.__open_readonly()
-        if conn is False:
+        if conn is None:
             return 0
         
         info = conn.getInfo()
@@ -92,6 +92,9 @@ class LibvirtHelper():
         result = False
         conn = LibvirtHelper.__open_readwrite()
 
+        if conn is None:
+            return False
+
         try:
             dom = conn.lookupByName(domain_name)
             dom.reboot()
@@ -114,7 +117,7 @@ class LibvirtHelper():
         except libvirt.libvirtError as e:
             print("ERROR: Could not open connection (RO) to libvirt")
             print(e)
-            return False
+            return None
 
     @staticmethod
     def __open_readwrite() -> libvirt.virConnect|bool:
@@ -129,4 +132,4 @@ class LibvirtHelper():
         except libvirt.libvirtError as e:
             print("ERROR: Could not open connection (RW) to libvirt")
             print(e)
-            return False
+            return None

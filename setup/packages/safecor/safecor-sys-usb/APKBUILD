@@ -44,5 +44,5 @@ package() {
     #install -D -m755 "$srcdir"/tty-tunnel.initd "$pkgdir"/etc/init.d/tty-tunnel
     install -D -m755 "$srcdir"/create-tty-tunnel.sh "$pkgdir/$BINDIR/create-tty-tunnel.sh"
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
-    install -D -m755 "$srcdir"/doas-svc-sys-usb-controller.conf "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf"
+    install -D -m755 "$srcdir"/doas-svc-sys-usb-controller.conf" "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf"
 }

@@ -47,6 +47,7 @@ scripts/start-sys-usb.sh
 scripts/start-business-domain.sh
 scripts/set-xenstore-permissions.sh
 scripts/integrity-setup.sh
+scripts/reboot-domain.sh
 
 conf/constants.sh
 conf/modules-safecor.conf
@@ -152,6 +153,7 @@ package() {
     install -D -m750 "$srcdir"/finish-core-init.sh "$pkgdir/$BINDIR"/finish-core-init.sh
     install -D -m750 "$srcdir"/set-xenstore-permissions.sh "$pkgdir/$BINDIR"/set-xenstore-permissions.sh
     install -D -m755 "$srcdir"/integrity-setup.sh "$pkgdir/$BINDIR"/integrity-setup.sh
+    install -D -m755 "$srcdir"/reboot-domain.sh "$pkgdir/$BINDIR"/reboot-domain.sh
 
     # Python scripts
     install -D -m640 "$srcdir"/write-screen-information-to-xenstore.py "$pkgdir/$BINDIR"/write-screen-information-to-xenstore.py
