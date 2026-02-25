@@ -450,15 +450,23 @@ class SysUsbController():
         file_mount_point = f"/media/loop/{filename}"
 
         if file_ext == ".iso":
-            cmd = f"mount -o loop -t isofs {source_mount_point}/{disk}/{source_mount_point} {file_mount_point}"
+            try:
+                if os.path.exists(file_mount_point):
+                    os.rmdir(file_mount_point)
+                os.mkdir(file_mount_point, 0o740)
+            except Exception as e:
+                Logger().error(f"An exception occured while preparing the mount point {file_mount_point}: {e}")
+
+            cmd = ["doas", "/bin/mount", "-o", "loop", "-t", "iso9660", f"{source_mount_point}/{disk}/{filepath}", f"{file_mount_point}"]
             res = subprocess.run(cmd, check=False)
 
-            if res.returncode != 0:
+            if res.returncode == 0:
                 # Mount succeeded, double check
-                if not os.path.exists(file_mount_point):
-                    Logger().error(f"The file {filepath} has not been mounted")
+                #if not os.path.exists(file_mount_point):
+                #    Logger().error(f"The file {filepath} has not been mounted")
+                #    return
                 
-                payload = NotificationFactory.create_notification_disk_state(filename, DiskState.CONNECTED)
+                payload = NotificationFactory.create_notification_disk_state(filename, DiskState.CONNECTED.value)
                 self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
         else:
             Logger().error(f"The file type {file_ext} is not handled for mounting")
@@ -475,16 +483,21 @@ class SysUsbController():
             Logger().error(f"The disk {disk} is not mounted")
             return
 
-        cmd = f"umount -f {file_mount_point}"
+        cmd = ["doas", "/bin/umount", "-f", f"{file_mount_point}"]
         res = subprocess.run(cmd, check=False)
 
-        if res.returncode != 0:
+        if res.returncode == 0:
             # Mount succeeded, double check
             if not os.path.exists(file_mount_point):
                 Logger().error(f"The disk {disk} has not been unmounted")
             
-            payload = NotificationFactory.create_notification_disk_state(disk, DiskState.DISCONNECTED)
+            payload = NotificationFactory.create_notification_disk_state(disk, DiskState.DISCONNECTED.value)
             self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
+        else:
+            try:
+                os.rmdir(file_mount_point)
+            except Exception as e:
+                Logger().error(f"Could not remove directory of mount point {file_mount_point}: {e}")
         
 
     def sanitize_filename(self, s: str) -> str:

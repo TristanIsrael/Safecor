@@ -1,7 +1,7 @@
 # Contributor:
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=safecor-hardening
-pkgver=1.0
+pkgver=1.2
 pkgrel=0
 pkgdesc="Safecor - Hardening for business Domains"
 url="https://www.alefbet.net/"

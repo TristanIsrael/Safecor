@@ -9,6 +9,9 @@ depend() {
 start() {
     ebegin "Starting X server"    
 
+    # Update devices (cf #138)
+    mdev -s
+
     # Generate X config files
     X -configure
     mv /xorg.conf.new /etc/X11/xorg.conf

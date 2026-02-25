@@ -1,7 +1,7 @@
 # Contributor:
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=safecor-sys-usb
-pkgver=1.1
+pkgver=1.2
 pkgrel=0
 pkgdesc="Safecor - USB proxy virtual machine"
 url="https://www.alefbet.net/"
@@ -24,7 +24,9 @@ mdev-usb-storage.sh
 99-usbserial.rules
 safecor-sys-usb-controller.py
 create-tty-tunnel.sh
-hardening.sh"
+hardening.sh
+doas-svc-sys-usb-controller.conf
+"
 
 CONFDIR="/etc/safecor"
 ROOTDIR="/usr/lib/safecor"
@@ -41,6 +43,6 @@ package() {
     install -D -m644 "$srcdir"/safecor-sys-usb-controller.py "$pkgdir/$BINDIR/safecor-sys-usb-controller.py"
     #install -D -m755 "$srcdir"/tty-tunnel.initd "$pkgdir"/etc/init.d/tty-tunnel
     install -D -m755 "$srcdir"/create-tty-tunnel.sh "$pkgdir/$BINDIR/create-tty-tunnel.sh"
-
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
+    install -D -m755 "$srcdir"/doas-svc-sys-usb-controller.conf "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf"
 }

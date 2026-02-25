@@ -4,6 +4,7 @@ mount -o remount,size=2M /dev/shm
 
 mkdir -p /var/log/safecor
 mkdir -p /media/loop
+chmod 770 /media/loop
 
 modprobe exfat
 modprobe vfat
@@ -17,6 +18,7 @@ adduser -H -D -s /sbin/nologin -G safecor svc-tty-tunnel
 addgroup svc-sys-usb-controller input
 addgroup svc-tty-tunnel dialout
 addgroup svc-tty-tunnel tty
+chgrp safecor /media/loop
 
 echo "**** Set permissions on Xen serial devices"
 chgrp safecor /dev/hvc*
