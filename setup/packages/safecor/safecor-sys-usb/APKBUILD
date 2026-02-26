@@ -7,7 +7,7 @@ pkgdesc="Safecor - USB proxy virtual machine"
 url="https://www.alefbet.net/"
 arch="noarch"
 license="MIT"
-depends="safecor-lib eudev socat xe-guest-utilities archivemount fuse"
+depends="safecor-lib eudev socat xe-guest-utilities archivemount fuse3 doas"
 makedepends="python3-dev py3-build py3-installer git"
 builddir="$srcdir/$pkgname-$pkgver"
 checkdepends=""
@@ -25,7 +25,6 @@ mdev-usb-storage.sh
 safecor-sys-usb-controller.py
 create-tty-tunnel.sh
 hardening.sh
-doas-svc-sys-usb-controller.conf
 "
 
 CONFDIR="/etc/safecor"
@@ -44,7 +43,7 @@ package() {
     #install -D -m755 "$srcdir"/tty-tunnel.initd "$pkgdir"/etc/init.d/tty-tunnel
     install -D -m755 "$srcdir"/create-tty-tunnel.sh "$pkgdir"/$BINDIR/create-tty-tunnel.sh
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
-    install -D -m755 "$srcdir"/doas-svc-sys-usb-controller.conf "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf
+    #install -D -m755 "$srcdir"/doas-svc-sys-usb-controller.conf "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf
 }
 
 sha512sums="
@@ -58,5 +57,4 @@ f89259df5e04a7eb9467a6cb6e7cf31f4f58a2d9da91714bf0ef86005da65d1c41a0bd2ef84dd6d2
 3a478432fe0d409adbbfb30a89ad494abacd50b2090a6bee9f195d416ca54c6bea81bcf091d0a45acf7a78d96fcf0c346a0e471fb2e7a457493004c738b58750  safecor-sys-usb-controller.py
 c52a5f597a5430b09fca13c1baf87c0ecebab610aa79b788b2d820912c8e7ece1abb63b9def7e035d396c951067efcd8f4388e3bdfa7b62dcfdea7d07c2e7160  create-tty-tunnel.sh
 9346a83d9f2072a2dd804f245e98cba444d9059e0a91ed55b9cc4c7c5eb521e0c8eea44f02894334094911344bf050ecaf32bea242aec2a417777c8abe2ece7e  hardening.sh
-5f775bf5d816d4cffe0ff51f304e3c3a5ef9a4b021d5b4dc51e832d7b58f8c5210b81e66272945620b2b11b1d969ad14e17d160f1d362ca9ff5ab7aef04963e7  doas-svc-sys-usb-controller.conf
 "

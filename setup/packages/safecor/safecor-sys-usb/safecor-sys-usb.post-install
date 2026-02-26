@@ -14,7 +14,7 @@ modprobe fuse
 
 echo "**** Creating service accounts"
 addgroup safecor
-adduser -H -D -s /sbin/nologin -G safecor svc-sys-usb-controller
+adduser -D -G safecor svc-sys-usb-controller
 adduser -H -D -s /sbin/nologin -G safecor svc-tty-tunnel
 addgroup svc-sys-usb-controller input
 addgroup svc-tty-tunnel dialout

@@ -22,6 +22,8 @@ class DiskState(Enum):
     UNKNOWN = "unknown"
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
+    MOUNTED = "mounted"
+    UNMOUNTED = "unmounted"
 
 class Constants():
     """ This class defined constants for the whole system """        
@@ -63,5 +65,5 @@ class Constants():
             ".tar", ".tar.gz", ".tar.bz2", ".tar.xz", "tar.zst", "tar.lz4", "cpio.gz", 
             ".tgz", ".xz", ".gz", ".bz2", ".lzma", ".lz", ".lz4", ".zst", ".Z", ".cpio", 
             ".a", ".ar", ".deb", ".zip", ".jar", ".war", ".ear", ".apk", ".7z", ".xar", 
-            ".pkg", ".lha", ".lzh", ".cab", ".rar", ".mtree" 
+            ".pkg", ".lha", ".lzh", ".cab", ".rar", ".mtree", ".iso"
         ]
