@@ -16,8 +16,8 @@ subpackages=""
 replaces="alpine-baselayout alpine-baselayout-data openrc"
 options="!check"  # no tests provided
 gitbranch="main"
+py_src_dir="../../../../python"
 source="
-$pkgname.zip::https://github.com/TristanIsrael/Safecor/archive/refs/heads/$gitbranch.zip
 start-debug.sh
 open-tty.sh
 motd
@@ -27,22 +27,23 @@ debug.initd
 "
 
 prepare() {
-    default_prepare
+    mkdir -p "$srcdir"
+
+    echo "Copy source files"    
+    cp -r "$py_src_dir"/diag "$srcdir"
 }
 
 build() {
-    cd "$gitrepo-$gitbranch/python/diag"
+    cd "$srcdir/diag"
     python3 -m build
 }
 
-package() {
-    echo "srcdir=$srcdir"
-    ls $srcdir
+package() {    
+    cd "$srcdir/diag/dist"
     mkdir -p "$pkgdir/usr/lib/safecor"
-    cd "$srcdir/$gitrepo-$gitbranch/python/diag/dist"    
-    tar xvzf *.tar.gz -C "$pkgdir/usr/lib/safecor"
+    tar xvzf diag-$pkgver.tar.gz -C "$pkgdir/usr/lib/safecor"
     cd "$pkgdir/usr/lib/safecor"
-    ln -s "diag-$pkgver" diag    
+    ln -s "diag-$pkgver" diag
 
     #install -D -m755 "$srcdir"/diag.initd "$pkgdir/etc/init.d/diag"
     install -D -m755 "$srcdir"/debug.initd "$pkgdir/etc/init.d/debug"
@@ -54,7 +55,6 @@ package() {
 }
 
 sha512sums="
-52171d2417ebe97338c2bee9013664ca8fb7d280cc4b9e9e574b2bdac3807d35c6a3d647aa5317ed43394ee30f91d3cc40edd5f8eef623ec8e64caa2e9e48335  safecor-diag.zip
 36695f64ddaddc71de6a07ef3c5596a05f019ead4efd015de7da8ef201d2130216c4431d4e0ba61e684760360ea7d5383b2d708c7cbf0e1d5a69658edf04a75b  start-debug.sh
 eb0faf9d9485c0a623669f1616e908c8eec68ceddf3cf5bf67dc273d7d03109efa566887f9434d3364669bc30babff1c33c275d4348d4b05a007d95b6173e1c4  open-tty.sh
 ed3018d42f8082cedaa994f5e797a3ff83daf354812aee4b7a07f27d961bb43d1b713133953bb2d639dd75c3dc9ee9cdb8cfe6c9214c81408d45136c51a05ab5  motd

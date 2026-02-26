@@ -42,4 +42,10 @@ ARCH="$2"
 
 # ---- Main logic ----
 echo "Synchronizing official repository with the directory $DIR"
-wget -4 --recursive --no-parent -nH --cut-dirs=2 -R "index.html*" -e robots=off --accept "*.apk" -P $DIR https://www.alefbet.net/github/safecor/$ARCH/
+wget -4 --recursive --no-parent -nH --cut-dirs=2 -R "index.html*" -e robots=off --accept "*.apk" --accept "APKINDEX.tar.gz" -P $DIR https://www.alefbet.net/github/safecor/$ARCH/
+
+# Recreate the symbolic link to noarch if needed
+if [ ! -e "$DIR/noarch" ]; then 
+    cd $DIR 
+    ln -s $ARCH noarch
+fi

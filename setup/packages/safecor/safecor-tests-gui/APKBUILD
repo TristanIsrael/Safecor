@@ -1,7 +1,7 @@
 # Contributor:
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=safecor-tests-gui
-pkgver=1.2
+pkgver=1.0
 pkgrel=0
 pkgdesc="Safecor - Test tool GUI"
 url="https://www.alefbet.net/"
@@ -16,31 +16,34 @@ subpackages=""
 replaces=""
 options="!check"  # no tests provided
 gitbranch="main"
+py_src_dir="../../../../python"
 source="
-$pkgname.zip::https://github.com/TristanIsrael/Safecor/archive/refs/heads/$gitbranch.zip
 tests.initd
 "
 
 prepare() {
-    default_prepare   
+    mkdir -p "$builddir"
+    mkdir -p "$srcdir"
+
+    echo "Copy source files"
+    cp -r "$py_src_dir"/tests "$srcdir"   
 }
 
 build() {
-    cd "$gitrepo-$gitbranch"/python/tests
+    cd "$srcdir/tests"
     python3 -m build
 }
 
 package() {
+    cd "$srcdir/tests/dist"
     mkdir -p "$pkgdir/usr/lib/safecor"
-    cd "$srcdir/$gitrepo-$gitbranch/python/tests/dist"    
-    tar xvzf *.tar.gz -C "$pkgdir/usr/lib/safecor"
+    tar xvzf tests-$pkgver.tar.gz -C "$pkgdir/usr/lib/safecor"
     cd "$pkgdir/usr/lib/safecor"
-    ln -s "tests-$pkgver" tests    
+    ln -s "tests-$pkgver" tests
 
     install -D -m755 "$srcdir"/tests.initd "$pkgdir/etc/init.d/tests"
 }
 
 sha512sums="
-84dfe5891579aec84a6bba9bf631c6cceecc8b55833bb00bb79d2e04d512f2c5bbbe3c7fe919d09603b1bd9a7c9ba6dc74e1403ec848edefc8783169feca0fa9  safecor-tests-gui.zip
 8b0370ee5ba7d9ec66927f0e71d31ac1336ec14cb0caf67532f27df5b67ac84b4298145fed0b1e4b658312b59d2efe61743e5777af41d8912a420466debec4d5  tests.initd
 "
