@@ -16,14 +16,13 @@ subpackages=""
 replaces=""
 options="!check"  # no tests provided
 gitbranch="main"
-py_src_dir="../../../../python"
+py_src_dir="../../../../../python"
 source="
 tests.initd
 "
 
 prepare() {
     mkdir -p "$builddir"
-    mkdir -p "$srcdir"
 
     echo "Copy source files"
     cp -r "$py_src_dir"/tests "$srcdir"   
