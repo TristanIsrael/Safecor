@@ -92,6 +92,6 @@ class InputsProxy:
                                 device.syn()
 
                     except Exception as e:
-                        SysLogger("Input proxy").error(f"Erreur in the frame: {e}")
+                        SysLogger("Input proxy").error(f"Error in the frame: {e}")
                         
             self.__is_running = False
