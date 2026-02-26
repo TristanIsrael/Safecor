@@ -30,8 +30,10 @@ prepare() {
     mkdir -p "$srcdir"
 
     echo "Copy source files"   
-    echo "$py_src_dir"
-    ls -l "$py_src_dir" 
+    echo "$pwd"
+    ls -l "$pwd"
+    echo $(realpath "../../../../")
+    ls -l $(realpath "../../../../")
     cp -r "$py_src_dir"/diag "$srcdir"
 }
 
