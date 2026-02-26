@@ -1,7 +1,7 @@
 # Contributor:
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=safecor-tests-gui
-pkgver=1.0
+pkgver=1.2
 pkgrel=0
 pkgdesc="Safecor - Test tool GUI"
 url="https://www.alefbet.net/"
@@ -15,7 +15,6 @@ install="$pkgname.post-install"
 subpackages=""
 replaces=""
 options="!check"  # no tests provided
-gitbranch="main"
 py_src_dir="../../../../../python"
 source="
 tests.initd
