@@ -41,5 +41,5 @@ package() {
 }
 
 sha512sums="
-84dfe5891579aec84a6bba9bf631c6cceecc8b55833bb00bb79d2e04d512f2c5bbbe3c7fe919d09603b1bd9a7c9ba6dc74e1403ec848edefc8783169feca0fa9  safecor-lib.zip
+ce4e4f4bdc5af420e29000efcc67a93abf1d361cba387fa817df4df8aa10e88dcf4c32a675f0990862682100ac65e94a1d74396231c93c4d3f45c40650d875fd  safecor-lib.zip
 "
