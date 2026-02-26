@@ -15,31 +15,23 @@ install=""
 subpackages=""
 replaces=""
 options="!check"  # no tests provided
-source="
-$pkgname.zip::https://github.com/TristanIsrael/Safecor/archive/refs/heads/$gitbranch.zip
-"
+source=""
 
-CONFDIR="$pkgdir/etc/safecor"
-ROOTDIR="$pkgdir/usr/lib/safecor"
-BINDIR="$ROOTDIR/bin"
+py_src_dir="../../../../python"
 
 prepare() {
-    default_prepare
-    #mkdir -p "$builddir"
-    #echo "Uncompress source files"
-    #unzip $pkgname.zip -d "$builddir"    
+    echo "Copy source files"
+
+    mkdir -p "$srcdir"
+    cp -r "$py_src_dir"/lib "$srcdir"
 }
 
 build() {
-    cd "$gitrepo-$gitbranch/python/lib"
+    cd "$srcdir/lib"
     python3 -m build
 }
 
 package() {
-    cd "src/$gitrepo-$gitbranch/python/lib/dist"
+    cd "$srcdir/lib/dist"
     python3 -m installer --destdir=$pkgdir safecor-*-py3-none-any.whl
 }
-
-sha512sums="
-ce4e4f4bdc5af420e29000efcc67a93abf1d361cba387fa817df4df8aa10e88dcf4c32a675f0990862682100ac65e94a1d74396231c93c4d3f45c40650d875fd  safecor-lib.zip
-"
