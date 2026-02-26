@@ -16,7 +16,7 @@ subpackages=""
 replaces="alpine-baselayout alpine-baselayout-data openrc"
 options="!check"  # no tests provided
 gitbranch="main"
-py_src_dir="../../../../python"
+py_src_dir="../../../../../python"
 source="
 start-debug.sh
 open-tty.sh
