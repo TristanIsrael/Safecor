@@ -475,6 +475,11 @@ class Api(metaclass=SingletonMeta):
         payload = RequestFactory.create_request_mount_file(disk, filepath)
         self.__mqtt_client.publish(f"{Topics.MOUNT_FILE}/request", payload)
     
+    def archive_extensions_handled(self):
+        """ Returns the list of file extensions handled by the mount function """
+
+        return Constants.ARCHIVE_EXTENSIONS_HANDLED
+
 
     def unmount(self, disk:str):
         """
@@ -671,7 +676,6 @@ class Api(metaclass=SingletonMeta):
         """
         payload = RequestFactory.create_request_restart_domain(domain_name)
         self.__mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/request", payload)
-
 
 
     ####

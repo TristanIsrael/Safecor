@@ -10,6 +10,7 @@ modprobe exfat
 modprobe vfat
 modprobe ntfs3
 modprobe ext4
+modprobe fuse
 
 echo "**** Creating service accounts"
 addgroup safecor

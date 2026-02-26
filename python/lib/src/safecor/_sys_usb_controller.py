@@ -435,9 +435,15 @@ class SysUsbController():
             self.__copy_files_queue.get()
 
         while not self.__read_files_queue.empty():
-            self.__read_files_queue.get()
+            self.__read_files_queue.get()    
 
     def __handle_mount_file(self, payload):
+        """ Mounts an archive file or a guest file (ISO, VMDK, etc) 
+        
+            The guests files formats are not handled yet.
+            The archives files formats list is provided by :data:`Constants.ARCHIVE_EXTENSIONS_HANDLED`.
+        """
+
         if not MqttHelper.check_payload(payload, ["disk", "filepath"]):
             Logger().error(f"The command {Topics.MOUNT_FILE} misses argument(s)", "sys-usb")
             return
@@ -445,7 +451,8 @@ class SysUsbController():
         disk = payload["disk"]
         filepath = payload["filepath"]
         filename = self.sanitize_filename(os.path.basename(filepath))
-        file_ext = os.path.splitext(filename)[1]
+        #file_ext = os.path.splitext(filename)[1]
+        file_ext = "".join(Path(filename).suffixes)
         source_mount_point = Constants.USB_MOUNT_POINT
         file_mount_point = f"/media/loop/{filename}"
 
@@ -466,8 +473,20 @@ class SysUsbController():
                 #    Logger().error(f"The file {filepath} has not been mounted")
                 #    return
                 
-                payload = NotificationFactory.create_notification_disk_state(filename, DiskState.CONNECTED.value)
+                payload = NotificationFactory.create_notification_disk_state(filepath, DiskState.CONNECTED.value)
                 self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
+            else:
+                Logger().warn(f"The file {filepath} could not be mounted ({res.stderr})")
+        elif file_ext in Constants.ARCHIVE_EXTENSIONS_HANDLED:
+            # Archivemount is user space with fuse
+            cmd = [ "archivemount", "-o", "readonly", "-o", "nobackup", "-o", "nosave", f"{source_mount_point}/{disk}/{filepath}", f"{file_mount_point}" ]
+            res = subprocess.run(cmd, check=False)
+
+            if res.returncode == 0:
+                payload = NotificationFactory.create_notification_disk_state(filepath, DiskState.CONNECTED.value)
+                self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
+            else:
+                Logger().warn(f"The file {filepath} could not be mounted ({res.stderr})")
         else:
             Logger().error(f"The file type {file_ext} is not handled for mounting")
 
@@ -511,6 +530,7 @@ class SysUsbController():
                 result.append(c)
                 
         return ''.join(result).replace(" ", "_")
+    
 
     ######## 
     ## Special functions

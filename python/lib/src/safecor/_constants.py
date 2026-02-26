@@ -58,3 +58,10 @@ class Constants():
     SAFECOR_INPUT_CONTROLLER = "safecor_input_controller"
     IO_BENCHMARK = "safecor_io_benchmark"
     SAFECOR_SYSTEM_CONTROLLER = "safecor_system_controller"
+
+    ARCHIVE_EXTENSIONS_HANDLED = [ 
+            ".tar", ".tar.gz", ".tar.bz2", ".tar.xz", "tar.zst", "tar.lz4", "cpio.gz", 
+            ".tgz", ".xz", ".gz", ".bz2", ".lzma", ".lz", ".lz4", ".zst", ".Z", ".cpio", 
+            ".a", ".ar", ".deb", ".zip", ".jar", ".war", ".ear", ".apk", ".7z", ".xar", 
+            ".pkg", ".lha", ".lzh", ".cab", ".rar", ".mtree" 
+        ]

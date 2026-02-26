@@ -7,3 +7,4 @@ ntfs3
 usbcore
 usb-storage
 ehci_hcd
+fuse
