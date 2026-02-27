@@ -5,7 +5,6 @@ from pathlib import Path
 import os
 import hashlib
 import subprocess
-import shutil
 
 
 class FileHelper():
@@ -23,6 +22,8 @@ class FileHelper():
 
             The list of disks is obtained from the directories contained in :attr:`Constants.USB_MOUNT_POINT`,
             by checking whether they are mount points.
+
+            This function does not return the list of files mounted.
         """
 
         disks = []
@@ -44,26 +45,31 @@ class FileHelper():
         The path used is built by concatenating the :attr:`Constants.USB_MOUNT_POINT` constant
         with the name passed as an argument.
 
+        The list can be queried for external storages and files mounted.
+
         For each file or folder, a dictionary is created:
             { "type": "folder", "path": "/", "name": "dossier 1" },
             { "type": "file", "path": "/dossier 1", "name": "fichier 1", "size": 333344 },
             { "type": "file", "path": "/dossier 1/dossier 2", "name": "fichier 4", "size": 12 }
         """
 
-        chemin:str = ""
+        files_path = ""
         if disk == Constants.STR_REPOSITORY:
-            chemin = Constants.DOM0_REPOSITORY_PATH
+            files_path = Constants.DOM0_REPOSITORY_PATH
         else:
-            chemin_montage = Constants.USB_MOUNT_POINT
-            if chemin_montage is None:
+            #mount_point = Constants.USB_MOUNT_POINT
+            mount_point = FileHelper.get_mount_point(disk)
+            if mount_point is None:
                 print("No mount point defined. Aborting.")
                 return []
             
-            chemin = f"{chemin_montage}/{disk}"
+            files_path = mount_point
 
-        print(f"Getting files list for mount point {chemin}")
+        #print(f"Getting files list for mount point {files_path}")
+        
         fichiers = []
-        FileHelper.get_folder_contents(chemin, fichiers, len(chemin), recursive, from_dir)
+        FileHelper.get_folder_contents(files_path, fichiers, len(files_path), recursive, from_dir)
+
         return fichiers
        
     @staticmethod
@@ -173,12 +179,9 @@ class FileHelper():
         """
         
         cmd = ['cp', f"{source_disk}{filepath}", f"{destination_disk}{filepath}"]
-        #cmd = ['rsync', '-a', f"{source_location}{filepath}", f"{destination_folder}{filepath}"]
-        #print(f"Run command {cmd}")
         
         try:
             subprocess.run(cmd, check= True, shell= False)
-            #shutil.copy2(f"{source_location}{filepath}", f"{destination_folder}{filepath}")
         except subprocess.CalledProcessError as e:
             Logger().debug(f"The file {filepath} could not be copied to {destination_disk}. Error: {e}")
             return ""
@@ -240,3 +243,23 @@ class FileHelper():
         except Exception:
             return False
         
+    @staticmethod
+    def get_mount_point(disk:str) -> str|None:
+        """ Returns the real mount point in the system 
+        
+        An external storage is mounted under /media/usb and a file is mounted in /media/loop. this function
+        helps finding the correct mount point for a disk.
+
+        :param disk: The name of the mount point
+        """
+
+        with open("/proc/mounts", "r", encoding="utf-8") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                mount_point = parts[1]
+                if disk in mount_point:
+                    return mount_point
+
+        return None

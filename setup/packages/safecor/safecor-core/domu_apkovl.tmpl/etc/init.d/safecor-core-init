@@ -9,9 +9,22 @@ depend() {
 start() {
     ebegin "Finalizing Safecor initialization"
 
+    # Remount special devices
     mount -o remount,size=5% /dev/shm
     mount -o remount,size=1M /run
     mount -o remount,size=95% /
+
+    # Create safecor group
+    addgroup -g 1000 safecor
+
+    # Set permissions for shares
+    mkdir -p /mnt/storage
+    mkdir -p /mnt/packages
+    mkdir -p /mnt/system
+    chown root:safecor /mnt/storage
+    chmod 770 /mnt/storage
+    chmod 700 /mnt/packages
+    chmod 700 /mnt/system
 
     apk update
     apk upgrade

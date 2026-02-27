@@ -43,7 +43,7 @@ package() {
     #install -D -m755 "$srcdir"/tty-tunnel.initd "$pkgdir"/etc/init.d/tty-tunnel
     install -D -m755 "$srcdir"/create-tty-tunnel.sh "$pkgdir"/$BINDIR/create-tty-tunnel.sh
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
-    #install -D -m755 "$srcdir"/doas-svc-sys-usb-controller.conf "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf
+    #install -D -m755 "$srcdir"/doas-mount.conf "$pkgdir"/etc/doas.d/mount.conf
 }
 
 sha512sums="
@@ -51,7 +51,7 @@ bd54ae363f2ba5210e8cafa50433bbc50fd8a9e93c55d17d89af736629c5277ba58141ae18934144
 e13789dab5abc3aa7bd0d30e7787240c2cd524548957dc33baa900f4b82854ce2f54a45dd78f3fa6b7fdf2c57273ca7f9ead5779ba2ca189435bfdb237ea62ef  safecor-sys-usb-controller.initd
 fcebcba38da11331a6b7bb92109ce9bab01823d179e28643a6404c669ad094e03976f4205ca5f6a4fd8e6251c2697e05a43d6b6b56e5b1b404977994227d8893  notify-disk-added.py
 c08281397384c54bdc4332c0c932e3b233347207835d4290feff7e352855a34a4a04f170afb32a3020135569e8391e0a2a6dcfe6a4d96ffbe38462dca7ce042c  notify-disk-removed.py
-f89259df5e04a7eb9467a6cb6e7cf31f4f58a2d9da91714bf0ef86005da65d1c41a0bd2ef84dd6d2d09050ed2cb8b65ff997ab041055fbeaebba7896759d0177  mdev-usb-storage.sh
+0683dcc95870016a9748b88cc1f272781a408426a76c802b9e772d4edbceb5b09543b8beba0941864eec08adff978ffe67cb8a33380654aae1157e5809762c86  mdev-usb-storage.sh
 7c289dd710cc747f9291efcc8ecc1e113bfca2a1f8330225feb4e8c94e5b64f5b52a9416cf40535586fa8c7da7a1169862fa5681089eb93941537de128b80999  99-usbdisks.rules
 7e4be5a9701da489f40edff1bb312216ac7b8b22549febf40d28c5a64230f297b2b970ab971244035d92a6f4d3409d205f4bb67de4c9960e7b17779f948f4950  99-usbserial.rules
 3a478432fe0d409adbbfb30a89ad494abacd50b2090a6bee9f195d416ca54c6bea81bcf091d0a45acf7a78d96fcf0c346a0e471fb2e7a457493004c738b58750  safecor-sys-usb-controller.py

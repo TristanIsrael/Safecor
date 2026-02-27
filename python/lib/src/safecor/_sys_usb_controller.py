@@ -129,8 +129,8 @@ class SysUsbController():
             self.__handle_copy_file(topic, payload)
         elif topic == Topics.READ_FILE:
             self.__handle_read_file(topic, payload)
-        elif topic == Topics.DELETE_FILE:
-            self.__handle_remove_file(topic, payload)
+        #elif topic == Topics.DELETE_FILE:
+        #    self.__handle_remove_file(topic, payload)
         elif topic == Topics.BENCHMARK:
             self.__handle_benchmark(topic, payload)
         elif topic == Topics.FILE_FINGERPRINT:
@@ -200,17 +200,19 @@ class SysUsbController():
         filepath = payload.get("filepath", "")
         repository_path:str = Constants.DOMU_REPOSITORY_PATH
     
-        source_location = f"{Constants.USB_MOUNT_POINT}/{source_disk}"
-        source_fingerprint = FileHelper.calculate_fingerprint(f"{source_location}/{filepath}")
+        #source_location = f"{Constants.USB_MOUNT_POINT}/{source_disk}"
+        mount_point = FileHelper.get_mount_point(source_disk)
+        #source_location = f"{Constants.USB_MOUNT_POINT}/{source_disk}"
+        source_fingerprint = FileHelper.calculate_fingerprint(f"{mount_point}/{filepath}")
 
         dest_parent_path = Path(f"{repository_path}/{filepath}").parent
         if not dest_parent_path.exists():
-            print(f"Création du répertoire {dest_parent_path} dans le dépôt")
+            #print(f"Create directory {dest_parent_path} in {mount_point}")
             os.makedirs(dest_parent_path.as_posix(), exist_ok= True)
 
         self.__read_files_queue.put(
             {
-                "source_location": source_location, 
+                "source_location": mount_point, 
                 "source_disk": source_disk, 
                 "filepath": filepath, 
                 "repository_path": repository_path, 
@@ -219,9 +221,10 @@ class SysUsbController():
         )
             #self.task_runner.run_task(self.__do_read_file, args=(source_location, source_disk, filepath, repository_path, source_fingerprint,))    
 
-    def __handle_remove_file(self, topic:str, payload: dict):
+    #def __handle_remove_file(self, topic:str, payload: dict):
         #Logger().error("The command remove file is not implemented")
-        pass
+        # Not implemented on sys-usb
+    #    pass
 
 
     def __handle_copy_file(self, topic:str, payload:dict):
@@ -342,7 +345,7 @@ class SysUsbController():
     
     def __handle_delete_file(self, payload):
         if not MqttHelper.check_payload(payload, ["disk", "filepath"]):
-            Logger().error(f"The command {Topics.DELETE_FILE} misses argument(s)", "Dom0")
+            Logger().error(f"The command {Topics.DELETE_FILE} misses argument(s)", "sys-usb")
             return
 
         disk = payload["disk"]
@@ -352,8 +355,9 @@ class SysUsbController():
             return
 
         filepath = payload["filepath"]
-        mount_point = Constants.USB_MOUNT_POINT
-        storage_filepath = f"{mount_point}/{disk}/{filepath}"
+        #mount_point = Constants.USB_MOUNT_POINT
+        mount_point = FileHelper.get_mount_point(disk)
+        storage_filepath = f"{mount_point}/{filepath}"
 
         if not FileHelper().remove_file(storage_filepath):
             Logger().error(f"Removal of file {filepath} from the disk {disk} failed")
@@ -463,13 +467,16 @@ class SysUsbController():
             except Exception as e:
                 Logger().error(f"An exception occured while preparing the mount point {file_mount_point}: {e}")
 
-            # Archivemount is user space with fuse
-            cmd = [ 
+            # The mount from python can not be done unless we are root... strange...
+            cmd = [                 
+                #"doas", 
                 #"/usr/bin/archivemount",
                 "/usr/bin/fuse-archive",
                 "-o", "nospecials", 
                 "-o", "noxattrs",
                 "-o", "ro,nodev,nosuid,noexec",
+                "-o", "uid=1000,gid=1000,umask=007",
+                "-o", "allow_other",
                 f"{source_mount_point}/{disk}{filepath}",
                 f"{file_mount_point}"
             ]
@@ -481,7 +488,8 @@ class SysUsbController():
             else:
                 Logger().warn(f"The file {filepath} could not be mounted (exitcode={res.returncode}")
         else:
-            Logger().error(f"The file type {file_ext} is not handled for mounting")
+            Logger().error(f"The file type {file_ext} is not handled for mounting")    
+
 
     def __handle_unmount(self, payload):
         if not MqttHelper.check_payload(payload, ["disk"]):
@@ -489,23 +497,26 @@ class SysUsbController():
             return
 
         disk = payload["disk"]
-        file_mount_point = f"/media/loop/{disk}"
+        #file_mount_point =  f"/media/loop/{disk}"
+        file_mount_point = FileHelper.get_mount_point(disk)
 
-        if not os.path.ismount(file_mount_point):
+        if not file_mount_point:
             Logger().error(f"The disk {disk} is not mounted")
             return
-
+                
         cmd = [ "fusermount3", "-u", f"{file_mount_point}"]
+        #cmd = [ "doas", "/bin/umount", f"{file_mount_point}" ]
         res = subprocess.run(cmd, check=False)
 
         if res.returncode == 0:
             # Mount succeeded, double check
             if not os.path.exists(file_mount_point):
                 Logger().error(f"The disk {disk} has not been unmounted")
+                return
             
             payload = NotificationFactory.create_notification_disk_state(disk, DiskState.UNMOUNTED.value)
             self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
-        else:
+
             try:
                 os.rmdir(file_mount_point)
             except Exception as e:

@@ -21,5 +21,6 @@
             "packageManager": "ms-python.python:pip"
         }
     ],
-    "editor.defaultFormatter": "ms-python.black-formatter"
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "python.REPL.enableREPLSmartSend": false
 }
