@@ -223,7 +223,7 @@ class Dom0Controller():
         #    response = ResponseFactory.create_response_restart_domain(domain_name, False)
         #    self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
 
-        cmd = ["doas", "/usr/lib/safecor/bin/reboot_domain.sh", domain_name]
+        cmd = ["doas", "/usr/lib/safecor/bin/reboot-domain.sh", domain_name]
         res = subprocess.run(cmd, check=False)
 
         if res.returncode == 0:

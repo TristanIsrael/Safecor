@@ -28,7 +28,7 @@ class SysUsbController():
     __messages_queue = Queue()
     __read_files_queue = Queue()
     __copy_files_queue = Queue()
-    __high_priority_messages = [ Topics.LIST_DISKS, Topics.LIST_FILES, Topics.DISCOVER_COMPONENTS, Topics.PING, Topics.SYS_USB_CLEAR_QUEUES ]
+    __high_priority_messages = [ Topics.LIST_DISKS, Topics.LIST_FILES, Topics.DISCOVER_COMPONENTS, Topics.PING, Topics.SYS_USB_CLEAR_QUEUES, Topics.MOUNT_FILE ]
 
     def __init__(self, mqtt_client:MqttClient):
         self.mqtt_client = mqtt_client
@@ -451,45 +451,35 @@ class SysUsbController():
         disk = payload["disk"]
         filepath = payload["filepath"]
         filename = self.sanitize_filename(os.path.basename(filepath))
-        #file_ext = os.path.splitext(filename)[1]
         file_ext = "".join(Path(filename).suffixes)
         source_mount_point = Constants.USB_MOUNT_POINT
         file_mount_point = f"/media/loop/{filename}"
-
-        #if file_ext == ".iso":
-        #    try:
-        #        if os.path.exists(file_mount_point):
-        #            os.rmdir(file_mount_point)
-        #        os.mkdir(file_mount_point, 0o740)
-        #    except Exception as e:
-        #        Logger().error(f"An exception occured while preparing the mount point {file_mount_point}: {e}")
-        #
-        #    cmd = ["doas", "/bin/mount", "-o", "loop", "-t", "iso9660", f"{source_mount_point}/{disk}/{filepath}", f"{file_mount_point}"]
-        #    res = subprocess.run(cmd, check=False)
-        #
-        #    if res.returncode == 0:                
-        #        payload = NotificationFactory.create_notification_disk_state(filepath, DiskState.MOUNTED.value)
-        #        self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
-        #    else:
-        #        Logger().warn(f"The file {filepath} could not be mounted ({res.stderr})")
-        #el
+        
         if file_ext in Constants.ARCHIVE_EXTENSIONS_HANDLED:
             try:
                 if os.path.exists(file_mount_point):
                     os.rmdir(file_mount_point)
-                os.mkdir(file_mount_point, 0o760)
+                os.mkdir(file_mount_point, mode=0o770)
             except Exception as e:
                 Logger().error(f"An exception occured while preparing the mount point {file_mount_point}: {e}")
 
             # Archivemount is user space with fuse
-            cmd = [ "archivemount", "-o", "readonly", "-o", "nobackup", "-o", "nosave", f"{source_mount_point}/{disk}/{filepath}", f"{file_mount_point}" ]
+            cmd = [ 
+                #"/usr/bin/archivemount",
+                "/usr/bin/fuse-archive",
+                "-o", "nospecials", 
+                "-o", "noxattrs",
+                "-o", "ro,nodev,nosuid,noexec",
+                f"{source_mount_point}/{disk}{filepath}",
+                f"{file_mount_point}"
+            ]
             res = subprocess.run(cmd, check=False)
 
             if res.returncode == 0:
                 payload = NotificationFactory.create_notification_disk_state(filepath, DiskState.MOUNTED.value)
                 self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
             else:
-                Logger().warn(f"The file {filepath} could not be mounted ({res.stderr})")
+                Logger().warn(f"The file {filepath} could not be mounted (exitcode={res.returncode}")
         else:
             Logger().error(f"The file type {file_ext} is not handled for mounting")
 
@@ -501,12 +491,11 @@ class SysUsbController():
         disk = payload["disk"]
         file_mount_point = f"/media/loop/{disk}"
 
-        if not os.path.exists(file_mount_point):
+        if not os.path.ismount(file_mount_point):
             Logger().error(f"The disk {disk} is not mounted")
             return
 
-        #cmd = ["doas", "/bin/umount", "-f", f"{file_mount_point}"]
-        cmd = ["fusermount3", "-u", f"{file_mount_point}"]
+        cmd = [ "fusermount3", "-u", f"{file_mount_point}"]
         res = subprocess.run(cmd, check=False)
 
         if res.returncode == 0:
