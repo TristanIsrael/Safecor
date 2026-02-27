@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pkg-py3-paho-mqtt2: ${{ steps.detect.outputs.py3-paho-mqtt2 }}
-      pkg-fuse-archive: ${{ steps.detect.outputs.py3-fuse-archive }}
+      pkg-fuse-archive: ${{ steps.detect.outputs.fuse-archive }}
       pkg-safecor-alpine-iso: ${{ steps.detect.outputs.safecor-alpine-iso }}
       pkg-safecor-container-debian: ${{ steps.detect.outputs.safecor-container-debian }}
       pkg-safecor-core: ${{ steps.detect.outputs.safecor-core }}
@@ -184,7 +184,7 @@ jobs:
     needs: detect-changes
     outputs:
       check-py3-paho-mqtt2: ${{ steps.check-py3-paho-mqtt2.outputs.do_build }}
-      check-fuse-archive: ${{ steps.check-fuse-archives.outputs.do_build }}
+      check-fuse-archive: ${{ steps.check-fuse-archive.outputs.do_build }}
       check-safecor-lib: ${{ steps.check-safecor-lib.outputs.do_build }}
       check-safecor-alpine-virt-kernel: ${{ steps.check-safecor-alpine-virt-kernel.outputs.do_build }}
       check-safecor-alpine-virt-iso: ${{ steps.check-safecor-alpine-virt-iso.outputs.do_build }}
