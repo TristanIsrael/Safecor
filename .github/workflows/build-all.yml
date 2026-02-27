@@ -23,6 +23,11 @@ on:
         required: false
         type: 'boolean'
         default: 'false'
+      force-fuse-archive:
+        description: "Build fuse-archive"
+        required: false
+        type: 'boolean'
+        default: 'false'
       force-safecor-alpine-iso:
         description: "Build alpine-iso"
         required: false
@@ -121,6 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pkg-py3-paho-mqtt2: ${{ steps.detect.outputs.py3-paho-mqtt2 }}
+      pkg-fuse-archive: ${{ steps.detect.outputs.py3-fuse-archive }}
       pkg-safecor-alpine-iso: ${{ steps.detect.outputs.safecor-alpine-iso }}
       pkg-safecor-container-debian: ${{ steps.detect.outputs.safecor-container-debian }}
       pkg-safecor-core: ${{ steps.detect.outputs.safecor-core }}
@@ -145,6 +151,7 @@ jobs:
           echo "Detecting changes..."
           declare -A paths=(
             [py3-paho-mqtt2]="setup/packages/safecor/py3-paho-mqtt2/"
+            [fuse-archive]="setup/packages/safecor/fuse-archive/"
             [safecor-alpine-iso]="setup/packages/safecor/safecor-alpine-iso/"
             [safecor-alpine-virt-kernel]="setup/packages/safecor/safecor-alpine-virt/"
             [safecor-container-debian]="setup/packages/safecor/py3-paho-mqtt2/"
@@ -177,6 +184,7 @@ jobs:
     needs: detect-changes
     outputs:
       check-py3-paho-mqtt2: ${{ steps.check-py3-paho-mqtt2.outputs.do_build }}
+      check-fuse-archive: ${{ steps.check-fuse-archives.outputs.do_build }}
       check-safecor-lib: ${{ steps.check-safecor-lib.outputs.do_build }}
       check-safecor-alpine-virt-kernel: ${{ steps.check-safecor-alpine-virt-kernel.outputs.do_build }}
       check-safecor-alpine-virt-iso: ${{ steps.check-safecor-alpine-virt-iso.outputs.do_build }}
@@ -204,7 +212,21 @@ jobs:
           FORCE_APPS: ${{ github.event.inputs.force-apps }}
           FORCE_LIBS: ${{ github.event.inputs.force-libs }}
         run: |          
-          if [[ $PKG_CHANGED == 'true' || $FORCE == 'true' || $FORCE_ALL == 'true' || $FORCE_APPS == 'true' || $FORCE_LIBS == 'true' ]]; then 
+          if [[ $PKG_CHANGED == 'true' || $FORCE == 'true' || $FORCE_ALL == 'true'$FORCE_LIBS == 'true' ]]; then 
+            echo "do_build=true" >> $GITHUB_OUTPUT
+          else 
+            echo "do_build=false" >> $GITHUB_OUTPUT
+          fi
+      - id: check-fuse-archive
+        name: check-fuse-archive
+        env:
+          PKG_CHANGED: ${{ needs.detect-changes.outputs.pkg-fuse-archive }}
+          FORCE: ${{ github.event.inputs.force-fuse-archive }}
+          FORCE_ALL: ${{ github.event.inputs.force-all }}
+          FORCE_APPS: ${{ github.event.inputs.force-apps }}
+          FORCE_LIBS: ${{ github.event.inputs.force-libs }}
+        run: |          
+          if [[ $PKG_CHANGED == 'true' || $FORCE == 'true' || $FORCE_ALL == 'true' || $FORCE_LIBS == 'true' ]]; then 
             echo "do_build=true" >> $GITHUB_OUTPUT
           else 
             echo "do_build=false" >> $GITHUB_OUTPUT
@@ -454,6 +476,36 @@ jobs:
         with:
           working-dir: setup/packages/safecor/py3-paho-mqtt2
           artifact-name: py3-paho-mqtt2
+
+      - name: Publish package
+        uses: ./.github/actions/publish
+        with:
+          privkey: ${{ secrets.DEPLOY_KEY }}
+          filepath: /home/builder/packages/safecor/x86_64/
+
+  build-fuse-archive:
+    needs: [ prepare ]
+    if: |
+      needs.prepare.outputs.check-fuse-archive == 'true'
+    runs-on: ubuntu-latest
+ 
+    container:
+      image: alpine:3.21
+ 
+    steps:      
+      - name: Checkout sources
+        uses: actions/checkout@v4
+ 
+      - name: Prepare build environment
+        uses: ./.github/actions/prepare-build-env
+        with:
+          abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+ 
+      - name: Build APK
+        uses: ./.github/actions/build-apk
+        with:
+          working-dir: setup/packages/safecor/fuse-archive
+          artifact-name: fuse-archive
 
       - name: Publish package
         uses: ./.github/actions/publish
