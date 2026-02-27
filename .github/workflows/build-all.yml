@@ -212,7 +212,7 @@ jobs:
           FORCE_APPS: ${{ github.event.inputs.force-apps }}
           FORCE_LIBS: ${{ github.event.inputs.force-libs }}
         run: |          
-          if [[ $PKG_CHANGED == 'true' || $FORCE == 'true' || $FORCE_ALL == 'true'$FORCE_LIBS == 'true' ]]; then 
+          if [[ $PKG_CHANGED == 'true' || $FORCE == 'true' || $FORCE_ALL == 'true' || $FORCE_LIBS == 'true' ]]; then 
             echo "do_build=true" >> $GITHUB_OUTPUT
           else 
             echo "do_build=false" >> $GITHUB_OUTPUT
