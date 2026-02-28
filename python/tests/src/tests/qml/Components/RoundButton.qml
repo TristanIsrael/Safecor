@@ -8,7 +8,6 @@ Item {
     property alias icon: txt.text
     property color taint: enabled ? Environment.colorButtonEnabled : Environment.colorButtonDisabled
     property int borderWidth: enabled ? 7 : 1
-    property bool highlight: true
     property bool flat: false
 
     signal clicked()
@@ -32,7 +31,7 @@ Item {
 
         MultiEffect {
             anchors.fill: parent
-            visible: !root.flat
+            visible: !root.flat 
 
             source: ShaderEffectSource {
                 width: wrapper.width
@@ -88,11 +87,13 @@ Item {
         height: wrapper.width *0.8
 
         Text {
-            id: txt
-            anchors.fill: parent
+            id: txt     
+            anchors.fill: parent       
             font.family: outlined ? "Material Icons Outlined" : "Material Icons"
             text: Constants.iconHelp
-            font.pixelSize: parent.height
+            font.pixelSize: parent.height*0.8
+            horizontalAlignment: Qt.AlignHCenter
+            verticalAlignment: Qt.AlignVCenter
             color: root.enabled ? Environment.colorButtonTextEnabled : Environment.colorButtonTextDisabled
         }
     }

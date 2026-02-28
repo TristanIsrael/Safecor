@@ -12,3 +12,4 @@ Panel 1.0 Panel.qml
 RoundButton 1.0 RoundButton.qml
 SimpleDialog 1.0 SimpleDialog.qml
 StyledText 1.0 StyledText.qml
+ShadowButton 1.0 ShadowButton.qml

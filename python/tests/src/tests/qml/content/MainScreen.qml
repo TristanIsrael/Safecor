@@ -30,6 +30,14 @@ MainScreenUi {
         }
     }
 
+    Connections {
+        target: window.btnShutdown
+
+        function onClicked() {
+            AppController.shutdown()
+        }
+    }
+
     HoverHandler {
         id: mouseHandler
         acceptedDevices: PointerDevice.Mouse
@@ -56,7 +64,6 @@ MainScreenUi {
 
     Keys.onPressed: (event) => {
         AppController.userText += event.text
-        console.debug(AppController.userText)
     }
 
     Bindings {

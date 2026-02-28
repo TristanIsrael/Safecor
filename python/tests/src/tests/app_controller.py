@@ -64,6 +64,10 @@ class AppController(QObject):
             self.__current_test.skip()
 
     @Slot()
+    def shutdown(self):
+        Api().shutdown()
+
+    @Slot()
     def mouse_moved(self):
         self.mouseMoved.emit()
 

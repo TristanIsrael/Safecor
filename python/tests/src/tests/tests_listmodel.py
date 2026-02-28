@@ -30,8 +30,8 @@ class TestsListModel(QAbstractListModel):
 
         item = self.__tests_list[index.row()]
 
-        if item.get("name") == "Get storages list":
-            print(item)
+        #if item.get("name") == "Get storages list":
+        #    print(item)
 
         if role == Roles.RoleLabel:
             return item.get("name")

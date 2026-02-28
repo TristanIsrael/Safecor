@@ -13,6 +13,7 @@ Item {
     property alias pnlMessages: pnlMessages
     property alias btnStartStop: btnStartStop
     property alias btnSkipTest: btnSkipTest
+    property alias btnShutdown: btnShutdown
 
     /* Private properties */
     /*implicitWidth: 1344
@@ -53,39 +54,44 @@ Item {
         height: parent.height * 0.06
     }
     
-    Panel {
-        id: pnlStartStop
+    ShadowButton {
+        id: btnShutdown   
 
-        x: (parent.width - width) / 2 - width/2 - 10
+        anchors {
+            right: btnStartStop.left
+            rightMargin: 20
+        }        
+        y: parent.height - (height * 1.25)
+        width: btnShutdown.width
+        height: btnShutdown.height
+        
+        icon: Constants.iconShutdown
+    }
+
+    ShadowButton {
+        id: btnStartStop
+        anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height - (height * 1.25)
         width: btnStartStop.width
         height: btnStartStop.height
-        radius: height
+        outlined: false
+        
+        icon: bindings.running ? Constants.iconPause : Constants.iconStart
+    }    
 
-        enabled: bindings.ready
+    ShadowButton {
+        id: btnSkipTest            
 
-        RoundButton {
-            id: btnStartStop
-            flat: true
-            icon: bindings.running ? Constants.iconPause : Constants.iconStart
+        anchors {
+            left: btnStartStop.right
+            leftMargin: 20
         }
-    }
-
-    Panel {
-        id: pnlSkipTest    
-
-        x: (parent.width - width) / 2 + width/2 + 10
         y: parent.height - (height * 1.25)
         width: btnSkipTest.width
         height: btnSkipTest.height
-        radius: height
         visible: bindings.running
-
-        RoundButton {
-            id: btnSkipTest
-            flat: true
-            icon: Constants.iconSkip
-        }
+        
+        icon: Constants.iconSkip
     }
 
     Item {
@@ -97,7 +103,7 @@ Item {
             top: topBar.bottom
             left: parent.left
             right: parent.right
-            bottom: pnlStartStop.top
+            bottom: btnStartStop.top
             margins: height * 0.05
         }
 

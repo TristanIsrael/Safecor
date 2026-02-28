@@ -23,7 +23,7 @@ Item {
             model: bindings.testsListModel
 
             delegate: ProgressListEntry {
-                implicitWidth: parent.width
+                implicitWidth: 600
 
                 label: model.label
                 progress: model.progress
