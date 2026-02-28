@@ -4,9 +4,33 @@ import string
 import tempfile
 import random
 import shutil
+import builtins
 from pathlib import Path
+from unittest.mock import patch, mock_open
 from safecor import Topology, Domain, DomainType, System, Constants
 
+
+# Saved because we will mock it later
+real_open = builtins.open
+real_exists = os.path.exists
+
+# Mocks functions
+def open_side_effect(*args, **kwargs):
+    path = args[0] if args else kwargs.get("file")
+
+    contents = {
+        "/sys/class/dmi/id/sys_vendor": "Durabook",
+        "/sys/class/dmi/id/product_name": "R8AA"
+    }
+
+    if path in contents:
+        return mock_open(read_data=contents[path])()
+    return real_open(*args, **kwargs)
+
+def path_exists_side_effect(path):
+    if path.startswith("/sys/class/dmi/id/"):
+        return True
+    return real_exists(path)
 
 class TestSystem(unittest.TestCase):
     files_path = Path(__file__).resolve().parent / "files"
@@ -33,7 +57,7 @@ class TestSystem(unittest.TestCase):
         self.assertNotEqual(topo, {})
  
         self.assertEqual(topo.get("product", {}).get("name", ""), "Safecor Tests")
-        self.assertEqual(topo.get("pci", {}).get("blacklist", ""), "00:0d.0")
+        self.assertEqual(topo.get("pci", {}).get("blacklist", ""), ["00:0d.0"])
         self.assertEqual(topo.get("usb", {}).get("use", 0), 1)
         self.assertEqual(topo.get("gui", {}).get("use", 0), 1)
         self.assertEqual(topo.get("gui", {}).get("memory", 0), 2000)
@@ -67,7 +91,7 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(system.get("use_gui", False), True)
         self.assertEqual(system.get("screen_rotation", 0), 90)
         self.assertEqual(system.get("gui_app_package", ""), "safecor-tests-gui")
-        self.assertEqual(system.get("memory", 0), 2000)
+        self.assertEqual(system.get("memory", 0), 2000)        
 
         domains = topo.get("domains", [])
         self.assertEqual(len(domains), 4)
@@ -76,7 +100,7 @@ class TestSystem(unittest.TestCase):
         self.assertIsNotNone(dom)
         self.assertEqual(dom["name"], "sys-usb")
         self.assertEqual(dom["type"], DomainType.CORE)
-        self.assertEqual(dom["memory"], 300)
+        self.assertEqual(dom["memory"], 350)
         self.assertEqual(dom["vcpus"], 2)
         self.assertEqual(dom["cpus"], [0, 1])
 
@@ -126,7 +150,7 @@ class TestSystem(unittest.TestCase):
         self.assertIsNotNone(dom)
         self.assertEqual(dom["name"], "sys-usb")
         self.assertEqual(dom["type"], DomainType.CORE)
-        self.assertEqual(dom["memory"], 300)
+        self.assertEqual(dom["memory"], 350)
         self.assertEqual(dom["vcpus"], 2)
         self.assertEqual(dom["cpus"], [0, 1])
 
@@ -174,6 +198,7 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(topo.gui.use, True)
         self.assertEqual(topo.gui.memory, 2000)
         self.assertEqual(topo.gui.app_package, "safecor-tests-gui")
+        self.assertEqual(topo.pci.blacklist, [ "00:0d.0" ])
 
         self.assertEqual(len(topo.domain_names()), 4)
 
@@ -181,7 +206,7 @@ class TestSystem(unittest.TestCase):
         self.assertIsNotNone(dom)
         self.assertEqual(dom.name, "sys-usb")
         self.assertEqual(dom.domain_type, DomainType.CORE)
-        self.assertEqual(dom.memory, 300)
+        self.assertEqual(dom.memory, 350)
         self.assertEqual(dom.vcpus, 2)
         self.assertEqual(dom.cpu_affinity, [0, 1])
 
@@ -240,8 +265,6 @@ class TestSystem(unittest.TestCase):
         Constants.DOM0_REPOSITORY_PATH = "/tmp"
         sysinfo = System.get_system_information()
 
-        print(sysinfo)
-        
         core = sysinfo.get("core", {})
         self.assertEqual(core.get("version", ""), "1.2.1")
         self.assertEqual(core.get("debug_on", None), False)
@@ -319,3 +342,62 @@ class TestSystem(unittest.TestCase):
         
     def test_cpu_affinity_to_string(self):
         self.assertEqual(System.cpu_affinity_to_string([1,2,3,4,5]), "1-5")
+
+    def test_topology_with_configuration(self):
+        topo_filepath = self.files_path / "topology_conf.json"
+        System.reset_topology()
+        
+        # Test the default configuration
+        topo = System.get_topology(topo_filepath.as_posix())
+        self.assertNotEqual(topo, {})
+
+        self.assertEqual(topo.use_usb, True)
+        self.assertEqual(topo.use_gui, True)
+        self.assertEqual(topo.screen.rotation, 0)
+        self.assertEqual(topo.pci.blacklist, [])
+        self.assertEqual(topo.product_name, "Saphir")
+        self.assertEqual(topo.color_as_hex("splash_bgcolor"), "#3a414dff")
+        self.assertEqual(topo.gui.memory, 2000)
+        self.assertEqual(topo.gui.app_package, "saphir-gui")
+        self.assertEqual(len(topo.domains), 4)
+
+        dom = topo.domain("saphir-av-clamav")
+        self.assertEqual(dom.name, "saphir-av-clamav")
+        self.assertEqual(dom.package, "saphir-av-clamav")
+        self.assertEqual(dom.memory, 3000)
+        self.assertEqual(dom.vcpus, 11)
+
+        dom = topo.domain("saphir-av-eset")
+        self.assertEqual(dom.name, "saphir-av-eset")
+        self.assertEqual(dom.package, "saphir-av-eset")
+        self.assertEqual(dom.memory, 1500)
+        self.assertEqual(dom.vcpus, 11)
+
+        # Test the configuration with the mocked system
+        System.reset_topology()
+        with patch("builtins.open", side_effect=open_side_effect), \
+             patch("os.path.exists", side_effect=path_exists_side_effect):
+                topo = System.get_topology(topo_filepath.as_posix())
+                self.assertNotEqual(topo, {})
+
+                self.assertEqual(topo.use_usb, True)
+                self.assertEqual(topo.use_gui, True)
+                self.assertEqual(topo.screen.rotation, 90)
+                self.assertEqual(topo.pci.blacklist, [ "00:0d.0" ])
+                self.assertEqual(topo.product_name, "Saphir")
+                self.assertEqual(topo.color_as_hex("splash_bgcolor"), "#3a414dff")
+                self.assertEqual(topo.gui.memory, 2000)
+                self.assertEqual(topo.gui.app_package, "saphir-gui")
+                self.assertEqual(len(topo.domains), 4)
+
+                dom = topo.domain("saphir-av-clamav")
+                self.assertEqual(dom.name, "saphir-av-clamav")
+                self.assertEqual(dom.package, "saphir-av-clamav")
+                self.assertEqual(dom.memory, 3000)
+                self.assertEqual(dom.vcpus, 11)
+
+                dom = topo.domain("saphir-av-eset")
+                self.assertEqual(dom.name, "saphir-av-eset")
+                self.assertEqual(dom.package, "saphir-av-eset")
+                self.assertEqual(dom.memory, 1500)
+                self.assertEqual(dom.vcpus, 11)

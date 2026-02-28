@@ -7,19 +7,24 @@ from logging import NullHandler
 from ._topology import Topology, Domain, Screen, DomainType
 from ._singleton import SingletonMeta
 from ._constants import Constants, InputType, BenchmarkId, ComponentState, DiskState
+from ._syslogger import SysLogger
+
 try:
     from ._libvirt_helper import LibvirtHelper
 except ImportError as e:
     print("The class LibvirtHelper won't be available due to missing dependancy")
     print(e)
+
+from ._configuration_helper import Configuration, ConfigurationHelper
 from ._system import System, topology
+
 try:
     from ._keymap_fr import KeymapFR
 except Exception as e:
     print("The class KeymapFR won't be available due to missing dependancy")
     print(e)
+
 from ._topics import Topics
-from ._syslogger import SysLogger
 from ._mqtt_helper import MqttHelper
 from ._mqtt_client import MqttClient, ConnectionType, SerialMQTTClient
 from ._request_factory import RequestFactory
@@ -27,11 +32,13 @@ from ._logger import Logger
 from ._notification_factory import NotificationFactory
 from ._file_helper import FileHelper
 from ._response_factory import ResponseFactory
+
 try:
     from ._disk_monitor import DiskMonitor
 except ImportError as e:
     print("The class DiskMonitor won't be available due to missing dependancy")
     print(e)
+
 from ._mouse import Mouse, MouseButton, MouseWheel, MouseMove
 from ._tasks_runner import TaskRunner
 from ._inputs_daemon import InputsDaemon
@@ -43,7 +50,6 @@ from ._api import Api
 from ._mock_sys_usb_controller import MockSysUsbController
 from ._debugging import Debugging
 from ._api_helper import ApiHelper
-from ._configuration_reader import Configuration, ConfigurationReader
 
 __all__ = [
     "__version__",
@@ -52,7 +58,7 @@ __all__ = [
     "Constants", "System", "topology", "Screen", "Constants", "ComponentState",
     "KeymapFR",
     "InputType", 
-    "Configuration", "ConfigurationReader",
+    "Configuration", "ConfigurationHelper",
     "RequestFactory",
     "LibvirtHelper",
     "Logger", "SysLogger",

@@ -1,0 +1,75 @@
+{    
+    "product": {
+        "name": "Saphir",
+        "splash_bgcolor": "#3a414d"
+    },
+    "usb": {
+        "use": 1
+    },
+    "gui": {
+        "use": 1,
+        "memory": 2000,
+        "app-package": "saphir-gui"        
+    },
+    "vcpu": {
+        "groups": {
+            "sys-gui": 0.2,
+            "antivirus": 0.8
+        }
+    },
+    "network": {
+        "repository": "https://www.alefbet.net/github/saphir"
+    },
+    "business": {    
+        "domains": [
+            {
+                "name": "saphir-av-clamav",
+                "app-package": "saphir-av-clamav",
+                "memory": 3000,
+                "vcpu_group": "antivirus"
+            },
+            {
+                "name": "saphir-av-eset",
+                "app-package": "saphir-av-eset",
+                "memory": 1500,
+                "vcpu_group": "antivirus"
+            }
+        ]
+    },
+    "configurations": [
+        {
+            "name": "Durabook R8",
+            "identifier": {
+                "sys_vendor": "Durabook",
+	            "product_name": "R8AA"
+            },
+            "settings": {
+                "gui": {
+                    "screen": {
+                        "rotation": 90
+                    }
+                },
+                "pci": {
+                    "blacklist": [ "00:0d.0" ]
+                }
+            }
+        },
+        {
+            "name": "Fake configuration",
+            "identifier": {
+                "sys_vendor": "None",
+	            "product_name": "Fake"
+            },
+            "settings": {
+                "gui": {
+                    "screen": {
+                        "rotation": 270
+                    }
+                },
+                "pci": {
+                    "blacklist": [ "00:00.0" ]
+                }
+            }
+        }
+    ]
+}

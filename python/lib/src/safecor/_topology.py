@@ -2,6 +2,7 @@
 
 from typing import List
 from enum import Enum
+import copy
 
 class DomainType(Enum):
     """ This enumeration defines a Domain"s type """
@@ -35,14 +36,22 @@ class Screen:
 class Gui:
     """ This class encapsulates information about the GUI of a product """
     
-    use = False 
+    use = False
     app_package = ""
     memory = 1000
+
+class Pci:
+    """ This class encapsulates information about the PCI buses of a system """
+
+    blacklist = []
 
 class Topology:
     """ This class encapsulates and handles information about the topology of a product 
     
     The topology is usually defined in the file /etc/safecor/topology.json
+
+    The topology object corresponds to the configuration that should be applied
+    to the device. 
     """
 
     domains = List[Domain]
@@ -52,13 +61,29 @@ class Topology:
     uuid = ""
     gui: Gui
     screen: Screen
+    configurations = []
+    pci: Pci
 
-    def __init__(self):
-        self.domains = []
-        self.gui = Gui()
-        self.screen = Screen()
-        self.__colors = {}
-        self.__initialized = False
+    def __init__(self, other=None):
+        """ Create a new Topology from scratch or as a deep copy if other is not None """
+
+        if other is None:
+            self.domains = []
+            self.gui = Gui()
+            self.screen = Screen()
+            self.pci = Pci()
+            self.__colors = {}
+            self.__initialized = False
+        else:
+            self.domains = copy.deepcopy(other.domains)
+            self.product_name = copy.deepcopy(other.product_name)
+            self.use_gui = copy.deepcopy(other.use_gui)
+            self.use_usb = copy.deepcopy(other.use_usb)
+            self.uuid = copy.deepcopy(other.uuid)
+            self.gui = copy.deepcopy(other.gui)
+            self.screen = copy.deepcopy(other.screen)
+            self.configurations = copy.deepcopy(other.configurations)
+            self.pci = copy.deepcopy(other.pci)
 
     def initialized(self) -> bool:
         """ Returns whether the object is initialized """
@@ -172,3 +197,4 @@ class Topology:
                 return result[0]
         
         return None
+    

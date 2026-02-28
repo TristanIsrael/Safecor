@@ -10,7 +10,7 @@ try:
 except ImportError:
     pass
 import shutil
-from . import SingletonMeta, __version__, Constants, Topology, Domain, DomainType
+from . import SingletonMeta, __version__, Constants, Topology, DomainType, ConfigurationHelper, Domain
 try:
     from . import LibvirtHelper
 except ImportError:
@@ -172,16 +172,6 @@ class System(metaclass=SingletonMeta):
 
         return self.__cpu_count
 
-        #try:            
-        #    output = subprocess.check_output(['xl', 'info'], encoding='utf-8')
-        #    for line in output.splitlines():
-        #        if line.startswith('nr_cpus'):
-        #            self.__cpu_count = int(line.split(':')[1].strip())
-        #except Exception:
-        #    return 1        
-        #return 1 if self.__cpu_count is None else self.__cpu_count
-
-
     @staticmethod
     def debug_activated():
         """ Returns whether the debugging has been activated 
@@ -205,48 +195,68 @@ class System(metaclass=SingletonMeta):
         return platform.node()
 
     @staticmethod
+    def reset_topology():
+        """ Resets the current topology """
+
+        global topology
+        topology = Topology()
+
+    @staticmethod
     def get_topology(override_topology_file:str = "") -> Topology:
         """ Returns a ``Topology`` object initialized with the contents of the topology file 
         
             This function must be ran in the Dom0.
         """
 
+        global topology
         if not topology.initialized():
-            # Initialize the topology object
+            # Initialize the topology object with the default configuration
             # We use the abstract struct returned by get_topology_struct()
-            topo = System.get_topology_struct(override_topology_file)
-
-            # Product information
-            topology.product_name = topo.get("product", {}).get("name", "Unknown")
-            topology.add_color("splash_bgcolor", topo.get("product", {}).get("splash_bgcolor", "#000000"))
-
-            # System information
-            topology.use_usb = topo.get("system", {}).get("use_usb", False)
-            topology.use_gui = topo.get("system", {}).get("use_gui", False)
-            topology.screen.rotation = topo.get("system", {}).get("screen_rotation", 0)
-            screen = System.get_framebuffer_dimension()
-            topology.screen.width = screen[0] if screen is not None else 0
-            topology.screen.height = screen[1] if screen is not None else 0
-            topology.uuid = System().get_system_uuid()
-            topology.gui.app_package = topo.get("system", {}).get("gui_app_package", "error")
-            topology.gui.memory = topo.get("system", {}).get("gui_memory", 2000)
-            topology.gui.use = topology.use_gui
-
-            # Domains information
-            domains = topo.get("domains", {})
-            for domain_name, domain_desc in domains.items():
-                domain = Domain(domain_name, domain_desc.get("type", DomainType.UNKNOWN))
-                domain.vcpu_group = domain_desc.get("vcpu_group", "")
-                domain.memory = domain_desc.get("memory", 0)
-                domain.vcpus = domain_desc.get("vcpus", "")
-                domain.cpu_affinity = domain_desc.get("cpus", []) #System.parse_range(domain.vcpus)
-                domain.package = domain_desc.get("package", "")
-
-                topology.add_domain(domain)
+            topo_struct = System.get_topology_struct(override_topology_file)
+            topo = System.__parse_topology(topo_struct)
+            topology = ConfigurationHelper.apply_configuration(topo)
 
             topology.set_initialized(True)
 
         return topology
+
+    @staticmethod
+    def __parse_topology(topo:dict) -> Topology:
+        _topology = Topology()
+
+        # Product information
+        _topology.product_name = topo.get("product", {}).get("name", "Unknown")
+        _topology.add_color("splash_bgcolor", topo.get("product", {}).get("splash_bgcolor", "#000000"))
+
+        # System information
+        _topology.use_usb = topo.get("system", {}).get("use_usb", False)
+        _topology.use_gui = topo.get("system", {}).get("use_gui", False)
+        _topology.screen.rotation = topo.get("system", {}).get("screen_rotation", 0)
+        screen = System.get_framebuffer_dimension()
+        _topology.screen.width = screen[0] if screen is not None else 0
+        _topology.screen.height = screen[1] if screen is not None else 0
+        _topology.uuid = System().get_system_uuid()
+        _topology.gui.app_package = topo.get("system", {}).get("gui_app_package", "error")
+        _topology.gui.memory = topo.get("system", {}).get("gui_memory", 2000)
+        _topology.gui.use = _topology.use_gui
+        _topology.pci.blacklist = topo.get("system", {}).get("pci", {}).get("blacklist", [])
+
+        # Domains information
+        domains = topo.get("domains", {})
+        for domain_name, domain_desc in domains.items():
+            domain = Domain(domain_name, domain_desc.get("type", DomainType.UNKNOWN))
+            domain.vcpu_group = domain_desc.get("vcpu_group", "")
+            domain.memory = domain_desc.get("memory", 0)
+            domain.vcpus = domain_desc.get("vcpus", "")
+            domain.cpu_affinity = domain_desc.get("cpus", []) #System.parse_range(domain.vcpus)
+            domain.package = domain_desc.get("package", "")
+
+            _topology.add_domain(domain)
+
+        # Configurations
+        _topology.configurations = topo.get("configurations", [])
+
+        return _topology
 
     @staticmethod
     def parse_range(value: str) -> tuple[int, ...]:
@@ -304,17 +314,29 @@ class System(metaclass=SingletonMeta):
                 },
                 "product": {
                     "name": "Safecor"
-                }
+                },
+                "configurations": [
+                    {
+                        "name": "",
+                        ...
+                    }
+                ]
             }
 
         All the keys are guaranteed to exist with a default value if necessary.
         """
-
-        topo_struct = {}
+        
         topo_data = System.get_topology_data(override_topology_file)
         if topo_data is None:
             print("No topology data available. Aborting.")
             return {}
+        
+        topo_struct = System.__analyse_topology_struct(topo_data)
+        return topo_struct
+        
+    @staticmethod
+    def __analyse_topology_struct(topo_data:dict) -> dict:
+        topo_struct = {}
 
         usb = topo_data.get("usb", {})
         gui = topo_data.get("gui", {})
@@ -322,6 +344,9 @@ class System(metaclass=SingletonMeta):
         vcpu = topo_data.get("vcpu", {})
         business = topo_data.get("business", {})
         business_domains = business.get("domains", [])
+
+        topo_data_pci = topo_data.get("pci", {})
+        pci_blacklist = topo_data_pci.get("blacklist", [])
 
         use_usb = usb.get("use", False)
         use_gui = gui.get("use", False)
@@ -334,7 +359,10 @@ class System(metaclass=SingletonMeta):
             "use_gui": use_gui,
             "screen_rotation": screen_rotation,
             "gui_app_package": gui_app_package,
-            "memory": gui_memory
+            "memory": gui_memory,
+            "pci": {
+                "blacklist": pci_blacklist
+            }
         }
 
         vcpu_groups = vcpu.get("groups", {})
@@ -384,6 +412,21 @@ class System(metaclass=SingletonMeta):
         topo_product["splash_bgcolor"] = json_product.get("splash_bgcolor", "#1ca9f7")
         topo_struct["product"] = topo_product
 
+        # Get the configurations settings
+        data_configurations = topo_data.get("configurations", [])
+        topo_configurations = {}
+        for data_conf in data_configurations:
+            conf_name = data_conf.get("name", "noname")
+            conf_identifier = data_conf.get("identifier", {})
+            conf_settings = data_conf.get("settings", {})
+
+            topo_configurations[conf_name] = {
+                "identifier": conf_identifier,
+                "settings": conf_settings
+            }
+        
+        topo_struct["configurations"] = topo_configurations
+
         return topo_struct
 
 
@@ -394,13 +437,14 @@ class System(metaclass=SingletonMeta):
             This function must be ran in the Dom0.
         """
 
+        filepath = '/etc/safecor/topology.json' if override_topology_file == "" else override_topology_file
         try:
-            with open('/etc/safecor/topology.json' if override_topology_file == "" else override_topology_file, 'r') as f:
+            with open(filepath, 'r') as f:
                 topo = f.read()
                 f.close()
                 return topo
         except Exception as e:
-            print("An error occured while reading the file /etc/safecor/topology.json")
+            print(f"An error occured while reading the topology file at {filepath})")
             print(e)
             return ""
 
