@@ -12,6 +12,7 @@ rc-service orchestrator start
 
 echo ''
 echo ''
+echo ''
 echo '    .d8888b.            .d888                                   '
 echo '    d88P  Y88b          d88P"                                   '
 echo '    Y88b.               888                                     '
@@ -23,3 +24,5 @@ echo '     "Y8888P"  "Y888888 888    "Y8888   "Y8888P "Y88P"  888     '
 echo ''
 echo ''
 echo '                     --| INSTALLATION DONE |--'
+echo ''
+echo ''
