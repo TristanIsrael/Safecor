@@ -1,7 +1,7 @@
 import unittest
 import time
 from safecor import DiskMonitor, Topics, MqttClient
-from _test_with_api import TestWithAPI
+from ._test_with_api import TestWithAPI
 
 class FakeDevice():
     device_type = ""

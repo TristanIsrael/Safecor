@@ -136,7 +136,9 @@ class System(metaclass=SingletonMeta):
                 with open('/sys/class/dmi/id/product_uuid', 'r') as f:
                     self.__system_uuid = f.read().strip()
             except FileNotFoundError:
-                return ""  # UUID non disponible sur cette machine Linux
+                return ""  # UUID is not available on this machine
+            except PermissionError:
+                return ""  # UUID reading is not autorized
         
         elif system == 'windows':
             try:
