@@ -1,19 +1,14 @@
-from PySide6.QtCore import QTimer
 from lib import AbstractTest
 from enums import MessageLevel
 from safecor import Api, Topics, ApiHelper, DiskState
 
 class TestGetStoragesList(AbstractTest):
 
-    name = "Get storages list"
+    name = "Storage notifications"
     description = ""
     parallelizable = True
     __payload = {}
     __step = 0
-    __nb_notif_recv = 0
-    __nb_disks = 0
-    __disks_recv = []
-    __tries = 0
 
     def start(self) -> None:
         """ Called when the test is started """
@@ -21,12 +16,11 @@ class TestGetStoragesList(AbstractTest):
  
         Api().add_message_callback(self.__on_message)
         Api().add_subscription_callback(self.__on_ready)
-        Api().subscribe(Topics.DISK_STATE)
-        Api().subscribe(f"{Topics.LIST_DISKS}/response")
+        Api().subscribe(Topics.DISK_STATE)        
 
     def __on_ready(self, mid:str):
         # Ask the user to connect one storage
-        self._send_message(self.tr("Please connect a storage with multiple partitions now."), MessageLevel.User)
+        self._send_message(self.tr("Please connect a storage now."), MessageLevel.User)
         self._send_message(self.tr("Waiting for a storage..."), MessageLevel.Information)
         self._set_waiting(True)
         self.__step = 1
@@ -37,8 +31,6 @@ class TestGetStoragesList(AbstractTest):
 
     def __on_message(self, topic:str, payload:dict):
         if topic == Topics.DISK_STATE:
-            self.__payload = payload
-        elif topic == f"{Topics.LIST_DISKS}/response":
             self.__payload = payload
 
         if self.__step == 1:
@@ -54,36 +46,22 @@ class TestGetStoragesList(AbstractTest):
             self._send_message(self.tr("Error: received an empty disk name"), MessageLevel.Error)            
             self._set_finished(False)
             return
-        else:
+        else:                                
             if self.__payload.get("state", "") != "connected":
                 self._send_message(self.tr("Error: the disk state is incorrect"), MessageLevel.Error)
                 self._set_finished(False)
-                return
-
-            self.__nb_notif_recv = self.__nb_notif_recv + 1
-            disk = ApiHelper.get_disk_name(self.__payload)
-            self._send_message(self.tr(f"Received a notification for the disk {disk}"), MessageLevel.Information)
-            self.__disks_recv.append(disk)
-
-            # Use the API
-            Api().get_disks_list()
-
-            QTimer.singleShot(100, self.__final_check)
+                return 
             
-    def __final_check(self):
-        # If we have as much notifications as disks names, the test is ok
-        # Otherwise we wait a little and check it one more time
-        disks = self.__payload.get("disks", [])
-        self.__nb_disks = len(disks) if disks is not None else 0
+            # Use the API
+            disk_name = ApiHelper.get_disk_name(self.__payload)
+            disk_state = ApiHelper.get_disk_state(self.__payload)
+            disk_connected = ApiHelper.is_disk_connected(self.__payload)
 
-        if self.__nb_disks == self.__nb_notif_recv:
-            # The test is successful
-            self._send_message(self.tr("The test succeeded"), MessageLevel.Information)
-            self._set_finished(True)
-        elif self.__tries < 2:
-            # Try again later
-            QTimer.singleShot(100, self.__final_check)
-        else:
-            # The test has failed
-            self._send_message(self.tr("The test has failed"), MessageLevel.Error)
-            self._set_finished(False)
+            if disk_name == "" or disk_state != DiskState.CONNECTED or not disk_connected or self.__payload.get("disk", "") != disk_name:
+                self._send_message(self.tr("Error: the disk information return by ApiHelper is incorrect"), MessageLevel.Error)
+                self._set_finished(False)
+                return
+            
+        # The test is successful
+        self._send_message(self.tr("The test succeeded"), MessageLevel.Information)
+        self._set_finished(True)

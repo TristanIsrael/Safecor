@@ -17,6 +17,7 @@ class AppController(QObject):
     __running = False
     __tests_list = TestsHelper.get_tests_list()
     __current_test_index = 0
+    __user_text = ""    
 
     def __init__(self, parent:QObject):
         super().__init__(parent)
@@ -35,12 +36,13 @@ class AppController(QObject):
 
         Api().start(domain_identifier="tests", mqtt_client=self.__mqtt_client)
 
+
     def __on_api_ready(self):
         self.__messages_model.add_message(self.tr("Safecor API is ready"))
         Api().notify_gui_ready()
         self.__ready = True
         self.readyChanged.emit()
-        self.__messages_model.add_message(self.tr("Waiting for user action..."), MessageLevel.User)
+        self.__messages_model.add_message(self.tr("Tests app is ready. Please click the start button."), MessageLevel.User)
 
 
     @Slot()
@@ -53,6 +55,21 @@ class AppController(QObject):
             self.__run_next_test()
         else:
             self.__messages_model.add_message(self.tr("Stop the whole test plan"))
+
+    @Slot()
+    def skip_test(self):
+        self.__messages_model.add_message(self.tr("Skip the current test"))
+
+        if self.__current_test is not None:
+            self.__current_test.skip()
+
+    @Slot()
+    def mouse_moved(self):
+        self.mouseMoved.emit()
+
+    @Slot()
+    def screen_touched(self):
+        self.screenTouched.emit()
 
     def __run_next_test(self):
         if self.__current_test_index >= len(self.__tests_list):
@@ -75,19 +92,23 @@ class AppController(QObject):
         test_class:AbstractTest = test["class"]
         self.__messages_model.add_message(self.tr(f"Starting test {test_name}"))
             
-        obj = test_class(self)
-        if obj is None:
+        self.__current_test = test_class(self)
+        if self.__current_test is None:
             self.__messages_model.add_message(self.tr(f"Could not start test {test_name}: Could not instanciate"))
             QTimer.singleShot(0, self.__run_next_test)
             return
 
         # Connect slots
-        obj.progressChanged.connect(self.__on_progress_changed)
-        obj.message.connect(self.__messages_model.add_message)
-        obj.finished.connect(self.__on_test_finished)
+        self.__current_test.progressChanged.connect(self.__on_progress_changed)
+        self.__current_test.message.connect(self.__messages_model.add_message)
+        self.__current_test.finished.connect(self.__on_test_finished)
+        self.userTextChanged.connect(self.__current_test.on_user_text_changed)
+        self.__current_test.resetUserText.connect(self.__reset_user_text)
+        self.mouseMoved.connect(self.__current_test.on_mouse_moved)
+        self.screenTouched.connect(self.__current_test.on_screen_touched)
 
         # Start the test
-        obj.start()
+        self.__current_test.start()
 
     def __on_progress_changed(self):
         sender = self.sender()
@@ -115,10 +136,10 @@ class AppController(QObject):
 
             if test is None:
                 self.__messages_model.add_message(self.tr(f"Error: the finished test has no name"))
-                return            
+                return
 
-            # Set the test finished            
-            test["finished"] = True          
+            # Set the test finished
+            test["finished"] = True
             test["success"] = sender.success
             if test.get("success", False) == True:
                 self.nbTestsSucceededChanged.emit()
@@ -138,6 +159,17 @@ class AppController(QObject):
                 return test 
         
         return None
+    
+    def __get_user_text(self) -> str:
+        return self.__user_text
+    
+    def __set_user_text(self, text:str):
+        self.__user_text = text
+        self.userTextChanged.emit(self.__user_text)
+
+    def __reset_user_text(self):
+        self.__user_text = ""
+        self.userTextChanged.emit(self.__user_text)
 
     ###############
     ### Signals
@@ -148,6 +180,9 @@ class AppController(QObject):
     nbTestsSucceededChanged = Signal()
     readyChanged = Signal()
     runningChanged = Signal()
+    userTextChanged = Signal(str)
+    mouseMoved = Signal()
+    screenTouched = Signal()
 
     ###############
     ### Properties
@@ -183,3 +218,5 @@ class AppController(QObject):
     @Property(int, notify= nbTestsSucceededChanged)
     def nbTestsSucceeded(self) -> int:
         return sum(1 for d in self.__tests_list if d.get("finished", False) == True and d.get("success", False) == True)
+
+    userText = Property(str, fget= __get_user_text, fset= __set_user_text, freset= __reset_user_text, notify=userTextChanged)

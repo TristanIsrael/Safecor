@@ -13,7 +13,18 @@ from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterType, qmlRegisterSin
 from app_controller import AppController
 from safecor import Api
 
+_view = None
+
 class MyView(QQuickView):
+    def __init__(self):
+        super().__init__()
+        self.widthChanged.connect(self.__on_resize)
+        self.heightChanged.connect(self.__on_resize)
+
+    def __on_resize(self):
+        self.rootObject().setWidth(self.width())
+        self.rootObject().setHeight(self.height())
+
     def keyPressEvent(self, event: QKeyEvent):
         # print(event.modifiers(), Qt.ControlModifier, event.key())
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_C:
@@ -50,7 +61,12 @@ def main():
     view.setSource(qml_file.as_uri())
     if os.getenv("DEVMODE") is None:
         view.showFullScreen()
+        screen = app.primaryScreen().geometry()
+        view.rootObject().setWidth(screen.width())
+        view.rootObject().setHeight(screen.height())
     else:
+        view.setWidth(1200)
+        view.setHeight(800)
         view.show()
 
     return app.exec()

@@ -8,7 +8,7 @@ QtObject {
     /* Bindings */
     property bool handheld: true
     property bool ready: AppController.ready
-    property bool running: false
+    property bool running: AppController.running
     property int batteryLevel: 100
     property bool plugged: true
     property bool ambientLightSensorReady: false
@@ -19,7 +19,7 @@ QtObject {
     property int nbTestsSucceeded: AppController.nbTestsSucceeded
     property int nbCapacitiesTotal: AppController.nbCapacitiesTotal
     property int nbCapacitiesFailed: 0
-    property int nbCapacitiesSucceeded: 0
+    property int nbCapacitiesSucceeded: 0    
 
     /* Models */
     property var testsListModel: AppController.testsListModel

@@ -168,7 +168,7 @@ class SerialMQTTClient(mqtt.Client):
             return self._sock
         except Exception as e:
             SysLogger("MQTT client").warn("An error occured while opening the serial port")
-            SysLogger("MQTT client").warn(e)
+            SysLogger("MQTT client").warn(str(e))
             return None
 
 class MqttClient():

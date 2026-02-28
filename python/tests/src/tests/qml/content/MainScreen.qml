@@ -2,28 +2,61 @@ import QtQuick
 import Components
 import Safecor
 
-Item {
-    id: root
+MainScreenUi {
+    id: window
 
-    /* Internal properties */    
-    width: implicitWidth
-    height: implicitHeight
-    implicitWidth: Environment.mainWidth
-    implicitHeight: Environment.mainHeight
+    //anchors.fill: parent
+    focus: true
 
-    MainScreenUi {
-        id: window
+    property point mouse_last_position
 
-        anchors.fill: parent
-        backFilter.colorizationColor: bindings.systemStateColor
+    //anchors.fill: parent
+    backFilter.colorizationColor: bindings.systemStateColor
 
-        /* Slots */
-        Connections {
-            target: window.btnStartStop
-            function onClicked() {
-                AppController.start_stop();
-            }
+    /* Slots */
+    Connections {
+        target: window.btnStartStop
+        
+        function onClicked() {
+            AppController.start_stop()
         }
+    }
+
+    Connections {
+        target: window.btnSkipTest
+
+        function onClicked() {
+            AppController.skip_test()
+        }
+    }
+
+    HoverHandler {
+        id: mouseHandler
+        acceptedDevices: PointerDevice.Mouse
+
+        onPointChanged: function() {            
+
+            if(mouseHandler.point.position !== window.mouse_last_position)
+                window.mouse_last_position = mouseHandler.point.position
+                AppController.mouse_moved()
+        }
+    } 
+
+    HoverHandler {
+        id: touchHandler
+        acceptedDevices: PointerDevice.TouchScreen
+
+        onPointChanged: function() {            
+
+            if(mouseHandler.point.position !== window.mouse_last_position)
+                window.mouse_last_position = mouseHandler.point.position
+                AppController.screen_touched()
+        }
+    }   
+
+    Keys.onPressed: (event) => {
+        AppController.userText += event.text
+        console.debug(AppController.userText)
     }
 
     Bindings {

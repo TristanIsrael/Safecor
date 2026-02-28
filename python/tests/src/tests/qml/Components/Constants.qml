@@ -28,6 +28,7 @@ QtObject {
     readonly property string iconUnchecked: "\ue835"
     readonly property string iconCore: "\ue726"
     readonly property string iconAntivirus: "\ue9e0"
+    readonly property string iconSkip: "\ueac9"
 
     readonly property string battery_0: "\uf306"
     readonly property string battery_15: "\uf30b"

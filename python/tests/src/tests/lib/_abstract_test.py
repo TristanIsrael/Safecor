@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, Slot
 from enums import MessageLevel
 
 class Message():
@@ -29,19 +29,29 @@ class AbstractTest(QObject):
     #### Methods ####
     #################
  
-    def start(self) -> None:
+    def start(self):
         """ Called when the test is started """
+
         self._set_progress(100)
         self._send_message(self.tr("Test not implemented"), MessageLevel.Warning)
         self.finished.emit()
 
-    def stop(self) -> None:
-        """ Called when the test must be stopped """
+    def stop(self):
+        """ Called when the test must be stopped, it may be resumed later """
+
         raise NotImplementedError
+    
+    def skip(self):
+        """ Called to draw the test """
+        
+        self._set_progress(100)
+        self.success = False
+        self.finished.emit()
 
     def is_success(self) -> bool:
         """ Called to know the test result """
-        raise NotImplementedError
+
+        return self.success
 
     def _send_message(self, message:str, level:MessageLevel):
         self.messages.append(Message(message, level))
@@ -63,6 +73,21 @@ class AbstractTest(QObject):
             self.resumed.emit()
 
     #################
+    ####  Slots  ####
+    #################
+    @Slot(str)
+    def on_user_text_changed(self, text:str):
+        """ Called by AppController when the user entered a text """
+
+    @Slot()
+    def on_mouse_moved(self):
+        """ Called by AppController when the mouse has been moved """
+
+    @Slot()
+    def on_screen_touched(self):
+        """ Called by AppController when the screen has been touched """
+
+    #################
     #### Signals ####
     #################
     progressChanged = Signal()
@@ -72,3 +97,4 @@ class AbstractTest(QObject):
     waiting = Signal()
     resumed = Signal()
     message = Signal(str, MessageLevel)
+    resetUserText = Signal()

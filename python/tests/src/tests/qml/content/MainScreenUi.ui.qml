@@ -12,12 +12,13 @@ Item {
     property alias backFilter: backFilter
     property alias pnlMessages: pnlMessages
     property alias btnStartStop: btnStartStop
+    property alias btnSkipTest: btnSkipTest
 
     /* Private properties */
-    implicitWidth: 1344
+    /*implicitWidth: 1344
     implicitHeight: 768
     width: implicitWidth
-    height: implicitHeight
+    height: implicitHeight*/
 
     Item {
         id: back
@@ -51,11 +52,11 @@ Item {
 
         height: parent.height * 0.06
     }
-
+    
     Panel {
         id: pnlStartStop
 
-        x: (parent.width - width) / 2
+        x: (parent.width - width) / 2 - width/2 - 10
         y: parent.height - (height * 1.25)
         width: btnStartStop.width
         height: btnStartStop.height
@@ -67,6 +68,23 @@ Item {
             id: btnStartStop
             flat: true
             icon: bindings.running ? Constants.iconPause : Constants.iconStart
+        }
+    }
+
+    Panel {
+        id: pnlSkipTest    
+
+        x: (parent.width - width) / 2 + width/2 + 10
+        y: parent.height - (height * 1.25)
+        width: btnSkipTest.width
+        height: btnSkipTest.height
+        radius: height
+        visible: bindings.running
+
+        RoundButton {
+            id: btnSkipTest
+            flat: true
+            icon: Constants.iconSkip
         }
     }
 

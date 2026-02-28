@@ -2,7 +2,8 @@
     "python.envFile": "${workspaceFolder}/.env",
     "python.analysis.extraPaths": [        
         "${workspaceFolder}/python/lib/src",
-        "${workspaceFolder}/python/lib/src/tests" 
+        "${workspaceFolder}/python/lib/src/tests",
+        "${workspaceFolder}/python/tests/src/tests" 
     ],
     "python.testing.unittestArgs": [
         "-v", "-s", 

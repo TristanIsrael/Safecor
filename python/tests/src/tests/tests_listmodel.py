@@ -43,7 +43,10 @@ class TestsListModel(QAbstractListModel):
             else:
                 return self.__calculate_package_progress(item.get("name"))
         elif role == Roles.RoleSuccess:
-            return item.get("success")
+            if item.get("is_test"):
+                return item.get("success")
+            else:
+                return self.__calculate_package_success(item.get("name"))
         elif role == Roles.RoleIsPackage:
             return not item.get("is_test")
         
@@ -59,6 +62,18 @@ class TestsListModel(QAbstractListModel):
         progress = float(sum_) / float(cnt_)if cnt_ > 0 else 0
 
         return progress
+    
+    def __calculate_package_success(self, package_name) -> int:
+        """ Calculates the success for a package by veryfying all tests are 
+        successful
+        """
+
+        tests = [d for d in self.__tests_list if d.get("package") == package_name]
+        for test in tests:
+            if not test.get("success", False):
+                return False
+
+        return True
         
 
     def get_nb_capacities_total(self) -> int:
