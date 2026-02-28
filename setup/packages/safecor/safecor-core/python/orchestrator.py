@@ -3,10 +3,9 @@ import glob
 import subprocess
 import time
 import threading
-import json
 import evdev
 from evdev import InputDevice, ecodes, UInput, AbsInfo
-from safecor import MqttFactory, Logger, InputType, SysLogger, ConfigurationReader, System
+from safecor import MqttFactory, Logger, SysLogger, System
 from inputs_proxy import InputsProxy
 
 mqtt_lock = threading.Event()
@@ -208,32 +207,11 @@ def create_virtual_touch() -> InputDevice:
         SysLogger("Orchestrator").error(f"Error while creating the virtual touchscreen: {e}")    
 
 
-#def wait_for_file(filepath):
-#    """ Waits for a file to exist.
-#    
-#    This function is used for synchronization with the XEN Domains creation.
-#    """
-#
-#    SysLogger("Orchestrator").info(f"Wait for the file {filepath} to be available")
-#
-#    while not os.path.exists(filepath):
-#        time.sleep(0.5)
-
-
 def get_blacklisted_devices():
     """ Reads the blacklisted PCI devices from the topology file """
 
-    #with open("/etc/safecor/topology.json", 'r') as file:
-    #    data = json.load(file)
-    #
-    #    pci = data.get("pci", {})
-    #    blacklist = pci.get("blacklist", "")
-    #    return blacklist.split(",")
-    config = ConfigurationReader.get_configuration_for_system()
-
-    pci = config.get("pci", {})
-    blacklist = pci.get("blacklist", "")
-    return blacklist.split(",")
+    topology = System.get_topology()
+    return topology.pci.blacklist
 
 
 def get_pci_usb_devices():
@@ -330,22 +308,20 @@ def start_business_domains():
     #with open('/etc/safecor/topology.json', 'r') as f:
     #    data = json.loads(f.read())
     #    f.close()
-    config = ConfigurationReader.get_configuration_for_system()
-        
-    json_business = config.get("business", {})
-    json_domains = json_business.get("domains", [])
-    for domain in json_domains:
-        domain_name = domain.get("name", "")
-        if domain_name == "":
+    topology = System.get_topology()
+
+    domains = topology.business_domains()
+    for domain in domains:
+        if domain.name == "":
             continue
 
-        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain_name]
+        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain.name]
         res = subprocess.run(cmd)
 
         if res.returncode == 0:
-            SysLogger("Orchestrator").info(f"Started Domain {domain_name}")
+            SysLogger("Orchestrator").info(f"Started Domain {domain.name}")
         else:
-            SysLogger("Orchestrator").critical(f"Domain {domain_name} did not start")
+            SysLogger("Orchestrator").critical(f"Domain {domain.name} did not start")
 
 
 def on_mqtt_message(topic:str, payload:dict):

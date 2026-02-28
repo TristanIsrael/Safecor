@@ -1,5 +1,6 @@
 import subprocess
-from safecor import ConfigurationReader, SysLogger
+import sys
+from safecor import SysLogger, System
 
 def angle_to_rotate(angle):
     """ Translates a rotation angle to XOrg value """
@@ -47,35 +48,15 @@ if __name__ == "__main__":
     #    print(e)    
     #    exit(1)    
 
-    config = ConfigurationReader.get_configuration_for_system()
-
-    # Settings structure:
-    # "gui": {
-    #    "use": 1,    
-    #    "screen": {
-    #        "rotation": 0
-    json_gui = config.get("gui")
-    if json_gui is None:
+    #config = ConfigurationReader.get_configuration_for_system()   
+    topology = System.get_topology()
+    
+    if not topology.use_gui:
         SysLogger("Screen rotation").info("No GUI in topology")
-        exit(0)
-        
-    json_use = json_gui.get("use")
-    if json_use is None:
-        SysLogger("Screen rotation").info("GUI is unset in topology")
-        exit(0)
+        sys.exit(0)
 
-    json_screen = json_gui.get("screen")
-    if json_screen is None:
-        SysLogger("Screen rotation").info("No screen option in topology")
-        exit(0)
-
-    rotation = json_screen.get("rotation")
-    if rotation is None:
-        SysLogger("Screen rotation").info("No rotation in topology")
-        exit(0)
-
-    if rotation != 0:
-        rotate_screen(rotation)
+    if topology.screen.rotation != 0:
+        rotate_screen(topology.screen.rotation)
     else:
         SysLogger("Screen rotation").info("No rotation needed")
 

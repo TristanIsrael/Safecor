@@ -198,3 +198,13 @@ class Topology:
         
         return None
     
+    def business_domains(self) -> list[Domain]:
+        """ Returns only the business domains """
+
+        doms = []
+
+        for dom in self.domains:
+            if dom.domain_type == DomainType.BUSINESS:
+                doms.append(dom)
+
+        return doms

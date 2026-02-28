@@ -234,6 +234,13 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom.vcpus, 14)
         self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
 
+        bus_doms = topo.business_domains()
+        self.assertEqual(len(bus_doms), 2)
+        dom = bus_doms[0]
+        self.assertEqual(dom.name, "test-domain")
+        dom = bus_doms[1]
+        self.assertEqual(dom.name, "another-domain")
+
     def test_parse_range(self):
         self.assertEqual(System.parse_range("1-2"), (1,2))
         self.assertEqual(System.parse_range(""), ())
