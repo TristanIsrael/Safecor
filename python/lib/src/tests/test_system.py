@@ -131,6 +131,7 @@ class TestSystem(unittest.TestCase):
     def test_get_topology_struct_vcpus_groups(self):
         topo_filepath = self.files_path / "topology_2.json"
         
+        System().reset_topology()
         topo = System.get_topology_struct(topo_filepath.as_posix())
         self.assertNotEqual(topo, {})
 
@@ -184,6 +185,7 @@ class TestSystem(unittest.TestCase):
     def test_get_topology(self):
         topo_filepath = self.files_path / "topology_1.json"
         
+        System().reset_topology()
         topo = System.get_topology(topo_filepath.as_posix())
         self.assertIsNotNone(topo)
 
@@ -264,6 +266,7 @@ class TestSystem(unittest.TestCase):
             "group-1": 0.6
         }
 
+        System().reset_topology()
         self.assertEqual(System().compute_cpus_for_group("sys-gui", groups), [2,3,4,5,6,7])
         self.assertEqual(System().compute_cpus_for_group("group-1", groups), [4,5,6,7,8,9,10,11])
         self.assertEqual(System().compute_cpus_for_group("none", groups), [2,3,4,5,6,7,8,9,10,11,12,13,14,15]) 

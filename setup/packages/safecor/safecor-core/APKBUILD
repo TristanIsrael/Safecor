@@ -17,7 +17,7 @@ builddir="$srcdir/$pkgname-$pkgver"
 install="$pkgname.pre-install $pkgname.post-install $pkgname.pre-deinstall $pkgname.post-deinstall"
 checkdepends=""
 subpackages=""
-replaces="alpine-baselayout alpine-baselayout-data mosquitto grub openrc qemu-system-x86_64"
+replaces="alpine-release alpine-baselayout alpine-baselayout-data mosquitto grub openrc qemu-system-x86_64"
 options="!check"  # no tests provided
 
 source="

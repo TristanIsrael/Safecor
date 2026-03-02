@@ -517,7 +517,8 @@ class System(metaclass=SingletonMeta):
         The other CPUs are assigned to sys-gui and the other groups by trying to avoid overlapping.
 
         This function must be ran in the Dom0.
-        """        
+        """
+        
         cpu_count = System().get_platform_cpu_count()
 
         if group_name not in groups and group_name not in [ "sys-usb", "Dom0" ]:
