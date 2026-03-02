@@ -233,7 +233,7 @@ class MqttClient():
                     return
             except Exception as e:
                 SysLogger("MQTT client").warn(f"Could not connect to the MQTT broker on {mqtt_host}")
-                SysLogger("MQTT client").warn(e)
+                SysLogger("MQTT client").warn(str(e))
                 return
             
             self.mqtt_client.loop_start()

@@ -68,3 +68,12 @@ class TestTopology(unittest.TestCase):
         self.assertEqual(topo.domain("domain 1").domain_type, DomainType.BUSINESS)
         self.assertEqual(topo.domain("domain 2").domain_type, DomainType.CORE)
         self.assertIsNone(topo.domain("domain 3"))
+
+    def test_blacklist(self):
+        topo = Topology()
+
+        topo.pci.blacklist.append("00:0d.0")
+
+        self.assertTrue(topo.is_pci_bus_blacklisted("00:0d.0"))
+        self.assertFalse(topo.is_pci_bus_blacklisted("00:0d.2"))
+        self.assertFalse(topo.is_pci_bus_blacklisted("00:14.0"))

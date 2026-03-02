@@ -153,7 +153,7 @@ class FileHelper():
                 return h.hexdigest()
         except Exception as e:
             print(f"An error occured while calculating the fingerprint of the file {filepath}")
-            print(e)
+            print(str(e))
 
         return ""
         

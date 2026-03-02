@@ -21,7 +21,7 @@ RUN apk update && apk add --no-cache \
     sudo \
     shadow
 
-# Get the officiel key for Safecor repository
+# Get the official key for Safecor repository
 RUN curl -L -o /etc/apk/keys/safecor.rsa.pub https://alefbet.net/github/safecor/safecor.rsa.pub
 
 # Update repositories list

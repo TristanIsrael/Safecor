@@ -208,3 +208,12 @@ class Topology:
                 doms.append(dom)
 
         return doms
+    
+    def is_pci_bus_blacklisted(self, bus_bdf:str) -> False:
+        """ Returns true if the bus is in the blacklist """
+
+        for d in self.pci.blacklist:
+            if bus_bdf.endswith(d):
+                return True
+            
+        return False

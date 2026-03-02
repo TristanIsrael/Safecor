@@ -13,7 +13,7 @@ try:
     from ._libvirt_helper import LibvirtHelper
 except ImportError as e:
     print("The class LibvirtHelper won't be available due to missing dependancy")
-    print(e)
+    print(str(e))
 
 from ._configuration_helper import Configuration, ConfigurationHelper
 from ._system import System, topology
@@ -22,7 +22,7 @@ try:
     from ._keymap_fr import KeymapFR
 except Exception as e:
     print("The class KeymapFR won't be available due to missing dependancy")
-    print(e)
+    print(str(e))
 
 from ._topics import Topics
 from ._mqtt_helper import MqttHelper
@@ -37,7 +37,7 @@ try:
     from ._disk_monitor import DiskMonitor
 except ImportError as e:
     print("The class DiskMonitor won't be available due to missing dependancy")
-    print(e)
+    print(str(e))
 
 from ._mouse import Mouse, MouseButton, MouseWheel, MouseMove
 from ._tasks_runner import TaskRunner

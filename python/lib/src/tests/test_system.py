@@ -408,3 +408,16 @@ class TestSystem(unittest.TestCase):
                 self.assertEqual(dom.package, "saphir-av-eset")
                 self.assertEqual(dom.memory, 1500)
                 self.assertEqual(dom.vcpus, 11)
+
+
+    def test_blacklist_pci(self):
+        topo_filepath = self.files_path / "topology_conf.json"
+        System.reset_topology()
+        
+        with patch("builtins.open", side_effect=open_side_effect), \
+             patch("os.path.exists", side_effect=path_exists_side_effect):
+        
+                topo = System.get_topology(topo_filepath.as_posix())
+                self.assertNotEqual(topo, {})
+                
+                self.assertEqual(len(topo.pci.blacklist), 1)

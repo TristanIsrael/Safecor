@@ -35,7 +35,7 @@ build() {
 package() {
     cd "$srcdir/tests/dist"
     mkdir -p "$pkgdir/usr/lib/safecor"
-    tar xvzf tests-$pkgver.tar.gz -C "$pkgdir/usr/lib/safecor"
+    tar xvzf "tests-$pkgver.tar.gz" -C "$pkgdir/usr/lib/safecor"
     cd "$pkgdir/usr/lib/safecor"
     ln -s "tests-$pkgver" tests
 

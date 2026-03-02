@@ -753,7 +753,7 @@ class Api(metaclass=SingletonMeta):
                     cb(mid)
         except Exception as e:
             print(f"WARNING: an exception occured in the callback on_subscribe {cb}")
-            print(e)
+            print(str(e))
 
     def __on_log(self, level, buf):
         print(f"MQTT event: level={level}, message={buf}")

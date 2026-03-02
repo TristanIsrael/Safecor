@@ -447,7 +447,7 @@ class System(metaclass=SingletonMeta):
                 return topo
         except Exception as e:
             print(f"An error occured while reading the topology file at {filepath})")
-            print(e)
+            print(str(e))
             return ""
 
     @staticmethod
@@ -463,7 +463,7 @@ class System(metaclass=SingletonMeta):
             return data
         except Exception as e:
             print("An error occured while decoding JSON file")
-            print(e)
+            print(str(e))
             return {}
         
 

@@ -64,6 +64,7 @@ conf/color_prompt.sh
 conf/inittab
 conf/doas-svc-orchestrator.conf
 conf/doas-svc-safecor-controller.conf
+conf/issue
 
 python/rotate-screen.py
 python/create-domains.py
@@ -130,6 +131,7 @@ package() {
     install -D -m644 "$srcdir"/10-stty.sh "$pkgdir"/etc/profile.d/10-stty.sh
     install -D -m644 "$srcdir"/color_prompt.sh "$pkgdir"/etc/profile.d/color_prompt.sh
     install -D -m644 "$srcdir"/inittab "$pkgdir"/etc/inittab
+    install -D -m644 "$srcdir"/issue "$pkgdir"/etc/issue
         
     #install -D -m755 "$srcdir"/connect-to-gui.initd "$pkgdir"/etc/init.d/connect-to-gui
     #install -D -m644 "$srcdir"/sys-usb.conf "$pkgdir/$CONFDIR/xen/sys-usb.conf"

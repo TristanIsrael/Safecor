@@ -207,13 +207,6 @@ def create_virtual_touch() -> InputDevice:
         SysLogger("Orchestrator").error(f"Error while creating the virtual touchscreen: {e}")    
 
 
-def get_blacklisted_devices():
-    """ Reads the blacklisted PCI devices from the topology file """
-
-    topology = System.get_topology()
-    return topology.pci.blacklist
-
-
 def get_pci_usb_devices():
     """ Gets the list of all PCI USB devices from the system """
 
@@ -232,20 +225,10 @@ def get_pci_usb_devices():
     return devs
 
 
-def is_blacklisted(dev:str, blacklist:list):
-    """ Returns true if the device is in the blacklist """
-
-    for d in blacklist:
-        if dev.endswith(d):
-            return True
-        
-    return False
-
-
 def expose_pci_devices():
     """ Passthrough the PCI devices to the sys-usb Domain """
 
-    blacklisted_devices = get_blacklisted_devices()
+    topology = System.get_topology()
     pci_usb_devs = get_pci_usb_devices()
 
     #print(blacklisted_devices)
@@ -253,7 +236,7 @@ def expose_pci_devices():
 
     whitelist = []
     for dev in pci_usb_devs:
-        if is_blacklisted(dev, blacklisted_devices):
+        if topology.is_pci_bus_blacklisted(dev):
             SysLogger("Orchestrator").info(f"Device {dev} is ignored because it is blacklisted")
         else:            
             Logger().debug(f"Expose device {dev}")

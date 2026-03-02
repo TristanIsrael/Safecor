@@ -116,7 +116,7 @@ class LibvirtHelper():
             return conn
         except libvirt.libvirtError as e:
             print("ERROR: Could not open connection (RO) to libvirt")
-            print(e)
+            print(str(e))
             return None
 
     @staticmethod
@@ -131,5 +131,5 @@ class LibvirtHelper():
             return conn
         except libvirt.libvirtError as e:
             print("ERROR: Could not open connection (RW) to libvirt")
-            print(e)
+            print(str(e))
             return None
