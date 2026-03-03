@@ -29,6 +29,7 @@ class System(metaclass=SingletonMeta):
     """
 
     __DEFAULT_SCREEN_SIZE = "1100,750"
+    __FALLBACK_CPU_COUNT = 1
     __width = -1
     __height = -1
     __rotation = -1
@@ -115,7 +116,7 @@ class System(metaclass=SingletonMeta):
             if res.returncode == 0:
                 return res.stdout
         except Exception:
-            return self.__DEFAULT_SCREEN_SIZE    
+            return self.__DEFAULT_SCREEN_SIZE
         
         return self.__DEFAULT_SCREEN_SIZE
     
@@ -170,7 +171,11 @@ class System(metaclass=SingletonMeta):
         if self.__cpu_count is not None:
             return self.__cpu_count
         
-        self.__cpu_count = LibvirtHelper.get_cpu_count()
+        try:
+            self.__cpu_count = LibvirtHelper.get_cpu_count()
+        except Exception:
+            # If libvirt is not available we send a fallback value
+            return self.__FALLBACK_CPU_COUNT
 
         return self.__cpu_count
 
@@ -754,20 +759,20 @@ class System(metaclass=SingletonMeta):
         except FileNotFoundError:
             return (1100, 750)
 
-    @staticmethod
-    def get_screen_rotation_from_topology(override_topology_file:str = "") -> int:
-        """ Returns the screen rotation defined in the topology file
-        
-        This function is necessary for treatments that occur before libvirt and xenstore
-        are loaded. The function :func:`get_topology_struct` is one of those.
-        """
-
-        topo_data = System.get_topology_data(override_topology_file)
-        gui = topo_data.get("gui", {})
-        screen = gui.get("screen", {})
-        rotation = screen.get("rotation", 0)
-
-        return rotation
+    #@staticmethod
+    #def get_screen_rotation_from_topology(override_topology_file:str = "") -> int:
+    #    """ Returns the screen rotation defined in the topology file
+    #    
+    #    This function is necessary for treatments that occur before libvirt and xenstore
+    #    are loaded. The function :func:`get_topology_struct` is one of those.
+    #    """
+    #
+    #    topo_data = System.get_topology_data(override_topology_file)
+    #    gui = topo_data.get("gui", {})
+    #    screen = gui.get("screen", {})
+    #    rotation = screen.get("rotation", 0)
+    #
+    #    return rotation
 
     @staticmethod
     def get_splash_bgcolor_from_topology(override_topology_file:str = "") -> int:

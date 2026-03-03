@@ -9,7 +9,7 @@ import atexit
 import signal
 from datetime import datetime
 
-from . import RequestFactory, Topics, NotificationFactory, ResponseFactory
+from . import RequestFactory, Topics, NotificationFactory, ResponseFactory, DiskState
 from . import Logger, MqttClient, System, SingletonMeta, MqttFactory, Constants
 
 class Api(metaclass=SingletonMeta):
@@ -614,7 +614,7 @@ class Api(metaclass=SingletonMeta):
 
         **This notification is for internal use only**
         """
-        payload = NotificationFactory.create_notification_disk_state(disk, "connected")
+        payload = NotificationFactory.create_notification_disk_state(disk, DiskState.CONNECTED.value)
         self.__mqtt_client.publish(Topics.DISK_STATE, payload)
     
 
@@ -624,7 +624,7 @@ class Api(metaclass=SingletonMeta):
 
         **This notification is for internal use only**
         """
-        payload = NotificationFactory.create_notification_disk_state(disk, "diconnected")
+        payload = NotificationFactory.create_notification_disk_state(disk, DiskState.DISCONNECTED.value)
         self.__mqtt_client.publish(Topics.DISK_STATE, payload)
 
 

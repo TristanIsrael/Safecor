@@ -335,8 +335,8 @@ class SysUsbController():
         self.mqtt_client.publish(f"{topic}/response", response)
 
     def __handle_discover_components(self) -> None:
-        comp1 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_DISK_CONTROLLER, "sys-usb", "System disk controller", ComponentState.READY, "core")
-        comp2 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_INPUT_CONTROLLER, "sys-usb", "Input controller", ComponentState.READY, "core")
+        comp1 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_DISK_CONTROLLER, "System disk controller", "sys-usb", ComponentState.READY, "core")
+        comp2 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_INPUT_CONTROLLER, "Input controller", "sys-usb", ComponentState.READY, "core")
         #comp3 = ResponseFactory.create_entry_component_state(Constants.IO_BENCHMARK, "sys-usb", "System I/O benchmark", ComponentState.READY, "core")        
 
         payload = ResponseFactory.create_response_component_state([comp1, comp2])

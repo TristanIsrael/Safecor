@@ -1,11 +1,10 @@
 """ \author Tristan Israël """
 
 from . import Constants, Logger
-from pathlib import Path
 import os
 import hashlib
 import subprocess
-
+from pathlib import Path
 
 class FileHelper():
     """ 
@@ -263,3 +262,14 @@ class FileHelper():
                     return mount_point
 
         return None
+
+    @staticmethod
+    def is_archive_file(filename:str) -> bool:
+        """ Verifies whether the file is (supposed to be) an archive file
+
+        The verification is done with the file extension, not using the MIME type nor 
+        controlling the MAGIC od the file. 
+        """
+
+        ext = Path(filename).suffix
+        return ext in Constants.ARCHIVE_EXTENSIONS_HANDLED

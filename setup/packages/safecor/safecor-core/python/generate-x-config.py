@@ -1,5 +1,5 @@
 import json
-from safecor import SysLogger
+from safecor import SysLogger, System
 
 
 def angle_to_rotate(angle):
@@ -40,37 +40,9 @@ EndSection
 if __name__ == "__main__":
     SysLogger("Generate X config").info("Generating X server configuration files...")
 
-    # Rotation is defined in topology.json
-    TOPOLOGY_FILE="/etc/safecor/topology.json"
-
-    try:
-        with open(TOPOLOGY_FILE, 'r') as file:
-            json_data = json.load(file)
-    except Exception as e:
-        SysLogger("Generate X config").error(f"An error occured while reading the topology file {TOPOLOGY_FILE}")
-        SysLogger("Generate X config").error(e)
-        print(f"An error occured while reading the topology file {TOPOLOGY_FILE}")
-        print(e)
-        exit(1)
-
-    #"gui": {
-    #    "use": 1,    
-    #    "screen": {
-    #        "rotation": 0
-    json_gui = json_data.get("gui")
-    if json_gui is None:
-        print("No GUI in topology")
-        exit(0)
-        
-    json_use = json_gui.get("use")
-    if json_use is None:
-        print("GUI is unset in topology")
-        exit(0)
-
-    json_screen = json_gui.get("screen")
-    if json_screen is not None:        
-        rotation = json_screen.get("rotation")
+    topology = System.get_topology()
+    rotation = topology.screen.rotation
                
-        write_monitor_section(rotation)
+    write_monitor_section(rotation)
     
     SysLogger("Generate X config").info("... done")

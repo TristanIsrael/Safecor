@@ -419,8 +419,20 @@ class TestSystem(unittest.TestCase):
         
         with patch("builtins.open", side_effect=open_side_effect), \
              patch("os.path.exists", side_effect=path_exists_side_effect):
-        
                 topo = System.get_topology(topo_filepath.as_posix())
                 self.assertNotEqual(topo, {})
                 
                 self.assertEqual(len(topo.pci.blacklist), 1)
+
+
+    def test_topology_no_libvirt(self):
+        # We override the default env
+        os.environ["MOCK_LIBVIRT"] = "0"
+
+        topo_filepath = self.files_path / "topology_conf.json"
+        System.reset_topology()
+
+        with patch("builtins.open", side_effect=open_side_effect), \
+             patch("os.path.exists", side_effect=path_exists_side_effect):
+                topo = System.get_topology(topo_filepath.as_posix())
+                self.assertEqual(topo.screen.rotation, 90)                

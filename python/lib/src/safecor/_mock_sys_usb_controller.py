@@ -1,39 +1,41 @@
 """ \author Tristan Israël """
 
 import os, shutil
-from safecor import MqttClient, ConnectionType, Topics, ResponseFactory, FileHelper, MqttHelper, NotificationFactory, Constants
+from safecor import MqttClient, ConnectionType, Topics, ResponseFactory, FileHelper, MqttHelper, NotificationFactory, Constants, DiskState
 from concurrent.futures import ThreadPoolExecutor
 import base64, zlib
+import platform
+import subprocess
+from pathlib import Path
 from threading import Event
 
 class MockSysUsbController():
 
-    def __init__(self, verrou:Event):
+    def __init__(self, sync_lock:Event):
         self.__thread_pool = ThreadPoolExecutor(max_workers=1)
-        self.__verrou = verrou
+        self.__sync_lock = sync_lock
 
 
-    def start(self, source_disk_path:str, storage_path:str, destination_disk_path:str):
-        self.source_disk_path = source_disk_path
-        self.storage_path = storage_path
-        self.destination_disk_path = destination_disk_path
+    def start(self, source_disks_list:dict, storage_path:str, destination_disk_path:str):
+        self.__source_disks_list = source_disks_list
+        self.__storage_path = storage_path
+        self.__destination_disk_path = destination_disk_path
 
-        self.mqtt_client = MqttClient("sys-usb", ConnectionType.TCP_DEBUG, "localhost")
-        self.mqtt_client.on_connected = self.__on_mqtt_connected
-        self.mqtt_client.on_message = self.__on_mqtt_message
-        self.mqtt_client.start()
+        self.__mqtt_client = MqttClient("sys-usb", ConnectionType.TCP_DEBUG, "localhost")
+        self.__mqtt_client.on_connected = self.__on_mqtt_connected
+        self.__mqtt_client.on_message = self.__on_mqtt_message
+        self.__mqtt_client.start()
 
 
     def __on_mqtt_connected(self):
         self.__debug("MQTT client connected")
-        self.mqtt_client.subscribe("{}/+/+/request".format(Topics.SYSTEM))
-        self.mqtt_client.subscribe("{}/+/request".format(Topics.DISCOVER))
+        self.__mqtt_client.subscribe(f"{Topics.SYSTEM}/+/+/request")
+        self.__mqtt_client.subscribe(f"{Topics.DISCOVER}/+/request")
 
         # Finally we announce our components
         self.__handle_discover_components()
 
-        self.__verrou.set()
-        #threading.Timer(10.0, self.__connect_destination).start()
+        self.__sync_lock.set()
 
 
     def __on_mqtt_message(self, topic:str, payload:dict):
@@ -42,14 +44,12 @@ class MockSysUsbController():
         self.__thread_pool.submit(self.__message_worker, topic, payload)
 
     def __message_worker(self, topic:str, payload:dict):
-        if topic == "{}/request".format(Topics.LIST_DISKS):
-            response = ResponseFactory.create_response_disks_list(["SAPHIR"])
-            self.mqtt_client.publish("{}/response".format(Topics.LIST_DISKS), response)
-
-        elif topic == "{}/request".format(Topics.LIST_FILES):            
+        if topic == f"{Topics.LIST_DISKS}/request":
+            response = ResponseFactory.create_response_disks_list(list(self.__source_disks_list.keys()))
+            self.__mqtt_client.publish(f"{Topics.LIST_DISKS}/response", response)
+        elif topic == f"{Topics.LIST_FILES}/request".format():
             self.__handle_list_files(payload)
-
-        elif topic == "{}/request".format(Topics.READ_FILE):
+        elif topic == f"{Topics.READ_FILE}/request".format():
             if not MqttHelper.check_payload(payload, ["disk", "filepath"]):
                 self.__debug("Missing arguments")
                 return
@@ -58,17 +58,20 @@ class MockSysUsbController():
             filepath = payload.get("filepath", "")
 
             # Verify and create the local storage if needed
-            if not os.path.exists(self.storage_path):
+            if not os.path.exists(self.__storage_path):
                 # Créer le dossier
-                os.makedirs(self.storage_path)
+                os.makedirs(self.__storage_path)
 
-            root_path = self.source_disk_path
-            source_path = "{}/{}".format(root_path, filepath)
-            dest_filepath = "{}/{}".format(self.storage_path, filepath)
+            if disk not in self.__source_disks_list:
+                print(f"ERROR: The disk {disk} does not exist.")
+                return
+            
+            root_path = self.__source_disks_list[disk]
+            source_path = f"{root_path}/{filepath}"
+            dest_filepath = f"{self.__storage_path}/{filepath}"
             dest_path = os.path.dirname(dest_filepath)
 
             # Verify and create paths if needed
-            #paths = os.path.dirname(source_path)
             if not os.path.exists(dest_path):
                 os.makedirs(dest_path)
 
@@ -79,28 +82,30 @@ class MockSysUsbController():
                 dest_fingerprint = FileHelper.calculate_fingerprint(dest_filepath)
 
                 notif = NotificationFactory.create_notification_new_file(Constants.STR_REPOSITORY, filepath, source_fingerprint, dest_fingerprint)
-                self.mqtt_client.publish(Topics.NEW_FILE, notif)
+                self.__mqtt_client.publish(Topics.NEW_FILE, notif)
             except Exception as e:
-                self.__debug("Error during copy: {}".format(e))
+                self.__debug(f"Error during copy: {str(e)}")
                 notif = NotificationFactory.create_notification_error(disk, filepath, "The file could not be copied")
-                self.mqtt_client.publish(Topics.ERROR, notif)
+                self.__mqtt_client.publish(Topics.ERROR, notif)
                 return            
-            
-        elif topic == "{}/request".format(Topics.DISCOVER_COMPONENTS):
+        elif topic == f"{Topics.DISCOVER_COMPONENTS}/request":
             self.__handle_discover_components()
-
-        elif topic == "{}/request".format(Topics.COPY_FILE):
+        elif topic == f"{Topics.COPY_FILE}/request":
             if not MqttHelper.check_payload(payload, ["disk", "filepath", "destination"]):
-                self.__debug("Missing arguments for topic {}".format(topic))
+                self.__debug(f"Missing arguments for topic {topic}")
                 return 
             
             disk = payload.get("disk", "")
             filepath = payload.get("filepath", "")
 
-            source_root_path = self.source_disk_path
-            source_path = "{}/{}".format(source_root_path, filepath)
-            dest_filepath = "{}/{}".format(self.destination_disk_path, filepath)
-            dest_path = os.path.dirname(dest_filepath)            
+            if disk not in self.__source_disks_list:
+                print(f"ERROR: The disk {disk} does not exist.")
+                return
+            
+            root_path = self.__source_disks_list[disk]
+            source_path = f"{root_path}/{root_path}"
+            dest_filepath = f"{Topics.COPY_FILE}/{filepath}"
+            dest_path = os.path.dirname(dest_filepath)
 
 
             if not os.path.exists(dest_path):
@@ -110,21 +115,24 @@ class MockSysUsbController():
                 shutil.copy(source_path, dest_path)
 
                 source_fingerprint = FileHelper.calculate_fingerprint(source_path)
-                dest_fingerprint = FileHelper.calculate_fingerprint(dest_filepath)                
+                dest_fingerprint = FileHelper.calculate_fingerprint(dest_filepath)
 
                 if source_fingerprint != dest_fingerprint:
                     self.__debug("ERROR: fingerprints are not equal")
 
                 response = ResponseFactory.create_response_copy_file(filepath, disk, source_fingerprint == dest_fingerprint, source_fingerprint)
-                self.mqtt_client.publish("{}/response".format(Topics.COPY_FILE), response)
-            except: 
+                self.__mqtt_client.publish(f"{Topics.COPY_FILE}/response", response)
+            except Exception: 
                 notif = NotificationFactory.create_notification_error(disk, filepath, "The file could not be copied")
-                self.mqtt_client.publish(Topics.ERROR, notif)
+                self.__mqtt_client.publish(Topics.ERROR, notif)
 
             source_fingerprint = FileHelper.calculate_fingerprint(source_path)
-            
         elif topic == f"{Topics.CREATE_FILE}/request":
-            self.__handle_create_file(topic, payload)
+            self.__handle_create_file(payload)
+        elif topic == f"{Topics.MOUNT_FILE}/request":
+            self.__handle_mount_file(payload)
+        elif topic == f"{Topics.UNMOUNT}/request":
+            self.__handle_unmount(payload)
 
     def __handle_discover_components(self):
         response = {
@@ -135,7 +143,7 @@ class MockSysUsbController():
             ]
         }
 
-        self.mqtt_client.publish("{}/response".format(Topics.DISCOVER_COMPONENTS), response)
+        self.__mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", response)
 
     def __handle_list_files(self, payload:dict):
         if not MqttHelper.check_payload(payload, ["disk", "recursive", "from_dir"]):
@@ -146,29 +154,30 @@ class MockSysUsbController():
         recursive = payload.get("recursive", False)
         from_dir = payload.get("from_dir", "")
 
-        if disk != "SAPHIR":
-            self.__debug("The disk {} does not exist".format(disk))
+        if disk not in self.__source_disks_list:
+            print(f"ERROR: The disk {disk} does not exist.")
             return
         
-        root_path = self.source_disk_path
+        root_path = self.__source_disks_list[disk]
         if not os.path.exists(root_path):
-            self.__debug("The folder {} does not exist".format(root_path))
-            return                
+            self.__debug(f"The folder {root_path} does not exist")
+            return
 
         files = list()
         FileHelper.get_folder_contents(root_path, files, len(root_path), recursive, from_dir)
 
-        response = ResponseFactory.create_response_list_files("SAPHIR", files)
-        self.mqtt_client.publish("{}/response".format(Topics.LIST_FILES), response)
+        response = ResponseFactory.create_response_list_files(disk, files)
+        self.__mqtt_client.publish(f"{Topics.LIST_FILES}/response", response)
 
-    def __handle_create_file(self, topic:str, payload:dict):
+    def __handle_create_file(self, payload:dict):
+        if not MqttHelper.check_payload(payload, ["disk", "filepath", "data"]):
+            self.__debug("Missing argument in the create_file command")
+            return
+        
         disk = payload.get("disk", "")
         filepath = payload.get("filepath", "")
         base64_data = payload.get("data", "")
 
-        if not MqttHelper.check_payload(payload, ["disk", "filepath", "data"]):
-            self.__debug("Missing argument in the create_file command")
-            return
 
         if disk == Constants.STR_REPOSITORY:
             # Ignored
@@ -183,31 +192,90 @@ class MockSysUsbController():
         else:
             data = decoded
 
-        complete_filepath = "{}/{}".format(self.destination_disk_path, filepath)
+        complete_filepath = f"{self.__destination_disk_path}/{filepath}"
         
-        self.__debug("Create a file {} of size {} octets on disk {}".format(filepath, len(data), disk))
+        self.__debug(f"Create a file {filepath} of size {data} octets on disk {disk}")
 
         try:
             with open(complete_filepath, 'wb') as f:
                 f.write(data)
             f.close()            
         except Exception as e:
-            self.__debug("An error occured while writing to file {}".format(complete_filepath))
+            self.__debug(f"An error occured while writing to file {complete_filepath}")
             self.__debug(str(e))
             
             response = ResponseFactory.create_response_create_file(filepath, disk, "", False)
-            self.mqtt_client.publish("{}/response".format(topic), response)
+            self.__mqtt_client.publish(f"{Topics.CREATE_FILE}/response".format(), response)
             return
 
         # On envoie la notification de succès
         fingerprint = FileHelper.calculate_fingerprint(complete_filepath)
         response = ResponseFactory.create_response_create_file(complete_filepath, disk, fingerprint, True)
-        self.mqtt_client.publish(f"{Topics.CREATE_FILE}/response", response)
+        self.__mqtt_client.publish(f"{Topics.CREATE_FILE}/response", response)
 
+
+    def __handle_mount_file(self, payload:dict):
+        if not MqttHelper.check_payload(payload, ["disk", "filepath"]):
+            self.__debug("Missing argument in the mount_file command")
+            return
+
+        disk = payload["disk"]
+        filepath = payload["filepath"]
+
+        root_path = self.__source_disks_list[disk]
+        if not os.path.exists(root_path):
+            self.__debug(f"The folder {root_path} does not exist")
+            return
+        
+        archive_filepath = f"{root_path}/{filepath}"
+        archive_filename = Path(filepath).name
+        mount_point = f"/tmp/{archive_filename}"
+
+        try :
+            if not os.path.exists(mount_point):
+                os.mkdir(mount_point)
+
+            if platform.system() == 'Darwin':
+                subprocess.run(["hdiutil", "attach", "-mountpoint", mount_point, archive_filepath], check=False)
+            elif platform.system() == "Linux":
+                subprocess.run(["mount", "-o", "loop", archive_filepath, mount_point], check=False)
+
+            # Add it to the source disks list
+            self.__source_disks_list[archive_filename] = mount_point
+
+            notif = NotificationFactory.create_notification_disk_state(archive_filename, DiskState.MOUNTED.value)
+            self.__mqtt_client.publish(Topics.DISK_STATE, notif)
+        except Exception as e:
+            print(f"ERROR when mounting file {archive_filepath}: {str(e)}")
+
+    def __handle_unmount(self, payload:dict):
+        if not MqttHelper.check_payload(payload, ["disk"]):
+            self.__debug("Missing argument in the mount_file command")
+            return
+
+        disk = payload["disk"]
+
+        if disk not in self.__source_disks_list:
+            print(f"Error: disk {disk} is not mounted")
+
+        mount_point = self.__source_disks_list[disk]
+
+        try:
+            if platform.system() == 'Darwin':
+                subprocess.run(["hdiutil", "detach", mount_point])
+            elif platform.system() == "Linux":
+                subprocess.run(["umount", mount_point])
+
+            # Remove from the source disks list
+            self.__source_disks_list.pop(disk, None)
+            notif = NotificationFactory.create_notification_disk_state(disk, DiskState.UNMOUNTED.value)
+            self.__mqtt_client.publish(Topics.DISK_STATE, notif)
+        except Exception as e:
+            print(f"ERROR when unmounting {disk}: {str(e)}")
 
     def __connect_destination(self):        
-        notif = NotificationFactory.create_notification_disk_state("TARGET", "connected")
-        self.mqtt_client.publish(Topics.DISK_STATE, notif)
+        notif = NotificationFactory.create_notification_disk_state("TARGET", DiskState.CONNECTED.value)
+        self.__mqtt_client.publish(Topics.DISK_STATE, notif)
 
     def __debug(self, message:str):
         print(f"[SYS-USB] {message}")

@@ -4,17 +4,17 @@ import os
 from safecor import SysLogger, System
 
 LOGO_FILEPATH = "/boot/splash.png"
-TOPOLOGY_FILE="/etc/safecor/topology.json"
-
 
 def create_splash(rotate:bool, filepath_pattern:str) -> Image:
     screen = System.get_framebuffer_dimension()
     screen_width = screen[0] if screen is not None else 800
     screen_height = screen[1] if screen is not None else 600
-    screen_rotation = System.get_screen_rotation_from_topology()
+    topology = System.get_topology()
+    screen_rotation = topology.screen.rotation
+    #screen_rotation = System.get_screen_rotation_from_topology()
     bgcolor = System.get_splash_bgcolor_from_topology()
 
-    SysLogger("Create splash").info(f"Create splash of size {screen_width}x{screen_height} {"rotated" if rotate else ""} width background color {bgcolor}")
+    SysLogger("Create splash").info(f"Create splash of size {screen_width}x{screen_height} {"rotated" if rotate else ""} with background color {bgcolor}")
 
     splash = Image.new("RGB", (screen_width, screen_height) if not rotate else (screen_height, screen_width), bgcolor)
     original = Image.open(LOGO_FILEPATH)
