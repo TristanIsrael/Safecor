@@ -107,14 +107,16 @@ class Api(metaclass=SingletonMeta):
     __subscriptions = []
     __shutdown_callbacks = []
     __restart_callbacks = []
-    __subscription_callbacks = []
+    __subscription_callbacks = []    
     __recording = False
-    __mqtt_client = None
     __ping_id = 0
     __logfile = "/var/log/safecor.log"
 
 
-    def start(self, mqtt_client:MqttClient = None, domain_identifier:str = "undefined", recording:bool = False, logfile:str = Constants.LOCAL_LOG_FILEPATH):
+    def __init__(self):
+        self.__mqtt_client = None
+
+    def start(self, mqtt_client:MqttClient|None, domain_identifier:str = "undefined", recording:bool = False, logfile:str = Constants.LOCAL_LOG_FILEPATH):
         """
         Starts the API by connecting to the MQTT broker and opening a log file if asked.
 
@@ -234,7 +236,7 @@ class Api(metaclass=SingletonMeta):
             print("WARNING: shutdown callback function is None")
 
 
-    def subscribe(self, topic:str) -> tuple[bool, int | None]:
+    def subscribe(self, topic:str) -> tuple[bool, int | None]|None:
         """
         Subscribes to a topic on the broker.
 
@@ -246,7 +248,7 @@ class Api(metaclass=SingletonMeta):
         Returns:
             tuple[bool, int | None]: A tuple containing the result as bool and the ID of the subscription
         """
-        if not topic in self.__subscriptions:
+        if topic not in self.__subscriptions:
             error_code, mid = self.__mqtt_client.subscribe(topic)
             if error_code != MQTTErrorCode.MQTT_ERR_SUCCESS:
                 print(f"WARNING: An error occured while subscribing to the topic {topic}")
@@ -254,6 +256,8 @@ class Api(metaclass=SingletonMeta):
                 return (False, None)
             else:
                 return (True, mid)
+        
+        return None
 
 
     def publish(self, topic:str, payload:dict):
@@ -614,7 +618,7 @@ class Api(metaclass=SingletonMeta):
 
         **This notification is for internal use only**
         """
-        payload = NotificationFactory.create_notification_disk_state(disk, DiskState.CONNECTED.value)
+        payload = NotificationFactory.create_notification_disk_state(disk, DiskState.CONNECTED)
         self.__mqtt_client.publish(Topics.DISK_STATE, payload)
     
 
@@ -624,7 +628,7 @@ class Api(metaclass=SingletonMeta):
 
         **This notification is for internal use only**
         """
-        payload = NotificationFactory.create_notification_disk_state(disk, DiskState.DISCONNECTED.value)
+        payload = NotificationFactory.create_notification_disk_state(disk, DiskState.DISCONNECTED)
         self.__mqtt_client.publish(Topics.DISK_STATE, payload)
 
 
@@ -746,13 +750,13 @@ class Api(metaclass=SingletonMeta):
             cb(success, reason)
 
 
-    def __on_subscribed(self, mid):
+    def __on_subscribed(self, mid) -> None:
         try:
             for cb in self.__subscription_callbacks:
                 if cb is not None:
                     cb(mid)
         except Exception as e:
-            print(f"WARNING: an exception occured in the callback on_subscribe {cb}")
+            print("WARNING: an exception occured in the callback on_subscribe")
             print(str(e))
 
     def __on_log(self, level, buf):
