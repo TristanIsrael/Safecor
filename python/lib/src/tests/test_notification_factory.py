@@ -8,11 +8,11 @@ class TestNotificationFactory(unittest.TestCase):
     def test_create_notification_disk_state(self):
         payload = NotificationFactory.create_notification_disk_state("My disk", DiskState.CONNECTED)
         self.assertEqual(payload["disk"], "My disk")
-        self.assertEqual(payload["state"], DiskState.CONNECTED)
+        self.assertEqual(payload["state"], DiskState.CONNECTED.value)
 
         payload = NotificationFactory.create_notification_disk_state("My disk", DiskState.DISCONNECTED)
         self.assertEqual(payload["disk"], "My disk")
-        self.assertEqual(payload["state"], DiskState.DISCONNECTED)
+        self.assertEqual(payload["state"], DiskState.DISCONNECTED.value)
 
     def test_create_notification_new_file(self):
         payload = NotificationFactory.create_notification_new_file("My disk", "/path/of/file.txt", "abd4534dbc98756", "1234567890")

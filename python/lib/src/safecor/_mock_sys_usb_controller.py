@@ -243,7 +243,7 @@ class MockSysUsbController():
             # Add it to the source disks list
             self.__source_disks_list[archive_filename] = mount_point
 
-            notif = NotificationFactory.create_notification_disk_state(archive_filename, DiskState.MOUNTED.value)
+            notif = NotificationFactory.create_notification_disk_state(archive_filename, DiskState.MOUNTED)
             self.__mqtt_client.publish(Topics.DISK_STATE, notif)
         except Exception as e:
             print(f"ERROR when mounting file {archive_filepath}: {str(e)}")
@@ -268,13 +268,13 @@ class MockSysUsbController():
 
             # Remove from the source disks list
             self.__source_disks_list.pop(disk, None)
-            notif = NotificationFactory.create_notification_disk_state(disk, DiskState.UNMOUNTED.value)
+            notif = NotificationFactory.create_notification_disk_state(disk, DiskState.UNMOUNTED)
             self.__mqtt_client.publish(Topics.DISK_STATE, notif)
         except Exception as e:
             print(f"ERROR when unmounting {disk}: {str(e)}")
 
     def __connect_destination(self):        
-        notif = NotificationFactory.create_notification_disk_state("TARGET", DiskState.CONNECTED.value)
+        notif = NotificationFactory.create_notification_disk_state("TARGET", DiskState.CONNECTED)
         self.__mqtt_client.publish(Topics.DISK_STATE, notif)
 
     def __debug(self, message:str):

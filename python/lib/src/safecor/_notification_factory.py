@@ -14,7 +14,7 @@ class NotificationFactory:
 
         payload = {
             "disk": disk, 
-            "state": state
+            "state": state.value
         }
 
         return payload

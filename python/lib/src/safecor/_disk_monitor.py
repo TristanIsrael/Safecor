@@ -47,7 +47,7 @@ class DiskMonitor():
                     Logger().info(f"USB Device connected. Partition detected: {mount_point} with name {disk_name}", "Disk monitor")
                     self.__disks[mount_point] = disk_name
 
-                    payload = NotificationFactory.create_notification_disk_state(disk_name, DiskState.CONNECTED.value)
+                    payload = NotificationFactory.create_notification_disk_state(disk_name, DiskState.CONNECTED)
                     self.__mqtt_client.publish(Topics.DISK_STATE, payload)
         elif action == 'remove':
             if device.device_type == "partition":
@@ -56,7 +56,7 @@ class DiskMonitor():
                     Logger().info(f"USB Device disconnected on {device.device_node}", "Disk monitor")
                     disk_name = self.__disks.pop(mount_point)
 
-                    payload = NotificationFactory.create_notification_disk_state(disk_name, DiskState.DISCONNECTED.value)
+                    payload = NotificationFactory.create_notification_disk_state(disk_name, DiskState.DISCONNECTED)
                     self.__mqtt_client.publish(Topics.DISK_STATE, payload)
 
     def start(self):

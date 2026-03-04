@@ -483,7 +483,7 @@ class SysUsbController():
             res = subprocess.run(cmd, check=False)
 
             if res.returncode == 0:
-                payload = NotificationFactory.create_notification_disk_state(filepath, DiskState.MOUNTED.value)
+                payload = NotificationFactory.create_notification_disk_state(filepath, DiskState.MOUNTED)
                 self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
             else:
                 Logger().warn(f"The file {filepath} could not be mounted (exitcode={res.returncode}")
@@ -514,7 +514,7 @@ class SysUsbController():
                 Logger().error(f"The disk {disk} has not been unmounted")
                 return
             
-            payload = NotificationFactory.create_notification_disk_state(disk, DiskState.UNMOUNTED.value)
+            payload = NotificationFactory.create_notification_disk_state(disk, DiskState.UNMOUNTED)
             self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
 
             try:
