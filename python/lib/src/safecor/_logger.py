@@ -237,7 +237,7 @@ class Logger(metaclass=SingletonMeta):
         spl.reverse()
         loglevel = spl[0]
 
-        if self.__log_level > self.__loglevel_value(loglevel):
+        if self.__log_level > Logger.loglevel_value(loglevel):
             return
 
         # Craft the log text
@@ -250,21 +250,7 @@ class Logger(metaclass=SingletonMeta):
         logfile = FileHandler(self.__filename, 'a')
         logfile.write(logtxt)
         logfile.flush()
-        logfile.close()
-
-    def __loglevel_value(self, level:str) -> int:
-        if level == "debug":
-            return logging.DEBUG
-        elif level == "info":
-            return logging.INFO
-        elif level == "warn" or level == "warning":
-            return logging.WARN
-        elif level == "error":
-            return logging.WARN
-        elif level == "critical":
-            return logging.CRITICAL
-        
-        return logging.NOTSET
+        logfile.close()    
     
     @staticmethod
     def format_logline(message:str) -> str:
@@ -308,3 +294,23 @@ class Logger(metaclass=SingletonMeta):
     def module_name(self):
         return self.__module_name
     
+    @staticmethod
+    def loglevel_value(level:str) -> int:
+        if level == "debug":
+            return logging.DEBUG
+        elif level == "info":
+            return logging.INFO
+        elif level == "warn" or level == "warning":
+            return logging.WARN
+        elif level == "error":
+            return logging.WARN
+        elif level == "critical":
+            return logging.CRITICAL
+        
+        return logging.NOTSET
+
+    @staticmethod
+    def loglevel_from_topic(topic:str) -> int:
+        val = topic.split("/")[-1]
+
+        return Logger.loglevel_value(val)
