@@ -54,3 +54,14 @@ class NotificationFactory:
         }
 
         return payload
+    
+    @staticmethod
+    def create_notification_deleted_file(disk:str, filepath:str) -> dict:
+        """ Create a notification for a file deletion """
+
+        payload = {
+            "disk": disk,
+            "filepath": filepath
+        }
+
+        return payload

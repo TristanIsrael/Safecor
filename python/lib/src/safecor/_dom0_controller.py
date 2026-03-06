@@ -267,7 +267,9 @@ class Dom0Controller():
         if not FileHelper().remove_file(storage_filepath):
             Logger().error(f"Removal of file {filepath} from repository failed")
         else:
-            Logger().info(f"Removed file {filepath} from repository")
+            notif = NotificationFactory.create_notification_deleted_file(disk, filepath)
+            self.mqtt_client.publish(Topics.DELETED_FILE, notif)
+            Logger().info(f"Removed file {filepath} from repository")            
         
     def __handle_discover_components(self):
         comp = ResponseFactory.create_entry_component_state(Constants.SAFECOR_SYSTEM_CONTROLLER,

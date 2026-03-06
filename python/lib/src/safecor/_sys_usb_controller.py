@@ -362,6 +362,8 @@ class SysUsbController():
         if not FileHelper().remove_file(storage_filepath):
             Logger().error(f"Removal of file {filepath} from the disk {disk} failed")
         else:
+            notif = NotificationFactory.create_notification_deleted_file(disk, filepath)
+            self.mqtt_client.publish(Topics.DELETED_FILE, notif)
             Logger().info(f"Removed file {filepath} from the disk {disk}")
             
     def __handle_ping(self, payload):
