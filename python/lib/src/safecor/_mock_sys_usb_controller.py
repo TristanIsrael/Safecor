@@ -93,7 +93,7 @@ class MockSysUsbController():
         elif topic == f"{Topics.COPY_FILE}/request":
             if not MqttHelper.check_payload(payload, ["disk", "filepath", "destination"]):
                 self.__debug(f"Missing arguments for topic {topic}")
-                return 
+                return
             
             disk = payload.get("disk", "")
             filepath = payload.get("filepath", "")
@@ -103,10 +103,9 @@ class MockSysUsbController():
                 return
             
             root_path = self.__source_disks_list[disk]
-            source_path = f"{root_path}/{root_path}"
-            dest_filepath = f"{Topics.COPY_FILE}/{filepath}"
+            source_path = f"{root_path}{filepath}"
+            dest_filepath = f"{self.__destination_disk_path}{filepath}"
             dest_path = os.path.dirname(dest_filepath)
-
 
             if not os.path.exists(dest_path):
                 os.makedirs(dest_path)
