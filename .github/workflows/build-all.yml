@@ -108,6 +108,11 @@ on:
         required: false
         type: 'boolean'
         default: 'false'
+      force-safecor-domu-base:
+        description: "Build domu-base"
+        required: false
+        type: 'boolean'
+        default: 'false'
       force-xtables-addons-safecor-virt:
         description: "Build xtables addons for Safecor virt"
         required: false
@@ -138,6 +143,7 @@ jobs:
       pkg-safecor-sys-usb: ${{ steps.detect.outputs.safecor-sys-usb }}
       pkg-safecor-syslog: ${{ steps.detect.outputs.safecor-syslog }}
       pkg-safecor-splash: ${{ steps.detect.outputs.safecore-splash }}
+      pkg-safecor-domu-base: ${{ steps.detect.outputs.safecore-domu-base }}
       pkg-xtables-addons-safecor-virt: ${{ steps.detect.outputs.xtables-addons-safecor-virt }}
       app-diag: ${{ steps.detect.outputs.app-diag }}      
       app-lib: ${{ steps.detect.outputs.app-lib }}
@@ -164,6 +170,7 @@ jobs:
             [safecor-sys-usb]="setup/packages/safecor/safecor-sys-usb/"
             [safecor-syslog]="setup/packages/safecor/safecor-syslog/"
             [safecor-splash]="setup/packages/safecor/safecor-splash/"
+            [safecor-domu-base]="setup/packages/safecor/safecor-domu-base/"
             [xtables-addons-safecor-virt]="setup/packages/safecor/xtables-addons-safecor-virt"
             [app-diag]="python/diag/"            
             [app-lib]="python/lib/"
@@ -197,6 +204,7 @@ jobs:
       check-safecor-gui-base: ${{ steps.check-safecor-gui-base.outputs.do_build }}
       check-safecor-syslog: ${{ steps.check-safecor-syslog.outputs.do_build }}
       check-safecor-splash: ${{ steps.check-safecor-splash.outputs.do_build }}
+      check-safecor-domu-base: ${{ steps.check-safecor-domu-base.outputs.do_build }}
       check-app-tests: ${{ steps.check-app-tests.outputs.do_build }}
       check-iso-tests: ${{ steps.check-app-tests.outputs.do_build }}
       check-app-diag: ${{ steps.check-app-diag.outputs.do_build }}      
@@ -399,6 +407,20 @@ jobs:
           else 
             echo "do_build=false" >> $GITHUB_OUTPUT
           fi
+      - id: check-safecor-domu-base
+        name: check-safecor-domu-base
+        env:
+          PKG_CHANGED: ${{ needs.detect-changes.outputs.pkg-safecor-domu-base }}
+          FORCE: ${{ github.event.inputs.force-safecor-domu-base }}
+          FORCE_ALL: ${{ github.event.inputs.force-all }}
+          FORCE_APPS: ${{ github.event.inputs.force-apps }}
+          FORCE_LIBS: ${{ github.event.inputs.force-libs }}
+        run: |          
+          if [[ $PKG_CHANGED == 'true' || $FORCE == 'true' || $FORCE_ALL == 'true' ]]; then 
+            echo "do_build=true" >> $GITHUB_OUTPUT
+          else 
+            echo "do_build=false" >> $GITHUB_OUTPUT
+          fi
       - id: check-app-tests
         name: check-app-tests
         env:
@@ -450,7 +472,8 @@ jobs:
             echo "do_build=true" >> $GITHUB_OUTPUT
           else 
             echo "do_build=false" >> $GITHUB_OUTPUT
-          fi      
+          fi  
+      
           
 
   build-py3-paho-mqtt2:
@@ -967,6 +990,37 @@ jobs:
         with:
           working-dir: setup/packages/safecor/safecor-gui-base
           artifact-name: safecor-gui-base
+
+      - name: Publish package
+        uses: ./.github/actions/publish
+        with:
+          privkey: ${{ secrets.DEPLOY_KEY }}
+          filepath: /home/builder/packages/safecor/x86_64/
+
+  build-safecor-domu-base:
+    needs: [ prepare ]
+    if: |
+      needs.prepare.outputs.check-safecor-domu-base == 'true' ||
+      needs.prepare.outputs.check-safecor-app-tests == 'true'
+    runs-on: ubuntu-latest
+ 
+    container:
+      image: alpine:3.21
+ 
+    steps:      
+      - name: Checkout sources
+        uses: actions/checkout@v4
+ 
+      - name: Prepare build environment
+        uses: ./.github/actions/prepare-build-env
+        with:
+          abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}     
+ 
+      - name: Build APK
+        uses: ./.github/actions/build-apk
+        with:
+          working-dir: setup/packages/safecor/safecor-domu-base
+          artifact-name: safecor-domu-base
 
       - name: Publish package
         uses: ./.github/actions/publish
