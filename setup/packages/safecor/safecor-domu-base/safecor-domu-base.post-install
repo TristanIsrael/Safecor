@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo "Create the safecor group"
+addgroup -g 2000 safecor
+
+echo "Set permissions on /mnt/storage"
+chgrp safecor /mnt/storage
+chmod 770 /mnt/storage

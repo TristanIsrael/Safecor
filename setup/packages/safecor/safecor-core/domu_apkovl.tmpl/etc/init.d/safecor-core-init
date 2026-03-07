@@ -15,7 +15,7 @@ start() {
     mount -o remount,size=95% /
 
     # Create safecor group
-    addgroup -g 1000 safecor
+    addgroup -g 2000 safecor
 
     # Set permissions for shares
     mkdir -p /mnt/storage

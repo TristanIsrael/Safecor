@@ -1,0 +1,23 @@
+# Contributor:
+# Maintainer: Tristan Israël <tristan.israel@alefbet.net>
+pkgname=safecor-domu-base
+pkgver=1.2
+pkgrel=0
+pkgdesc="Safecor - Base package for business domain"
+url="https://www.alefbet.net/"
+arch="noarch"
+license="MIT"
+depends="shadow"
+makedepends=""
+builddir="$srcdir/$pkgname-$pkgver"
+checkdepends=""
+install="$pkgname.post-install"
+subpackages=""
+replaces=""
+options="!check"  # no tests provided
+source="
+"
+
+package() {
+}
+

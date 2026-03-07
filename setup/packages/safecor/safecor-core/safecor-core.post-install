@@ -27,7 +27,7 @@ logger -t "Safecor/core-post-install" "Resizing shared memory"
 mount -o remount,size=16M /dev/shm
 
 logger -t "Safecor/core-post-install" "Creating service accounts"
-addgroup safecor
+addgroup -g 2000 safecor
 adduser -H -D -s /sbin/nologin -G safecor svc-mqtt-tunnels
 adduser -H -D -s /sbin/nologin -G safecor svc-tty-tunnels
 adduser -H -D -s /sbin/nologin -G safecor svc-tty-terminal
