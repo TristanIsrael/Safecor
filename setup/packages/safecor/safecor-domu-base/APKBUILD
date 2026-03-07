@@ -18,5 +18,7 @@ options="!check"  # no tests provided
 source=""
 
 package() {
-    default_package
+    # no-op
+    mkdir "$pkgdir"
+    echo "$pkgname" > "$pkgdir"/tmp/pkg.tmp
 }
