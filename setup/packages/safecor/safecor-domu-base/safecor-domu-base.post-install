@@ -4,7 +4,7 @@ echo "Create the safecor group"
 addgroup -g 2000 safecor
 
 echo "Set permissions on /mnt/storage"
-if [ -d "/mnt/storage" ]; do
+if [ -d "/mnt/storage" ]; then
     chgrp safecor /mnt/storage
     chmod 770 /mnt/storage
 fi

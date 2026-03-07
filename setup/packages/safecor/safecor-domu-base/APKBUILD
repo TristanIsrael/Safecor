@@ -19,5 +19,5 @@ source=""
 
 package() {
     mkdir -p "$pkgdir"/usr/lib/safecor/etc
-    touch "installed" > "$pkgdir"/usr/lib/safecor/etc/$pkgname
+    echo "$pkgname" >> "$pkgdir"/usr/lib/safecor/etc/installed
 }
