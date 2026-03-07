@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PRIVATE_KEY="/Users/tristanisrael/Documents/Sources/crypto/safecor.rsa"
+PRIVATE_KEY="/Volumes/SECURITY/Safecor/abuild/safecor.rsa"
 SAFECOR_SOURCE_PATH="/Users/tristanisrael/Documents/Sources/Safecor"
 DOCKER_PATH="/usr/local/bin"
 IMAGE_NAME="safecor-dev"

@@ -19,5 +19,5 @@ source="
 "
 
 package() {
+    default_package
 }
-
