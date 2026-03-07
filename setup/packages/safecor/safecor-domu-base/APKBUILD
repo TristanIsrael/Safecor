@@ -15,8 +15,7 @@ install="$pkgname.post-install"
 subpackages=""
 replaces=""
 options="!check"  # no tests provided
-source="
-"
+source=""
 
 package() {
     default_package
