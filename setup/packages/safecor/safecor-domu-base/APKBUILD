@@ -19,6 +19,6 @@ source=""
 
 package() {
     # no-op
-    mkdir -p "$pkgdir"
+    mkdir -p "$pkgdir"/tmp/pkg.tmp
     echo "$pkgname" > "$pkgdir"/tmp/pkg.tmp
 }
