@@ -18,7 +18,6 @@ options="!check"  # no tests provided
 source=""
 
 package() {
-    # no-op
-    mkdir -p "$pkgdir"/tmp
-    echo "$pkgname" > "$pkgdir"/tmp/pkg.tmp
+    mkdir -p "$pkgdir"/usr/lib/safecor/etc
+    touch "installed" > "$pkgdir"/usr/lib/safecor/etc/$pkgname
 }
