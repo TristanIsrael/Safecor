@@ -307,7 +307,7 @@ class MqttClient():
             self.unsubscribe(topic)
 
     def publish(self, topic:str, payload:dict):
-        data = json.dumps(payload)
+        data = json.dumps(payload, ensure_ascii=True)
         #print(data)
         #print(len(data))
         self.mqtt_client.publish(topic=topic, payload=data)
@@ -323,9 +323,8 @@ class MqttClient():
             self.on_log(level, buf)
 
     def __on_message(self, client:mqtt.Client, userdata, msg:mqtt.MQTTMessage):
-        #print(f"[{userdata}] Message reçu sur {msg.topic}: {msg.payload.decode()}")        
         try:
-            payload = json.loads(msg.payload.decode())
+            payload = json.loads(msg.payload.decode("utf-8"))
             if self.on_message is not None:
                 self.on_message(msg.topic, payload)
 

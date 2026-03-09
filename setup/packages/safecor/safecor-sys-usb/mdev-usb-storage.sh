@@ -24,7 +24,7 @@ then
 	echo "Mouting disk $LABEL with filesystem $FS in $MOUNT_POINT" >> $LOG_FILENAME
 	echo mount $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME >> $LOG_FILENAME
 	mkdir -p "$MOUNT_POINT"	
-    mount -o uid=1000,gid=1000,umask=007 $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME 2>&1
+    mount -o uid=1000,gid=2000,umask=007 $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME 2>&1
     chown svc-sys-usb-controller:safecor "$MOUNT_POINT"
     chmod 770 "$MOUNT_POINT"    
 
