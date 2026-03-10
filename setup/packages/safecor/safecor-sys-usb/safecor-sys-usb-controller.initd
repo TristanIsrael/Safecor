@@ -10,7 +10,7 @@ depend() {
 start() {
     ebegin "Starting Safecor sys-usb controller"
 
-    start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --pidfile /var/run/$name.pid --background --user "$user" -- /usr/lib/safecor/bin/safecor-sys-usb-controller.py
+    start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --umask 0007 --pidfile /var/run/$name.pid --background --user "$user" -- /usr/lib/safecor/bin/safecor-sys-usb-controller.py
 
     eend $?
 }
