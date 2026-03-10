@@ -239,7 +239,8 @@ class FileHelper():
         try:
             os.remove(filepath)
             return True
-        except Exception:
+        except Exception as e:
+            print(e)
             return False
         
     @staticmethod
