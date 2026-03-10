@@ -182,7 +182,7 @@ class FileHelper():
         try:
             subprocess.run(cmd, check= True, shell= False)
         except subprocess.CalledProcessError as e:
-            Logger().debug(f"The file {filepath} could not be copied to {destination_disk}. Error: {e}")
+            Logger().debug(f"The file {filepath} could not be copied to {destination_disk}. Error: {str(e)}")
             return ""
 
         # Calculate the new file's fingerprint

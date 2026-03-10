@@ -269,8 +269,8 @@ class Dom0Controller():
         else:
             notif = NotificationFactory.create_notification_deleted_file(disk, filepath)
             self.mqtt_client.publish(Topics.DELETED_FILE, notif)
-            Logger().info(f"Removed file {filepath} from repository")            
-        
+            Logger().info(f"Removed file {filepath} from repository")
+
     def __handle_discover_components(self):
         comp = ResponseFactory.create_entry_component_state(Constants.SAFECOR_SYSTEM_CONTROLLER,
             "Core controller",

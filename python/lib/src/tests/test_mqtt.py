@@ -3,6 +3,7 @@ import unittest, time, threading
 
 class TestMqttClient(unittest.TestCase):
 
+    __recv_strings = []
     nb_connections = 0
     finished = False
 
@@ -32,6 +33,10 @@ class TestMqttClient(unittest.TestCase):
         elif self._testMethodName == "test_list_files":
             self.setupConnection()
             self.client2.subscribe(f"{Topics.LIST_FILES}/request")
+            time.sleep(0.5)
+        elif self._testMethodName == "test_utf8":
+            self.setupConnection()
+            self.client1.subscribe("test/utf8")
             time.sleep(0.5)
 
     def test_connections_count(self):
@@ -102,6 +107,26 @@ class TestMqttClient(unittest.TestCase):
                 self.assertEqual(files[1].get("type"), "file")
                 self.assertEqual(files[2].get("type"), "folder")
                 self.finished = True
+        elif self._testMethodName == "test_utf8":
+            self.__recv_strings.append(payload["string"])
+
+                
+    def test_utf8(self):
+        test_strings = [
+            "1. A string without special chars",
+            "2. Accents et symboles : éàèùâêîôû ç ñ ä ö ü ß € £ ¥ © ® ™",
+            "3. 日本語テスト：システムガイド保守マニュアル version1.0",
+            "4. בדיקת יוניקוד: מערכת-מדריך-תחזוקה גרסה 1.0"
+        ]        
+
+        for s in test_strings:
+            self.client2.publish("test/utf8", { "string": s })
+
+        time.sleep(0.5)
+
+        self.assertEqual(self.__recv_strings, test_strings)
+        print(self.__recv_strings)
+
 
     def tearDown(self):
         self.client1.stop()
