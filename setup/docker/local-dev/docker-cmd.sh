@@ -19,8 +19,9 @@ fi
 
 if [ -n "$OVERRIDE_REPOSITORIES" ]; then 
     echo "Override repositories in the container"
-    MOUNT_REPO="--mount type=bind,source="$SCRIPT_DIR/repositories",target=/etc/apk/repositories,readonly"
-fi 
+    MOUNT_REPO="--mount type=bind,source=$SCRIPT_DIR/repositories,target=/etc/apk/repositories,readonly"
+    PIP_REPO="--mount type=bind,source=$SCRIPT_DIR/pip.conf,target=/home/builder/.pip/pip.conf,readonly"
+fi
 
 if [ $EMULATE -eq 1 ]; then
     echo "Start emulated Docker"
@@ -33,8 +34,9 @@ if [ $EMULATE -eq 1 ]; then
         -it \
         --rm \
         --platform linux/amd64 \
-        --mount type=bind,source="$PRIVATE_KEY",target=/home/builder/.abuild/safecor.rsa,readonly \
         $MOUNT_REPO \
+        $PIP_REPO \
+        --mount type=bind,source=$PRIVATE_KEY,target=/home/builder/.abuild/safecor.rsa,readonly \
         -v "$SAFECOR_SOURCE_PATH:/home/builder/src/safecor" \
         -e STAGE="$STAGE" \
         --name "$DOCKER_NAME" \
@@ -46,15 +48,15 @@ if [ $EMULATE -eq 1 ]; then
         "$DOCKER_PATH/docker" run \
         --rm \
         --platform linux/amd64 \
-        --mount type=bind,source="$PRIVATE_KEY",target=/home/builder/.abuild/safecor.rsa,readonly \
         $MOUNT_REPO \
+        $PIP_REPO \
+        --mount type=bind,source=$PRIVATE_KEY,target=/home/builder/.abuild/safecor.rsa,readonly \
         -v "$SAFECOR_SOURCE_PATH:/home/builder/src/safecor" \
         -e STAGE="$STAGE" \
         --name "$DOCKER_NAME" \
         "$IMAGE_NAME" \
         sh -c "$@"
     fi
-
 else
     echo "Start native Docker"
 
@@ -65,8 +67,9 @@ else
         "$DOCKER_PATH/docker" run \
         --rm \
         -it \
-        --mount type=bind,source="$PRIVATE_KEY",target=/home/builder/.abuild/safecor.rsa,readonly \
         $MOUNT_REPO \
+        $PIP_REPO \
+        --mount type=bind,source=$PRIVATE_KEY,target=/home/builder/.abuild/safecor.rsa,readonly \
         -v "$SAFECOR_SOURCE_PATH:/home/builder/src/safecor" \
         -e STAGE="$STAGE" \
         --name "$DOCKER_NAME" \
@@ -77,8 +80,9 @@ else
         # Run the container
         "$DOCKER_PATH/docker" run \
         --rm \
-        --mount type=bind,source="$PRIVATE_KEY",target=/home/builder/.abuild/safecor.rsa,readonly \
         $MOUNT_REPO \
+        $PIP_REPO \
+        --mount type=bind,source=$PRIVATE_KEY,target=/home/builder/.abuild/safecor.rsa,readonly \
         -v "$SAFECOR_SOURCE_PATH:/home/builder/src/safecor" \
         -e STAGE="$STAGE" \
         --name "$DOCKER_NAME" \
