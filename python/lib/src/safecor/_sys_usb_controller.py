@@ -411,9 +411,8 @@ class SysUsbController():
             notif = NotificationFactory.create_notification_error(source_disk, filepath, "The file could not be copied")
             self.mqtt_client.publish(Topics.ERROR, notif)
 
-    def __do_copy_file(self, source_location:str, filepath:str, target_disk: str, target_location:str):        
-        #source_filepath = "{}/{}/{}".format(Parametres().parametre(Cles.CHEMIN_MONTAGE_USB), source_disk, filepath)        
-        source_fingerprint = FileHelper.calculate_fingerprint("{}/{}".format(source_location, filepath))
+    def __do_copy_file(self, source_location:str, filepath:str, target_disk: str, target_location:str):
+        source_fingerprint = FileHelper.calculate_fingerprint(f"{source_location}/{filepath}")
         
         # Création du répertoire de destination si nécessaire
         parent_path = Path(filepath).parent
@@ -429,7 +428,7 @@ class SysUsbController():
             notif = NotificationFactory.create_notification_new_file(disk= target_disk, filepath= filepath, source_fingerprint= source_fingerprint, dest_fingerprint= dest_fingerprint)
             self.mqtt_client.publish(f"{Topics.NEW_FILE}/notification", notif)
 
-            response = ResponseFactory.create_response_copy_file(filepath, target_disk, True, dest_fingerprint)            
+            response = ResponseFactory.create_response_copy_file(filepath, target_disk, True, dest_fingerprint)
         else:
             response = ResponseFactory.create_response_copy_file(filepath, target_disk, False, dest_fingerprint)
             Logger().error(f"La copie du fichier {filepath} dans le dépôt a échoué.")
@@ -470,8 +469,8 @@ class SysUsbController():
                 Logger().error(f"An exception occured while preparing the mount point {file_mount_point}: {e}")
 
             # The mount from python can not be done unless we are root... strange...
-            cmd = [                 
-                #"doas", 
+            cmd = [
+                #"doas",
                 #"/usr/bin/archivemount",
                 "/usr/bin/fuse-archive",
                 "-o", "nospecials", 
