@@ -485,7 +485,7 @@ class SysUsbController():
             res = subprocess.run(cmd, check=False)
 
             if res.returncode == 0:
-                payload = NotificationFactory.create_notification_disk_state(filepath, DiskState.MOUNTED)
+                payload = NotificationFactory.create_notification_disk_state(filename, DiskState.MOUNTED)
                 self.mqtt_client.publish(f"{Topics.DISK_STATE}", payload)
             else:
                 Logger().warn(f"The file {filepath} could not be mounted (exitcode={res.returncode}")
