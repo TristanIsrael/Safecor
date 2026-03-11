@@ -461,7 +461,7 @@ class SysUsbController():
         source_mount_point = Constants.USB_MOUNT_POINT
         file_mount_point = f"/media/loop/{filename}"
         
-        if file_ext in Constants.ARCHIVE_EXTENSIONS_HANDLED:
+        if FileHelper.is_archive_file(filename):
             try:
                 if os.path.exists(file_mount_point):
                     os.rmdir(file_mount_point)
@@ -490,7 +490,7 @@ class SysUsbController():
             else:
                 Logger().warn(f"The file {filepath} could not be mounted (exitcode={res.returncode}")
         else:
-            Logger().error(f"The file type {file_ext} is not handled for mounting")    
+            Logger().error(f"The file type {file_ext} is not handled for mounting")
 
 
     def __handle_unmount(self, payload):
