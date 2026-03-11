@@ -1,3 +1,3 @@
-packages	    /mnt/packages	    9p	trans=xen,version=9p2000.L,ro,cache=none,nosuid,noexec,nodev 0 0
-storage	        /mnt/storage	    9p	trans=xen,version=9p2000.L,rw,cache=none,nosuid,noexec,nodev 0 0
-system	        /mnt/system	        9p	trans=xen,version=9p2000.L,ro,cache=none,nosuid,noexec,nodev 0 0
+packages	    /mnt/packages	    9p	trans=xen,version=9p2000.L,ro,cache=none,nosuid,noexec,nodev,msize=131072 0 0
+storage	        /mnt/storage	    9p	trans=xen,version=9p2000.L,rw,cache=none,nosuid,noexec,nodev,msize=131072 0 0
+system	        /mnt/system	        9p	trans=xen,version=9p2000.L,ro,cache=none,nosuid,noexec,nodev,misze=131072 0 0
