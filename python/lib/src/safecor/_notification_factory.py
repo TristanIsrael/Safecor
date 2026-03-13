@@ -49,7 +49,7 @@ class NotificationFactory:
         """ Create a notification for the energy state """
         
         payload = {
-            "battery_level": battery.percent,
+            "battery_level": round(battery.percent, 2),
             "plugged": 1 if battery.power_plugged else 0
         }
 
