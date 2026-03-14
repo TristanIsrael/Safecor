@@ -2,12 +2,12 @@
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=safecor-gui-base
 pkgver=1.2
-pkgrel=0
+pkgrel=1
 pkgdesc="Safecor - Base package for GUI domain"
 url="https://www.alefbet.net/"
 arch="noarch"
 license="MIT"
-depends="xorg-server xrandr xe-guest-utilities mesa-dri-gallium xf86-input-libinput xsetroot eudev xdpyinfo xset"
+depends="xorg-server xrandr xe-guest-utilities xf86-input-libinput xsetroot eudev xdpyinfo xset"
 makedepends=""
 builddir="$srcdir/$pkgname-$pkgver"
 checkdepends=""
