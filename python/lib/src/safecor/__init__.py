@@ -55,7 +55,7 @@ __all__ = [
     "__version__",
     "SingletonMeta",
     "Topology", "Domain", "DomainType", "DiskState",
-    "Constants", "System", "topology", "Screen", "Constants", "ComponentState",
+    "Constants", "System", "topology", "Screen", "Constants", "ComponentState", "Topics",
     "KeymapFR",
     "InputType", 
     "Configuration", "ConfigurationHelper",
@@ -63,18 +63,17 @@ __all__ = [
     "LibvirtHelper",
     "Logger", "SysLogger",
     "NotificationFactory", 
-    "ResponseFactory",
-    "DiskMonitor",
+    "ResponseFactory",    
     "FileHelper",    
     "InputsDaemon",
     "Mouse", "MouseButton", "MouseWheel", "MouseMove",
     "BenchmarkId",
     "TaskRunner",
-    "MqttClient", "ConnectionType", "Topics", "MqttFactory", "SerialMQTTClient", "MqttHelper",
-    "Dom0Controller", "SysUsbController", "Api",
+    "MqttClient", "ConnectionType", "MqttFactory", "SerialMQTTClient", "MqttHelper",
+    "Dom0Controller", "DiskMonitor", "SysUsbController", "Api",
     "ComponentsHelper",
     "MockSysUsbController",
-    "Debugging", "ApiHelper"
+    "Debugging", "ApiHelper",    
 ]
 
 logging.getLogger(__name__).addHandler(NullHandler())
