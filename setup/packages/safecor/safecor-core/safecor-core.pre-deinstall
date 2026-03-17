@@ -30,6 +30,15 @@ done
 mv /usr/bin/qemu-system-x86_64 /usr/bin/qemu-system-x86_64.cmd
 mv /usr/bin/qemu-system-x86_64.real /usr/bin/qemu-system-x86_64
 
+# Remove users and groups
+delgroup safecor
+deluser svc-mqtt-tunnels
+deluser svc-tty-tunnels
+deluser svc-tty-terminal
+deluser svc-mqtt-logger
+deluser svc-orchestrator
+deluser svc-safecor-controller
+
 exit 0
 
 
