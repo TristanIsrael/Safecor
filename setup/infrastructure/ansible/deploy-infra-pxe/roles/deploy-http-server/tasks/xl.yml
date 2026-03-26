@@ -1,33 +1,33 @@
 ---
 
-- name: Récupération du noyau pour le boot PXE
+- name: (XL) Get the PXE boot kernel file
   get_url:
-    url: "{{depot_noyaux}}vmlinuz-lts"
+    url: "{{alpine_kernels}}vmlinuz-lts"
     dest: /var/www/pxe
     mode: 0650
     owner: lighttpd
     group: lighttpd
     
-- name: Récupération du modloop pour le boot PXE
+- name: (XL) Get the PXE modloop file
   get_url:
-    url: "{{depot_noyaux}}modloop-lts"
+    url: "{{alpine_kernels}}modloop-lts"
     dest: /var/www/pxe
     mode: 0650
     owner: lighttpd
     group: lighttpd
     
-- name: Récupération du initramfs pour le boot PXE
+- name: (XL) Get the PXE initramfs file
   get_url:
-    url: "{{depot_noyaux}}initramfs-lts"
+    url: "{{alpine_kernels}}initramfs-lts"
     dest: /var/www/pxe
     mode: 0650
     owner: lighttpd
     group: lighttpd
     
-- name: Création du script PXE pour le boot
-  template:
-    src: gpxe-script.j2
-    dest: /var/www/pxe/gpxe-script
-    mode: 0750
-    owner: lighttpd
-    group: lighttpd
+#- name: (XL) Create the PXE script
+#  template:
+#    src: gpxe-script.j2
+#    dest: /var/www/pxe/gpxe-script
+#    mode: 0750
+#    owner: lighttpd
+#    group: lighttpd

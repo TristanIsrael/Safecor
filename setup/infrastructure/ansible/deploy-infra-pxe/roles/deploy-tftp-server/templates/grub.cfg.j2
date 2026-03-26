@@ -1,0 +1,63 @@
+set timeout=30
+set default=-1
+
+insmod net
+insmod efinet
+insmod all_video
+insmod gfxterm
+insmod efi_gop
+insmod efi_uga
+insmod gfxterm_background
+terminal_output gfxterm
+
+set color_normal=black/black
+#set menu_color_normal=yellow/blue
+#set menu_color_highlight=red/blue
+
+set gfxmode=1280x900,1024x768,auto
+
+#background_color 84,168,241
+#background_image --mode normal /splash.png
+loadfont /font.pf2
+
+set theme=safecor/theme.txt
+
+# Get an IP address
+net_dhcp
+
+menuentry "Safecor Diag" {
+	insmod http
+
+	echo "Loading XEN..."
+	multiboot2 (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/xen-4.19.4.gz console=tty0 no-real-mode edd=off dom0_mem=1024M dom0_max_vcpus=2 dom0_vcpus_pin=true
+
+	echo "Loading Linux..."
+	linux (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/vmlinuz-lts ip=dhcp modloop=http://{{alpine_kernels_server}}{{alpine_kernels_path}}/modloop-lts alpine_repo={{alpine_repository}}/main apkovl=http://{{ http_server }}/configs/safecor-diag.tar.gz kernel.dmesg_restrict=1 kernel.kptr_restrict=2 kernel.pid_max=65535 kernel.perf_cpu_time_max_percent=1 kernel.perf_event_max_sample_rate=1 kernel.perf_event_paranoid=2 kernel.randomize_va_space=2 kernel.sysrq=0 kernel.unprivileged_bpf_disabled=1 kernel.panic_on_oops=1 l1tf=full,force page_poison=on pti=on slab_nomerge=yes slub_debug=FZP spec_store_bypass_disable=seccomp spectre_v2=on mds=full,nosmt mce=0 page_alloc.shuffle=1 rng_core.default_quality=500 loglevel=0 console=tty0 
+
+	echo "Loading initramfs..."
+	initrd (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/initramfs-lts
+}
+
+menuentry "Alpine 3.21.3 with Xen" {
+	insmod gzip
+	insmod http
+
+	echo "Loading XEN..."
+	multiboot2 (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/xen-4.19.4.gz console=tty0 no-real-mode edd=off dom0_mem=1024M dom0_max_vcpus=2 dom0_vcpus_pin=true
+
+	echo "Loading Linux..."
+	module2 (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/vmlinuz-lts modloop=http://{{alpine_kernels_server}}{{alpine_kernels_path}}/modloop-lts ip=dhcp alpine_repo={{alpine_repository}}/main apkovl=http://{{ http_server }}/configs/alpine-vanilla.tar.gz kernel.dmesg_restrict=1 kernel.kptr_restrict=2 kernel.pid_max=65535 kernel.perf_cpu_time_max_percent=1 kernel.perf_event_max_sample_rate=1 kernel.perf_event_paranoid=2 kernel.randomize_va_space=2 kernel.sysrq=0 kernel.unprivileged_bpf_disabled=1 kernel.panic_on_oops=1 l1tf=full,force page_poison=on pti=on slab_nomerge=yes slub_debug=FZP spec_store_bypass_disable=seccomp spectre_v2=on mds=full,nosmt mce=0 page_alloc.shuffle=1 rng_core.default_quality=500 loglevel=0 console=vga 
+
+	echo "Loading initramfs..."
+	module2 (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/initramfs-lts
+}
+
+menuentry "Alpine 3.21.3" {
+	insmod http
+
+	echo "Loading Linux..."
+	linux (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/vmlinuz-lts ip=dhcp modloop=http://{{alpine_kernels_server}}{{alpine_kernels_path}}/modloop-lts alpine_repo={{alpine_repository}}/main apkovl=http://{{ http_server }}/configs/alpine-vanilla.tar.gz kernel.dmesg_restrict=1 kernel.kptr_restrict=2 kernel.pid_max=65535 kernel.perf_cpu_time_max_percent=1 kernel.perf_event_max_sample_rate=1 kernel.perf_event_paranoid=2 kernel.randomize_va_space=2 kernel.sysrq=0 kernel.unprivileged_bpf_disabled=1 kernel.panic_on_oops=1 l1tf=full,force page_poison=on pti=on slab_nomerge=yes slub_debug=FZP spec_store_bypass_disable=seccomp spectre_v2=on mds=full,nosmt mce=0 page_alloc.shuffle=1 rng_core.default_quality=500 loglevel=0 console=tty0 
+
+	echo "Loading initramfs..."
+	initrd (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/initramfs-lts
+}

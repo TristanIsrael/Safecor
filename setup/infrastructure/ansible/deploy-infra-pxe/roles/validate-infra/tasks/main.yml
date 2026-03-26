@@ -1,19 +1,19 @@
 --- 
 
-- name: Installation des outils de test
+- name: Install test tools
   apk:
     name: 
       - dhcpcd
       - tftp-hpa
     state: present
 
-- name: Vérification du fonctionnement du serveur DHCP
+- name: Verify DHCP server configuration
   block:
-    - name: Demande d'une adresse IP au serveur DHCP
+    - name: Ask for an IP address
       shell: dhcpcd -T eth0 > /tmp/out.txt
       register: output     
 
-    - name: Vérification du serveur émetteur
+    - name: Verify the emitter
       lineinfile:
         path: /tmp/out.txt 
         line: "new_dhcp_server_identifier='{{ dhcp_server }}'"
@@ -22,7 +22,7 @@
       register: conf
       failed_when: (conf is changed) or (conf is failed)
 
-    - name: Vérification des informations de boot PXE 
+    - name: Verify the PXE boot information
       lineinfile:
         path: /tmp/out.txt 
         line: "new_filename='gpxe.kpxe'"
@@ -31,57 +31,58 @@
       register: conf
       failed_when: (conf is changed) or (conf is failed)
     
-- name: Vérification de l'obtention de l'adresse TFTP du noyau iPXE 
+- name: Verify the TFTP address of the iPXE kernel
   debug:
-    msg: "Cette vérification n'est pas encore implémentée"
+    msg: "This check is not implemented yet"
 
-- name: Vérification du téléchargement du noyau iPXE
+- name: Verify the iPXE kernel download
   block:
     - name: Nettoyage
       file:
         path: gpxe.kpxe
         state: absent
-    - name: Téléchargement
+    - name: Download
       shell: tftp {{ tftp_server }} -c get gpxe.kpxe      
-    - name: Vérification
+    - name: Verify
       block:
         - stat: 
             path: gpxe.kpxe
           register: out        
         - fail: 
-            msg: "Le fichier de noyau iPXE n'a pas été trouvé"
+            msg: "The iPXE kernel file has not been found"
           when: (not out.stat.exists) or (out.stat.size == 0) 
-    - name: Nettoyage
+    - name: Clean
       file:
         path: gpxe.kpxe
         state: absent      
 
-- name: Vérification du téléchargement du script gpxe 
+- name: Verify the gpxe script download 
   block:
-    - get_url: 
+    - name: Download
+      get_url: 
         url: http://{{ http_server }}/gpxe-script
         dest: /tmp/gpxe-script
-    - name: Vérification
+    - name: Verify
       block:
         - stat: 
             path: /tmp/gpxe-script
           register: out        
         - fail: 
-            msg: "Le fichier de script gpxe est incorrect"
+            msg: "The gpxe script is incorrect"
           when: (not out.stat.exists) or (out.stat.size == 0) 
     - file:
         path: /tmp/gpxe-script
         state: absent
 
-- name: Vérification du téléchargement du fichier vmlinuz-virt
+- name: Verify the download of vmlinuz-virt
   debug:
-    msg: Action non implémentée
+    msg: Non implemented yet
 
-- name: Vérification du téléchargement du fichier modloop-virt
+- name: Verify the download of modloop-virt
   debug:
-    msg: Action non implémentée
+    msg: Non implemented yet
 
-- name: Vérification du téléchargement du fichier initramfs-virt
+- name: Verify the download of initramfs-virt
   debug:
-    msg: Action non implémentée
+    msg: Non implemented yet
     

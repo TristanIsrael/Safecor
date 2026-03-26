@@ -1,20 +1,20 @@
 ---
 
-- name: Installation du serveur DHCP 
+- name: Installation of the packages
   apk: 
-    name: dhcp
+    name: dnsmasq
     state: present
  
-- name: Configuration du service
+- name: Configuration of the service
   template:
-    src: dhcpd.conf.j2
-    dest: "/etc/dhcp/dhcpd.conf"
+    src: dnsmasq.conf.j2
+    dest: "/etc/dnsmasq.conf"
     mode: 0750
     owner: root
     group: root
 
-- name: Redémarrage du service
+- name: Start the service
   service:
-    name: "dhcpd"
+    name: "dnsmasq"
     state: restarted
     enabled: true    

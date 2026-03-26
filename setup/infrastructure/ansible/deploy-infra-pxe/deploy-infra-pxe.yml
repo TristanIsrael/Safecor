@@ -1,7 +1,7 @@
 ---
 
-- name: "Installation du serveur DHCP pour le boot PXE"
-  hosts: hote_dhcp
+- name: "Install DHCP server for PXE boot"
+  hosts: dhcp_host
   become: yes
   become_user: root
   
@@ -9,8 +9,8 @@
     - role: deploy-dhcp-server
       when: install_dhcp | bool
 
-- name: "Installation du serveur TFTP pour le boot PXE"
-  hosts: hote_tftp
+- name: "Install TFTP server for PXE boot"
+  hosts: tftp_host
   become: yes
   become_user: root
   
@@ -18,8 +18,8 @@
     - role: deploy-tftp-server
       when: install_tftp | bool
 
-- name: "Installation du serveur HTTP pour le boot PXE"
-  hosts: hote_http
+- name: "Install HTTP server for PXE boot"
+  hosts: http_host
   become: yes
   become_user: root
   
@@ -27,16 +27,15 @@
     - role: deploy-http-server
       when: install_http | bool
 
-- name: "Installation du serveur NFS pour le boot PXE"
-  hosts: hote_nfs
+- name: "Install NFS server for PXE boot"
+  hosts: nfs_host
   become: yes
-  become_user: root
-  
+  become_user: root 
   roles:
     - role: deploy-nfs-server
       when: install_nfs | bool 
 
-- name: "Configuration des clients NTP"
+- name: "Configure NTP on all servers"
   hosts: all:!localhost
   become: yes
   become_user: root
@@ -44,10 +43,10 @@
   roles:
     - role: configure-ntp-client
 
-- name: "Vérification de l'infrastructure"
-  hosts: 127.0.0.1
-  become: yes
-  become_user: root
-
-  roles: 
-    - validate-infra
+#- name: "Verify the setup"
+#  hosts: 127.0.0.1
+#  become: yes
+#  become_user: root
+#
+#  roles: 
+#    - validate-infra

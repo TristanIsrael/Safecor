@@ -1,0 +1,2 @@
+/mnt/repository/alpine/v${ALPINE_VERSION}/main
+/mnt/repository/alpine/v${ALPINE_VERSION}/community

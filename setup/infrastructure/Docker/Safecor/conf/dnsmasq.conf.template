@@ -1,0 +1,19 @@
+#interface=${NIC_NAME}
+
+# DHCP addresses range
+dhcp-range=${DHCP_RANGE_BEGIN},${DHCP_RANGE_END}
+
+no-resolv
+option domain-name "${}"
+
+# TFTP management
+enable-tftp
+dhcp-boot=pxelinux.0
+dhcp-option=66,${TFTP_SERVER_IP}
+
+# UEFI PXE
+dhcp-match=set:efi64,option:client-arch,7
+dhcp-boot=tag:efi64,bootx64.efi
+
+# Debugging
+log-queries

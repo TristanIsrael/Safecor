@@ -1,1 +1,0 @@
-dwc_otg.lpm_enable=0 modules=loop,squashfs,sd-mod,usb-storage quiet console=tty1 apkovl=http://{{ http_server }}/configs/default.tar.gz ip=dhcp modloop=http://{{ http_server }}/modloop-rpi4 alpine_dev=nfs:{{ nfs_server }}:/var/www/pxe alpine_repo={{ depot_alpine }}main/ PANOPTISCAN_CONFIG=s_raspi

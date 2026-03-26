@@ -1,41 +1,87 @@
 ---
  
-- name: Installation du serveur TFTP 
+- name: Install the TFTP server
   apk: 
     name: tftp-hpa
     state: present
 
-- name: Vérification du répertoire de données PXE
+- name: Configure the TFTP server
+  template:
+    src: in.tftpd.j2
+    dest: "/etc/conf.d/in.tftpd"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Declare data directory
   stat:
-    path: /var/tftpboot/pxe
-  register: rep_donnees
+    path: /srv/tftp/themes/safecor
+  register: datadir
 
-- name: Modification des permissions sur le dossier tftpboot
-  file:
-    path: /var/tftpboot
-    mode: 0755
-    
-- name: Contrôle du répertoire de données
+- name: Verify the TFTP directories
   debug:
-    msg: "Le répertoire existe"
-  when: rep_donnees.stat.exists
-  
-- name: Création du répertoire de données PXE
+    msg: "The directory exists"
+  when: datadir.stat.exists
+
+- name: Create the TFTP directories
   file:
-    path: /var/tftpboot/pxe
+    path: /srv/tftp/themes/safecor
     state: directory
-    mode: 0755    
-  #when: not rep_donnees.stat.exists   
+    mode: 0775
+    owner: root
+    group: root
+  when: not datadir.stat.exists
 
-- name: Installation de la configuration S Raspberry Pi 4B
-  include_tasks: s_raspi_4b.yml
-  when: configurations.s_raspi_4b|bool
+#- name: Upload the iPXE bootloader
+#  copy:
+#    src: snponly.efi
+#    dest: /srv/tftp/snponly.efi
+#    mode: 0644
 
-- name: Installation de la configuration XL 
-  include_tasks: xl.yml
-  when: configurations.xl|bool
+#- name: Copy the iPXE script
+#  template:
+#    src: autoexec.ipxe.j2
+#    dest: "/srv/tftp/autoexec.ipxe"
+#    mode: 0644
+#    owner: root
+#    group: root
 
-- name: Redémarrage du service
+- name: Install GRUB
+  apk: 
+    name: grub-efi
+    state: present
+
+- name: Create the GRUB bootloader 
+  shell: |
+    cd /srv/tftp
+    grub-mkimage -O x86_64-efi -o grubx64.efi -p / net efinet tftp http configfile normal multiboot2 gzio fat ext2 multiboot echo efi_gop efi_uga all_video png gfxterm gfxterm_background gfxmenu
+
+- name: Copy the GRUB configuration file
+  template:
+    src: grub.cfg.j2
+    dest: "/srv/tftp/grub.cfg"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Create the GRUB font
+  shell: |
+    cd /srv/tftp
+    grub-mkfont -o font.pf2 -s 24 /usr/share/fonts/misc/ter-u24b.otb
+
+- name: Copy the splash image
+  copy:
+    src: splash_ng.png
+    dest: /srv/tftp/themes/safecor/splash.png
+    mode: 0644
+
+- name: Copy the GRUB theme
+  copy:
+    src: theme.txt
+    dest: /srv/tftp/themes/safecor/theme.txt 
+    mode: 0644
+
+- name: Restart the services
   service:
     name: "in.tftpd"
     state: restarted

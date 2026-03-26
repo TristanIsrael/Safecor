@@ -1,19 +1,9 @@
 #!/bin/sh
 
-if [ ! -d "/config" ]; then 
-    mkdir -p "/config"
+if [ ! -d "/mnt/configs" ]; then 
+    mkdir -p "/mnt/configs"
 fi
 
-if [ ! -f "/config/montage.ok" ]; then
-    echo "[+] Montage du partage NFS des configurations"
-    mount {{ nfs_server }}:/var/www/pxe/configs /config -t nfs -o rw,nolock
-fi
-
-if [ ! -f "/config/montage.ok" ]; then
-    echo "[+] Le montage a échoué. Arrêt du script."
-    exit 1
-fi
-
-echo "[+] Sauvegarde du profil de la machine"
-lbu pkg /config/default.tar.gz
-echo "[+] Sauvegarde terminée"
+echo "[+] Saving this system's profile..."
+lbu pkg /mnt/configs/default.tar.gz
+echo "[+] Finished"

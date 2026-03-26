@@ -1,0 +1,29 @@
+title-text: ""
+desktop-color: "#1ea9f7"
+
++ image {
+        left = 0
+        top = 0
+        width = 150
+        height = 150
+        file = "splash.png"
+}
+
++ boot_menu {
+        left = 25%
+        top = 35%
+        width = 100%
+        height = 65%
+        item_spacing = 0
+        selected_item_color = #ffffff
+        unselected_item_color = #000000
+}
+
++ label {
+        text = "Safecor boot menu"
+        top = 12%
+        width = 100%
+        left = 0%
+        align = center
+        color = #9c0d38
+}

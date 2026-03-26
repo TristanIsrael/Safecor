@@ -1,0 +1,7 @@
+interface=eth0
+bind-interfaces
+
+dhcp-range={{ lan_ip_start }},{{ lan_ip_end }},12h
+
+dhcp-match=set:efi64,option:client-arch,7
+dhcp-boot=tag:efi64,grubx64.efi,{{ tftp_server }},{{ tftp_server }}

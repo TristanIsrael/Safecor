@@ -1,48 +1,46 @@
 all:
   vars:    
-    install_dhcp: yes     # Définit si le service DHCP doit être installé
-    install_tftp: yes     # Définit si le serveur TFTP doit être installé
-    install_http: yes     # Définit si le service HTTP doit être installé
-    install_nfs: yes      # Définit si le service NFS doit être installé
-    depot_alpine: "http://192.168.10.3/"
-    depot_noyaux: "{{ depot_alpine }}releases/"
-    alpine_version: "3.19.1"
-    dhcp_domain: panoptiscan.lan
+    install_dhcp: yes     
+    install_tftp: yes     
+    install_http: yes
+    install_nfs: yes
+    alpine_repository: "http://192.168.10.5/alpine/v3.21"
+    safecor_repository: "http://192.168.10.5/safecor"
+    alpine_kernels_server: "192.168.10.5"
+    alpine_kernels_path: "/alpine/releases"
+    alpine_version: "3.21.3"
+    dhcp_domain: safecor.lan    
     lan_subnet: 192.168.10.0
     lan_netmask: 255.255.255.0
     lan_ip_start: 192.168.10.10
-    lan_ip_end: 192.168.10.252
+    lan_ip_end: 192.168.10.253
     lan_ip_broadcast: 192.168.10.255
-    http_server: 192.168.10.2
-    nfs_server: 192.168.10.2
-    tftp_server: 192.168.10.2 
-    dhcp_server: 192.168.10.1 
-    ntp_server: 192.168.10.253
-    configurations: 
-      xl: yes
-      s_raspi_4b: no
-      s_lattepanda: no
+    http_server: 192.168.10.1
+    nfs_server: 192.168.10.1
+    tftp_server: 192.168.10.1
+    dhcp_server: 192.168.10.1
+    ntp_server: 192.168.10.1
       
-hote_dhcp:
+dhcp_host:
   hosts:
     192.168.10.1:
       ansible_user: "ansible"
       ansible_password: "ansible"    
 
-hote_http:
+http_host:
   hosts:
-    192.168.10.2:
+    192.168.10.1:
       ansible_user: "ansible"
       ansible_password: "ansible"
 
-hote_nfs:
+nfs_host:
   hosts:
-    192.168.10.2:
+    192.168.10.1:
       ansible_user: "ansible"
       ansible_password: "ansible"
 
-hote_tftp:
+tftp_host:
   hosts:
-    192.168.10.2:
+    192.168.10.1:
       ansible_user: "ansible"
       ansible_password: "ansible"

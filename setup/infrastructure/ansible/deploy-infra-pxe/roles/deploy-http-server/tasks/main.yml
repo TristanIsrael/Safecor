@@ -1,59 +1,39 @@
 ---
 
-- name: Installation du serveur HTTP 
+- name: Install HTTP server
   apk: 
     name: lighttpd
     state: present
 
-- name: Installation de GNU tar
+- name: Install additional tools
   apk: 
     name: tar
     state: present
 
-- name: Vérification du répertoire de données
+- name: Verify the PXE data directory
   stat:
-    path: /var/www/pxe
-  register: rep_donnees
+    path: /var/www/configs
+  register: datadir
     
-- name: Contrôle du répertoire de données
-  debug:
-    msg: "Le répertoire existe"
-  when: rep_donnees.stat.exists
-  
-- name: Création du répertoire de données
+- name: Create missing directories
   file:
-    path: /var/www/pxe
+    path: /var/www/configs
     state: directory
     mode: 0777
     group: lighttpd
     owner: lighttpd
-  when: not rep_donnees.stat.exists
+  when: not datadir.stat.exists
     
-- name: Création du répertoire configs
+- name: Create configurations directories
   file:
-    path: /var/www/pxe/configs
+    path: /var/www/configs
     state: directory
     mode: 0777
     group: lighttpd
     owner: lighttpd
-  when: not rep_donnees.stat.exists
+  when: not datadir.stat.exists
 
-- name: Création d'un fichier témoin dans le dossier configs
-  file:
-    path: /var/www/pxe/configs/montage.ok
-    state: touch
-    mode: 0700    
-
-- name: Création du répertoire data
-  file:
-    path: /var/www/pxe/data
-    state: directory
-    mode: 0777
-    group: lighttpd
-    owner: lighttpd
-  when: not rep_donnees.stat.exists
-
-- name: Configuration du service HTTP
+- name: Configure HTTP service
   template:
     src: lighttpd.conf.j2    
     dest: "/etc/lighttpd/lighttpd.conf"
@@ -61,24 +41,19 @@
     group: root 
     mode: 0644
     
-- name: Redémarrage du service HTTP
+- name: Restart HTTP service
   service:
     name: "lighttpd"
     state: restarted
     enabled: true    
 
-- name: Création du script de sauvegarde des profils
+- name: Create the profiles save script
   template:
     src: save-config.sh.j2
-    dest: /var/www/pxe/save-config.sh
+    dest: /var/www/configs/save-config.sh
     mode: 0750
     owner: lighttpd
     group: lighttpd
 
-- name: Installation de la configuration S Raspberry Pi 4B
-  include_tasks: s_raspi_4b.yml
-  when: configurations.s_raspi_4b|bool
-
-- name: Installation de la configuration XL 
-  include_tasks: xl.yml
-  when: configurations.xl|bool
+#- name: Setup the XL configuration files
+#  include_tasks: xl.yml

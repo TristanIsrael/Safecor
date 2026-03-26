@@ -1,6 +1,11 @@
 ---
 
-- name: Configuration du client NTP Chrony
+- name: Install the FTP client
+  apk:
+    name: chrony
+    state: present
+
+- name: Configure the NTP
   template:
     src: chrony.conf.j2
     dest: "/etc/chrony/chrony.conf"
@@ -8,7 +13,7 @@
     owner: root
     group: root
 
-- name: Redémarrage du service chronyd
+- name: Restart the NTP
   service:
     name: "chronyd"
     state: restarted

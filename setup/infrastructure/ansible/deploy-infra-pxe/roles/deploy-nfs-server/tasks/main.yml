@@ -1,17 +1,85 @@
 ---
 
-- name: Installation du serveur NFS
+- name: Install the NFS server
   apk:
     name: nfs-utils
     state: present
 
-- name: Configuration du service
+- name: Configure the NFS server
   template:
     src: exports.j2
     dest: "/etc/exports"
     mode: 0750
+
+- name: Declare the data directory
+  stat:
+    path: /var/configs
+  register: datadir
+
+- name: Verify the TFTP directory
+  debug:
+    msg: "The directory exists"
+  when: datadir.stat.exists
+
+- name: Create the TFTP directories
+  file:
+    path: /var/configs
+    state: directory
+    mode: 0775
+    owner: root
+    group: root
+  when: not datadir.stat.exists
     
-- name: Redémarrage du service NFS
+# APK overlay Alpine vanilla
+- name: Copy the vanilla apkovl
+  copy:
+    src: alpine-vanilla.tar.gz
+    dest: /tmp/alpine-vanilla.tar.gz    
+
+- name: Uncompress the vanilla apkovl
+  shell: |
+    cd /tmp
+    mkdir alpine-vanilla
+    tar xvzf alpine-vanilla.tar.gz -C alpine-vanilla/
+
+- name: Copy the vanilla apkovl
+  template:
+    src: repositories.j2 
+    dest: /tmp/alpine-vanilla/etc/apk/repositories
+
+- name: Create the new vanilla apkovl
+  shell: |
+    cd /tmp
+    rm alpine-vanilla.tar.gz
+    cd alpine-vanilla
+    tar -cvzf /var/www/configs/alpine-vanilla.tar.gz etc
+
+# APK overlay Safecor Diag
+- name: Copy the safecor-diag apkovl
+  copy:
+    src: safecor-diag.tar.gz
+    dest: /tmp/safecor-diag.tar.gz    
+
+- name: Uncompress the safecor-diag apkovl
+  shell: |
+    cd /tmp
+    mkdir safecor-diag
+    tar xvzf safecor-diag.tar.gz -C safecor-diag/
+
+- name: Copy the safecor-diag apkovl
+  template:
+    src: repositories.j2 
+    dest: /tmp/safecor-diag/etc/apk/repositories
+
+- name: Create the new safecor-diag apkovl
+  shell: |
+    cd /tmp
+    rm safecor-diag.tar.gz
+    cd safecor-diag
+    tar -cvzf /var/www/configs/safecor-diag.tar.gz etc
+
+# END
+- name: Restart the NFS server
   service:
     name: "nfs"
     state: restarted
