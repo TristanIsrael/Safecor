@@ -22,7 +22,8 @@
             {
                 "name": "test-domain",
                 "app-package": "bash",
-                "memory": 100
+                "memory": 100,
+                "temp_disk_size": 4096
             },
             {
                 "name": "another-domain",

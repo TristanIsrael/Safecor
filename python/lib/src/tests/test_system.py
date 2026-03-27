@@ -71,12 +71,14 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(domain.get("app-package", ""), "bash")
         self.assertEqual(domain.get("memory", 0), 100)
         self.assertEqual(domain.get("cpu", 0), 0)
+        self.assertEqual(domain.get("temp_disk_size", 0), 4096)
 
         domain = topo.get("business", {}).get("domains", "")[1]
         self.assertEqual(domain.get("name", ""), "another-domain")
         self.assertEqual(domain.get("app-package", ""), "my-domain")
         self.assertEqual(domain.get("memory", 0), 1024)
         self.assertEqual(domain.get("cpu", 0), 0)
+        self.assertEqual(domain.get("temp_disk_size", 0), 0)
 
     def test_get_topology_struct_no_vcpus_groups(self):
         topo_filepath = self.files_path / "topology_1.json"
@@ -240,8 +242,10 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(len(bus_doms), 2)
         dom = bus_doms[0]
         self.assertEqual(dom.name, "test-domain")
+        self.assertEqual(dom.temp_disk_size, 4096)
         dom = bus_doms[1]
         self.assertEqual(dom.name, "another-domain")
+        self.assertEqual(dom.temp_disk_size, 0)
 
     def test_parse_range(self):
         self.assertEqual(System.parse_range("1-2"), (1,2))

@@ -21,6 +21,7 @@ class Domain:
     cpu_affinity = [] # List of CPU pins
     package = ""
     domain_type = DomainType.BUSINESS
+    temp_disk_size = 0
     
     def __init__(self, domain_name:str, domain_type:DomainType):
         self.name = domain_name

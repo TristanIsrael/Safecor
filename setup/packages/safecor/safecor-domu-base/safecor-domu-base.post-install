@@ -8,3 +8,8 @@ if [ -d "/mnt/storage" ]; then
     chgrp safecor /mnt/storage
     chmod 770 /mnt/storage
 fi
+
+echo "Mount temp disk on /tmp if required"
+mount LABEL=TMPFILE /tmp || true
+rmdir /var/tmp
+ln -s /tmp /var/tmp

@@ -42,14 +42,14 @@ except ImportError as e:
 from ._mouse import Mouse, MouseButton, MouseWheel, MouseMove
 from ._tasks_runner import TaskRunner
 from ._inputs_daemon import InputsDaemon
-from ._sys_usb_controller import SysUsbController
 from ._dom0_controller import Dom0Controller
 from ._components_helper import ComponentsHelper
 from ._mqtt_factory import MqttFactory
 from ._api import Api
-from ._mock_sys_usb_controller import MockSysUsbController
 from ._debugging import Debugging
 from ._api_helper import ApiHelper
+from ._sys_usb_controller import SysUsbController
+from ._mock_sys_usb_controller import MockSysUsbController
 
 __all__ = [
     "__version__",
@@ -70,10 +70,10 @@ __all__ = [
     "BenchmarkId",
     "TaskRunner",
     "MqttClient", "ConnectionType", "MqttFactory", "SerialMQTTClient", "MqttHelper",
-    "Dom0Controller", "DiskMonitor", "SysUsbController", "Api",
+    "Dom0Controller", "DiskMonitor", "Api",
     "ComponentsHelper",
-    "MockSysUsbController",
-    "Debugging", "ApiHelper",    
+    "Debugging", "ApiHelper",
+    "SysUsbController", "MockSysUsbController",    
 ]
 
 logging.getLogger(__name__).addHandler(NullHandler())

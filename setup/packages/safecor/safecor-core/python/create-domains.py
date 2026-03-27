@@ -100,7 +100,7 @@ class DomainsFactory:
                     boot_iso_location= f"bootiso-{domain.name}.iso",
                     share_packages= True,
                     share_storage= True,
-                    share_system= False
+                    share_system= False,
                 )
 
                 filename = f"/etc/safecor/xen/{domain.name}.conf"
@@ -214,6 +214,13 @@ cpus = "{ System.cpu_affinity_to_string(dom.cpu_affinity) }"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
     'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img'
+'''
+        # Add a temp diskfile if required
+        # The diskfile is prepared by the orchestrator
+        if domain.temp_disk_size > 0:
+            txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
+        
+        txt += '''
 ]
 device_model_override = "/usr/bin/qemu-system-x86_64"
 device_model_version = "qemu-xen"

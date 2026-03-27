@@ -257,6 +257,7 @@ class System(metaclass=SingletonMeta):
             domain.vcpus = domain_desc.get("vcpus", "")
             domain.cpu_affinity = domain_desc.get("cpus", []) #System.parse_range(domain.vcpus)
             domain.package = domain_desc.get("package", "")
+            domain.temp_disk_size = domain_desc.get("temp_size_size", 0)
 
             _topology.add_domain(domain)
 
@@ -309,7 +310,8 @@ class System(metaclass=SingletonMeta):
                         "memory": 4000,
                         "vcpus": 2,
                         "cpus": "3-4",
-                        "package": ""
+                        "package": "",
+                        "temp_disk_size": 4096
                     }
                 ],
                 "system": {
@@ -407,7 +409,8 @@ class System(metaclass=SingletonMeta):
                 "package": domain.get("app-package", ""),
                 "vcpus": System.compute_vcpus_for_group(group_name, vcpu_groups),
                 "cpus": System().compute_cpus_for_group(group_name, vcpu_groups),
-                "vcpu_groups": vcpu_groups
+                "vcpu_groups": vcpu_groups,
+                "temp_disk_size": domain.get("temp_disk_size", 0)
             }
 
         topo_struct["domains"] = topo_domains

@@ -11,7 +11,11 @@ from pathlib import Path
 from queue import Queue
 from . import Constants, MqttClient, Topics, MqttHelper
 from . import FileHelper, ResponseFactory, ComponentState
-from . import Logger, DiskMonitor, NotificationFactory, DiskState
+try:
+    from . import DiskMonitor
+except ImportError:
+    print("SysUsbController cannot use DiskMonitor")
+from . import Logger, NotificationFactory, DiskState
 try:
     from . import InputsDaemon
     NO_INPUTS_MONITORING = False

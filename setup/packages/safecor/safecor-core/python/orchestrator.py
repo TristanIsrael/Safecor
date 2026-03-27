@@ -284,13 +284,33 @@ def can_create_domains() -> bool:
     
     return True
 
+def create_temp_disk(domain_name:str, size_in_mb:int):
+    """ Create a temporary file for the /tmp in a Domain """
+
+    filename = f"{domain_name}-tmp.img"
+    
+    # Remove any existing file
+    os.remove(filename)
+
+    cmd = f"truncate -s {size_in_mb*1024} /usr/lib/safecor/tmp/{filename}"
+
+    res = subprocess.run(cmd)
+    if res.returncode > 0:
+        SysLogger("Orchestrator").error(f"Cannot create the temporary diskfile for {domain_name}")
+        return
+    
+    cmd = f"mkfs.ext4 -L TMPFILE {filename}"
+    if res.returncode > 0:
+        SysLogger("Orchestrator").error(f"Cannot format the temporary diskfile for {domain_name}")
+        return
+
+    SysLogger("Orchestrator").debug(f"Temporary diskfile of size {size_in_mb} MB created for {domain_name}")
+
+    # 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/saphir-av-eset-tmp.img'
 
 def start_business_domains():
     """ Starts the business Domains"""
 
-    #with open('/etc/safecor/topology.json', 'r') as f:
-    #    data = json.loads(f.read())
-    #    f.close()
     topology = System.get_topology()
 
     domains = topology.business_domains()
