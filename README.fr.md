@@ -1,64 +1,64 @@
-# Safecor - an operating system for security products
+# Safecor - un système d’exploitation pour produits de sécurité
 
-![Usage restricted](https://img.shields.io/badge/Usage-Restricted-red)
-![No redistribution](https://img.shields.io/badge/Redistribution-Disallowed-red)
-![Contribute](https://img.shields.io/badge/Contributions-Repo-blue)
+![Usage restreint](https://img.shields.io/badge/Usage-Restricted-red)
+![Pas de redistribution](https://img.shields.io/badge/Redistribution-Disallowed-red)
+![Contributions via le dépôt](https://img.shields.io/badge/Contributions-Repo-blue)
 
-[![platform](https://img.shields.io/badge/platform-Alpine-Linux.svg)](https://gbatemp.net/forums/nintendo-switch.283/?prefix_id=44)
-[![language](https://img.shields.io/badge/language-Python-ba1632.svg)](https://github.com/topics/cpp)
-[![GPLv3 License](https://img.shields.io/badge/license-Proprietary-189c11.svg)](https://www.gnu.org/licenses/old-licenses/gpl-3.0.en.html)
-[![Latest Version](https://img.shields.io/github/v/release/TristanIsrael/Safecor?label=latest&color=blue)](https://github.com/TristanIsrael/Safecor/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/TristanIsrael/Safecor/total?color=6f42c1)](https://github.com/TristanIsrael/Safecor/graphs/traffic)
-[![GitHub issues](https://img.shields.io/github/issues/TristanIsrael/Safecor?color=222222)](https://github.com/TristanIsrael/Safecor/issues)
-[![GitHub stars](https://img.shields.io/github/stars/TristanIsrael/Safecor)](https://github.com/TristanIsrael/Safecor/stargazers)
+[![plateforme](https://img.shields.io/badge/platforme-Alpine-Linux.svg)](https://gbatemp.net/forums/nintendo-switch.283/?prefix_id=44)
+[![langage](https://img.shields.io/badge/langage-Python-ba1632.svg)](https://github.com/topics/cpp)
+[![Licence propriétaire](https://img.shields.io/badge/licence-Proprietary-189c11.svg)](https://www.gnu.org/licenses/old-licenses/gpl-3.0.en.html)
+[![Dernière version](https://img.shields.io/github/v/release/TristanIsrael/Safecor?label=latest&color=blue)](https://github.com/TristanIsrael/Safecor/releases/latest)
+[![Téléchargements](https://img.shields.io/github/downloads/TristanIsrael/Safecor/total?color=6f42c1)](https://github.com/TristanIsrael/Safecor/graphs/traffic)
+[![Problèmes GitHub](https://img.shields.io/github/issues/TristanIsrael/Safecor?color=222222)](https://github.com/TristanIsrael/Safecor/issues)
+[![Étoiles GitHub](https://img.shields.io/github/stars/TristanIsrael/Safecor)](https://github.com/TristanIsrael/Safecor/stargazers)
 ![CI](https://github.com/TristanIsrael/Safecor/actions/workflows/build-all.yml/badge.svg)
 
-**This project provides a software architecture for creating security products.**
+**Ce projet fournit une architecture logicielle pour créer des produits de sécurité.**
 
-> ⚠️ **Important Notice**
+> ⚠️ **Avis important**
 
-This repository is subject to a restrictive license.  
-You are **not allowed to fork, copy, modify, or reuse** this code in any form, including through GitHub features, **without explicit written permission** from the author.
+Ce dépôt est soumis à une licence restrictive.  
+Vous **n’êtes pas autorisé à forker, copier, modifier ou réutiliser** ce code sous quelque forme que ce soit, y compris via les fonctionnalités GitHub, **sans l’autorisation écrite explicite** de l’auteur.
 
 ## 📚 Documentation
 
-Newcomers should begin with the [architecture documentation](wiki/Architecture.md).
+Les nouveaux utilisateurs doivent commencer par la [documentation sur l’architecture](wiki/Architecture.md).
 
-The main documentation is available in the [Github Wiki](https://github.com/TristanIsrael/Safecor/wiki).
+La documentation principale est disponible dans le [Wiki GitHub](https://github.com/TristanIsrael/Safecor/wiki).
 
-API automatically generated documentation:
-- [Python API documentation on Github Pages](https://tristanisrael.github.io/Safecor)
-- [Protocol documentation on Github Wiki](https://github.com/TristanIsrael/Safecor/wiki/Protocol)
+Documentation API générée automatiquement :  
+- [Documentation API Python sur GitHub Pages](https://tristanisrael.github.io/Safecor)  
+- [Documentation du protocole sur GitHub Wiki](https://github.com/TristanIsrael/Safecor/wiki/Protocol)
 
-## 📁 Project directory structure
+## 📁 Structure des répertoires du projet
 
-The project is divided into different parts :
+Le projet est divisé en différentes parties :
 
-| Folder | Description|
+| Dossier | Description |
 |--|--|
-| certs | contains the public key for the Alpine repository |
-| misc | contains different objects like fonts, logos and scripts |
-| python | contains the source code of the projet [See README.md](python/README.md) |
-| setup | contains the source code of the Alpine packages [See README.md](setup/README.md) |
+| certs | contient la clé publique pour le dépôt Alpine |
+| misc | contient différents objets comme polices, logos et scripts |
+| python | contient le code source du projet [Voir README.md](python/README.md) |
+| setup | contient le code source des paquets Alpine [Voir README.md](setup/README.md) |
 
 ## 📜 Licence
 
-Please read the [licence](python/lib/LICENCE.md) carefully before using this product. 
+Veuillez lire attentivement la [licence](python/lib/LICENCE.md) avant d’utiliser ce produit. 
 
 ## 🚀 Releases
 
-*Please notice that only x86_64 packages are available*
+*Veuillez noter que seuls les paquets x86_64 sont disponibles actuellement.*
 
-The releases are available in the [official repository](https://alefbet.net/github/safecor).
+Les releases sont disponibles dans le [dépôt officiel](https://alefbet.net/github/safecor).
 
-Add the following in `/etc/apk/repositories`:
+Ajoutez la ligne suivante dans `/etc/apk/repositories` :
 ```
 https://alefbet.net/github/safecor
 ```
 
-The [public key file](https://alefbet.net/github/safecor/safecor.rsa.pub) must be downloaded into `/etc/apk/keys`.
+Le fichier de [la clé publique](https://alefbet.net/github/safecor/safecor.rsa.pub) doit être téléchargé dans le répertoire `/etc/apk/keys`.
 
-## 🖥️ Compatibility
+## 🖥️ Compatibilité
 
 | Alpine | Status |
 |--|--|
@@ -67,10 +67,10 @@ The [public key file](https://alefbet.net/github/safecor/safecor.rsa.pub) must b
 | v3.22 | ![Not tested](https://img.shields.io/badge/Not%20tested-ffa500) |
 | v3.23 | ![Not tested](https://img.shields.io/badge/Not%20tested-ffa500) |
 
-## 🏁 Getting started
+## 🏁 Première utilisation
 
-When you use Safecor for the first time we suggest you start with the [demonstration app](python/demo/README.md) or the [diagnostic app](python/diag/README.md).
+Lors de la première utilisation de Safecor, nous vous suggérons de commencer par l’[application de démonstration](python/demo/README.md) ou l’[application de diagnostic](python/diag/README.md).
 
-Follow the instruction in the [provisioning](python/lib/docs/source/markdown/provisioning.md) documentation.
+Suivez les instructions de la documentation [provisioning](python/lib/docs/source/markdown/provisioning.md).
 
-**Please notice that your hardware must be compatible with VT-d and VT-x. This can be verified with the [diagnostic app](python/diag/README.md).**
+**Veuillez noter que votre matériel doit être compatible avec VT-d et VT-x. Cela peut être vérifié avec l’[application de diagnostic](python/diag/README.md).**
