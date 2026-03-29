@@ -11,8 +11,6 @@
 
 This project provides a software architecture for creating security products.
 
-**PSEC is being renamed Safecor. During the transition you will find both names in the source code and the documentation**
-
 > ⚠️ **Important Notice**
 
 This repository is subject to a restrictive license.  
@@ -47,14 +45,14 @@ Please read the [licence](python/lib/LICENCE.md) carefully before using this pro
 
 *Please notice that only x86_64 packages are available*
 
-The releases are available in the [official repository](https://alefbet.net/repositories/Safecor).
+The releases are available in the [official repository](https://alefbet.net/github/safecor).
 
 Add the following in `/etc/apk/repositories`:
 ```
-https://alefbet.net/repositories/Safecor
+https://alefbet.net/github/safecor
 ```
 
-The [public key file](https://alefbet.net/repositories/PGP/Safecor.rsa.pub) must be downloaded into `/etc/apk/keys`.
+The [public key file](https://alefbet.net/github/safecor/safecor.rsa.pub) must be downloaded into `/etc/apk/keys`.
 
 ## Compatibility
 
