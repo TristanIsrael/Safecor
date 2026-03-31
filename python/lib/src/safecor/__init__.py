@@ -6,7 +6,7 @@ from logging import NullHandler
 
 from ._topology import Topology, Domain, Screen, DomainType
 from ._singleton import SingletonMeta
-from ._constants import Constants, InputType, BenchmarkId, ComponentState, DiskState
+from ._constants import Constants, InputType, BenchmarkId, ComponentState, DiskState, Settings
 from ._syslogger import SysLogger
 
 try:
@@ -55,7 +55,7 @@ __all__ = [
     "__version__",
     "SingletonMeta",
     "Topology", "Domain", "DomainType", "DiskState",
-    "Constants", "System", "topology", "Screen", "Constants", "ComponentState", "Topics",
+    "Constants", "System", "topology", "Screen", "Constants", "ComponentState", "Topics", "Settings",
     "KeymapFR",
     "InputType", 
     "Configuration", "ConfigurationHelper",

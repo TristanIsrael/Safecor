@@ -1,6 +1,6 @@
 """ \author Tristan Israël """
 
-from . import ComponentState, BenchmarkId
+from . import ComponentState, BenchmarkId, Topology
 
 class ResponseFactory():
     """ This class helps generating commands for API reponses.   
@@ -131,4 +131,31 @@ class ResponseFactory():
             "source": source_name,
             "data": data,
             "sent_at": sent_at
+        }
+
+    @staticmethod
+    def create_response_languages_list(languages:list):
+        return {
+            "languages": languages
+        }
+    
+
+    @staticmethod
+    def create_response_language_default(language:str):
+        return {
+            "language": language
+        }
+    
+    @staticmethod
+    def create_response_get_setting(key:str, value):
+        return {
+            "key": key,
+            "value": value
+        }
+
+    @staticmethod
+    def create_response_set_setting(key:str, value):
+        return {
+            "key": key,
+            "value": value
         }

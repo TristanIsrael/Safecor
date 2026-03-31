@@ -36,6 +36,7 @@ class System(metaclass=SingletonMeta):
     __system_uuid = ""
     __cpu_count = None
     __cpu_assignments = None
+    __settings = {}
 
     def get_screen_width(self) -> int:
         """ Returns the system main screen's resolution width 
@@ -210,7 +211,7 @@ class System(metaclass=SingletonMeta):
 
     @staticmethod
     def get_topology(override_topology_file:str = "") -> Topology:
-        """ Returns a ``Topology`` object initialized with the contents of the topology file 
+        """ Returns a ``Topology`` object initialized with the contents of the topology file
         
             This function must be ran in the Dom0.
         """
@@ -234,6 +235,8 @@ class System(metaclass=SingletonMeta):
         # Product information
         _topology.product_name = topo.get("product", {}).get("name", "Unknown")
         _topology.add_color("splash_bgcolor", topo.get("product", {}).get("splash_bgcolor", "#000000"))
+        _topology.languages = topo.get("product", {}).get("languages", [])
+        _topology.default_language = topo.get("product", {}).get("default_language", "en")
 
         # System information
         _topology.use_usb = topo.get("system", {}).get("use_usb", False)
@@ -421,6 +424,8 @@ class System(metaclass=SingletonMeta):
         topo_product["name"] = json_product.get("name", "No Name")
         topo_product["splash_bgcolor"] = json_product.get("splash_bgcolor", "#1ca9f7")
         topo_struct["product"] = topo_product
+        topo_product["languages"] = json_product.get("languages", [])
+        topo_product["default_language"] = json_product.get("default_language", "en")
 
         # Get the configurations settings
         data_configurations = topo_data.get("configurations", [])
@@ -829,3 +834,33 @@ class System(metaclass=SingletonMeta):
                 present = flags.CREATE in flags.from_mask(mask)
                 threading.Thread(target=fn_callback, args=(path, _filename, present,)).start()
             
+    def get_settings(self) -> dict:
+        return self.__settings
+    
+    def get_setting(self, key:str):
+        return self.__settings.get(key, "")
+    
+    def set_setting(self, key:str, value):
+        self.__settings[key] = value
+
+    def parse_kernel_command_line_settings(self):
+        """ Returns the settings defined on the command line
+
+        All the keys are turned to lowercase.
+        """
+
+        valid_settings = [ "DEBUG", "debug", "DEFAULT_LANGUAGE", "default_language" ]
+
+        with open("/proc/cmdline", "r") as f:
+            content = f.read().strip()
+            result = {}
+
+            for item in content.split():
+                if "=" in item:
+                    key, value = item.split("=", 1)
+                    if key in valid_settings:
+                        result[key.lower()] = value
+
+            return result
+
+        return {}

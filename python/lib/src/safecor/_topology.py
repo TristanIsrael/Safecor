@@ -64,6 +64,8 @@ class Topology:
     screen: Screen
     configurations = []
     pci: Pci
+    languages = []
+    default_language = "en"
 
     def __init__(self, other=None):
         """ Create a new Topology from scratch or as a deep copy if other is not None """
@@ -85,6 +87,8 @@ class Topology:
             self.screen = copy.deepcopy(other.screen)
             self.configurations = copy.deepcopy(other.configurations)
             self.pci = copy.deepcopy(other.pci)
+            self.languages = copy.deepcopy(other.languages)
+            self.default_language = copy.deepcopy(other.default_language)
 
     def initialized(self) -> bool:
         """ Returns whether the object is initialized """

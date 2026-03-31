@@ -606,11 +606,41 @@ class Api(metaclass=SingletonMeta):
         """ Queries sys-usb to clear its queues.
         """
 
-        Api().publish(f"{Topics.SYS_USB_CLEAR_QUEUES}/request", {})
-
+        self.__mqtt_client.publish(f"{Topics.SYS_USB_CLEAR_QUEUES}/request", {})
 
     ####
-    # Fonctions de notification
+    # Settings
+    #
+    def get_languages_list(self):
+        """ 
+        Asks for the languages defined in the product
+        """
+        
+        self.__mqtt_client.publish(f"{Topics.LANGUAGES}/request")
+
+    def get_default_language(self):
+        """
+        Asks for the default language of the system
+        """
+
+        self.__mqtt_client.publish(f"{Topics.DEFAULT_LANGUAGE}/request")
+
+    def get_current_language(self):
+        """
+        Asks for the current system language
+        """
+
+        self.__mqtt_client.publish(f"{Topics.CURRENT_LANGUAGE}/request")
+
+    def set_current_language(self):
+        """
+        Sets the current system language
+        """
+
+        self.__mqtt_client.publish(f"{Topics.SET_LANGUAGE}/request")
+
+    ####
+    # Notifications
     #
     def notify_disk_added(self, disk):
         """
@@ -739,7 +769,7 @@ class Api(metaclass=SingletonMeta):
             try:
                 cb(topic, payload)
             except Exception:
-                Logger.print("An exception has been raised by the callback")                
+                Logger.print("An exception has been raised by the callback")
 
 
     def __on_shutdown(self, payload:dict):

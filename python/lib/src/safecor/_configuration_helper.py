@@ -10,17 +10,20 @@ class Configuration():
     - a name (field `name`)
     - an identifier for the hardware (field `identifier`)
     - a set of parameters (field `settings`)
+    - the languages used by the system (field `languages`)
+    - the default language defined for the system (field `default_language`)
     """
 
     name = ""
     identifier = {}
     settings = {}
+    languages = []
+    default_language = "en"
 
     def __init__(self, name:str, identifier:dict, settings:dict):
         self.name = name
         self.identifier = identifier
         self.settings = settings
-
 
 class ConfigurationHelper():
     """ This class handles different sets of parameters defined for hardware configurations.
@@ -87,7 +90,7 @@ class ConfigurationHelper():
                 break
             
         # Finally we return the topology with the configuration applied
-        return topology    
+        return topology
 
     @staticmethod
     def __read_configurations(topo:list[dict]) -> list[Configuration]:

@@ -4,11 +4,11 @@ import threading
 import subprocess
 import time
 import psutil
-from . import Constants, __version__
+from . import Constants, __version__, Settings
 from . import Logger, FileHelper
 from . import ResponseFactory
 from . import MqttClient, Topics, MqttHelper, NotificationFactory
-from . import System, ComponentState
+from . import System, ComponentState, topology
 LIBVIRT_UNAVAILABLE = False
 try:
     from . import LibvirtHelper
@@ -82,7 +82,7 @@ class Dom0Controller():
         self.__mqtt_lock.wait()
     
 
-    def __on_mqtt_connected(self):        
+    def __on_mqtt_connected(self):
         self.mqtt_client.subscribe(f"{Topics.LIST_FILES}/request")
         self.mqtt_client.subscribe(f"{Topics.FILE_FINGERPRINT}/request")
         self.mqtt_client.subscribe(f"{Topics.SHUTDOWN}/request")
@@ -93,6 +93,10 @@ class Dom0Controller():
         self.mqtt_client.subscribe(f"{Topics.DELETE_FILE}/request")
         self.mqtt_client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/request")
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
+        self.mqtt_client.subscribe(f"{Topics.SETTINGS}/#/request")
+
+        # Handle the kernel's or configuration command line settings
+        self.__handle_settings()
 
         Logger().debug("Safecor Dom0 controller is ready")
 
@@ -126,6 +130,8 @@ class Dom0Controller():
                 self.__handle_discover_components()
             elif topic == f"{Topics.PING}/request":
                 self.__handle_ping(payload)
+            elif topic.startswith(Topics.SETTINGS):
+                self.__handle_settings(topic, payload)
         except Exception:
             Logger.print("An exception occured while handling the message")
 
@@ -290,4 +296,74 @@ class Dom0Controller():
 
         self.mqtt_client.publish(f"{Topics.PING}/response", payload)
 
-    
+    def __handle_settings(self, topic:str, payload:dict):
+        """
+        Handles the settings requests
+        """
+
+        if topic.startswith(Topics.LANGUAGES):
+            self.__handle_settings_languages(topic, payload)
+        
+    def __handle_settings_languages(self, topic:str, payload:dict):
+        """ 
+        Handles the languages settings
+        """
+
+        if topic.startswith(Topics.LIST_LANGUAGES):
+            payload = ResponseFactory.create_response_languages_list(topology.languages)
+            self.mqtt_client.publish(f"{Topics.LIST_LANGUAGES}/response", payload)
+        elif topic.startswith(Topics.DEFAULT_LANGUAGE):
+            payload = ResponseFactory.create_response_language_default(topology.default_language)
+            self.mqtt_client.publish(f"{Topics.DEFAULT_LANGUAGE}/response", payload)
+        elif topic.startswith(Topics.CURRENT_LANGUAGE):
+            key = payload.get("key", None)
+            if key is None:
+                Logger().warn(f"There is no setting with the name {key}")
+                return
+            
+            payload = ResponseFactory.create_response_get_setting(key, System().get_setting(key))
+            self.mqtt_client.publish(f"{Topics.CURRENT_LANGUAGE}/response", payload)
+        elif topic.startswith(Topics.SET_LANGUAGE):
+            # Send the response
+            key = payload.get("key", None)
+            if key is None:
+                Logger().warn(f"There is no setting with the name {key}")
+                return
+            
+            value = payload.get("value", "")
+            
+            # Define the setting
+            System().set_setting(key, value)
+            new_value = System().get_setting(key)
+
+            # Verify the setting
+            if value == new_value:
+                Logger().warn(f"The setting value for {key} has not been changed")
+                return
+            
+            # Send the response
+            payload = ResponseFactory.create_response_set_setting(key, new_value)
+            self.mqtt_client.publish(f"{Topics.CURRENT_LANGUAGE}/response", payload)
+
+            # Send a notification that the value changed
+            notif = NotificationFactory.create_notification_setting_changed(key, value)
+            self.mqtt_client.publish(f"{Topics.SETTING_CHANGED}", notif)
+
+    def __handle_settings(self):
+        """ Handle the settings defined in the configuration or kernel's command line 
+
+        The current settings are:
+        - The language that becomes the current language. If no language setting is defined, the
+        default language becomes the current language
+        """
+
+        # Look in the kernel command line
+        kernel_settings =  System().parse_kernel_command_line_settings()
+
+        if "language" in kernel_settings:
+            lang = kernel_settings["language"]
+            Logger().info(f"Default language defined on the kernel's command line is {lang}")
+            System().set_setting(Settings.CURRENT_LANGUAGE, lang)
+        else:
+            Logger().info(f"Default language defined on the kernel's command line is {topology.default_language}")
+            System().set_setting(Settings.CURRENT_LANGUAGE, topology.default_language)

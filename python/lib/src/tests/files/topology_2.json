@@ -1,6 +1,8 @@
 {
     "product": {
-        "name": "Safecor Tests"
+        "name": "Safecor Tests",
+        "languages": [ "fr", "en", "de"],
+        "default_language": "fr"
     },
     "pci": {        
         "blacklist": [ "00:0d.0" ]

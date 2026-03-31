@@ -12,6 +12,7 @@ class Topics():
     WORKFLOW = f"{SYSTEM}/workflow"
     ENERGY = f"{SYSTEM}/energy"
     SYS_USB = f"{SYSTEM}/sys-usb"
+    SETTINGS = f"{SYSTEM}/settings"
 
     DEBUGGING = f"{SYSTEM}/debugging"
 
@@ -52,3 +53,11 @@ class Topics():
 
     # Debugging
     PING = f"{DEBUGGING}/ping"
+
+    # Settings
+    SETTING_CHANGED = f"{SETTINGS}/changed"
+    LANGUAGES = f"{SETTINGS}/languages"
+    LIST_LANGUAGES = f"{LANGUAGES}/list"
+    DEFAULT_LANGUAGE = f"{LANGUAGES}/default"
+    CURRENT_LANGUAGE = f"{LANGUAGES}/current"
+    SET_LANGUAGE = f"{LANGUAGES}/set"

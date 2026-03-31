@@ -57,6 +57,8 @@ class TestSystem(unittest.TestCase):
         self.assertNotEqual(topo, {})
  
         self.assertEqual(topo.get("product", {}).get("name", ""), "Safecor Tests")
+        self.assertEqual(topo.get("product", {}).get("languages"), [])
+        self.assertEqual(topo.get("product", {}).get("default_language"), "en")
         self.assertEqual(topo.get("pci", {}).get("blacklist", ""), ["00:0d.0"])
         self.assertEqual(topo.get("usb", {}).get("use", 0), 1)
         self.assertEqual(topo.get("gui", {}).get("use", 0), 1)
@@ -138,6 +140,8 @@ class TestSystem(unittest.TestCase):
         self.assertNotEqual(topo, {})
 
         self.assertEqual(topo.get("product", {}).get("name", ""), "Safecor Tests")
+        self.assertEqual(topo.get("product", {}).get("languages"), [ "fr", "en", "de"])
+        self.assertEqual(topo.get("product", {}).get("default_language"), "fr")
 
         system = topo.get("system", {})
         self.assertEqual(system.get("use_usb", False), True)
@@ -183,6 +187,24 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom["package"], "my-domain")
         self.assertEqual(dom["cpus"], [4,5,6,7,8,9,10,11])
 
+    def test_languages(self):
+        topo_filepath = self.files_path / "topology_1.json"
+        
+        System().reset_topology()
+        topo = System.get_topology(topo_filepath.as_posix())
+        self.assertIsNotNone(topo)
+
+        self.assertEqual(len(topo.languages), 0)
+        self.assertEqual(topo.default_language, "en")
+
+        topo_filepath = self.files_path / "topology_2.json"
+        
+        System().reset_topology()
+        topo = System.get_topology(topo_filepath.as_posix())
+        self.assertIsNotNone(topo)
+
+        self.assertEqual(topo.languages, ["fr", "en", "de"])
+        self.assertEqual(topo.default_language, "fr")
 
     def test_get_topology(self):
         topo_filepath = self.files_path / "topology_1.json"
@@ -440,3 +462,9 @@ class TestSystem(unittest.TestCase):
              patch("os.path.exists", side_effect=path_exists_side_effect):
                 topo = System.get_topology(topo_filepath.as_posix())
                 self.assertEqual(topo.screen.rotation, 90)                
+
+    def test_settings(self):
+        self.assertEqual(System().get_setting("none"), "")
+        System().set_setting("a_setting", "a value")
+        self.assertEqual(System().get_setting("a_setting"), "a value")
+        self.assertEqual(System().get_settings(), { "a_setting": "a value"})

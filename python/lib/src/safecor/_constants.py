@@ -67,3 +67,9 @@ class Constants():
         ".jar", ".lha", ".lzh", ".lz", ".lz4", ".lzma", ".mtree", ".pkg", ".rar", ".tgz",
         ".war", ".xar", ".xz", ".zip", ".Z", ".zst"
     ]
+
+class Settings():
+    """ This class defines the settings keys reference """
+
+    DEFAULT_LANGUAGE = "default_language"
+    CURRENT_LANGUAGE = "current_language"
