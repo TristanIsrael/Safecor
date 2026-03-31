@@ -117,20 +117,15 @@ class ConfigurationHelper():
             if usb.get("use", None) is not None:
                 topo.use_usb = usb.get("use")
 
-        # GUI section
-        gui = conf.get("gui", None)
-        if gui is not None:
-            if gui.get("use", None) is not None:
-                topo.use_gui = gui.get("use")
-                topo.gui.use = topo.use_gui
-            if gui.get("app-package", None) is not None:
-                topo.gui.app_package = gui.get("app-package")
-            if gui.get("memory", None) is not None:
-                topo.gui.memory = gui.get("memory")
-            if gui.get("screen", None) is not None:
-                screen = gui.get("screen")
-                if screen.get("rotation", None) is not None:
-                    topo.screen.rotation = screen.get("rotation")
+        # screen section
+        screen = conf.get("screen", None)
+        if screen is not None:
+            if screen.get("enabled", None) is not None:
+                topo.screen.enabled = screen.get("enabled")
+            if screen.get("rotation", None) is not None:
+                topo.screen.rotation = screen.get("rotation")
+            if screen.get("default_focus", None) is not None:
+                topo.screen.default_focus = screen.get("default_focus")
             
         # PCI section
         pci = conf.get("pci", None)

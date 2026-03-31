@@ -6,10 +6,9 @@
     "usb": {
         "use": 1
     },
-    "gui": {
-        "use": 1,
-        "memory": 2000,
-        "app-package": "saphir-gui"        
+    "screen": {
+        "enabled": 1,
+        "default_focus": "controller"
     },
     "vcpu": {
         "groups": {
@@ -33,6 +32,13 @@
                 "app-package": "saphir-av-eset",
                 "memory": 1500,
                 "vcpu_group": "antivirus"
+            },
+            {
+                "name": "controller",
+                "app-package": "app-controller",
+                "memory": 1000,
+                "vcpu_group": "sys-gui",
+                "has_gui": 1
             }
         ]
     },
@@ -44,10 +50,8 @@
 	            "product_name": "R8AA"
             },
             "settings": {
-                "gui": {
-                    "screen": {
-                        "rotation": 90
-                    }
+                "screen": {
+                    "rotation": 90
                 },
                 "pci": {
                     "blacklist": [ "00:0d.0" ]
@@ -61,10 +65,8 @@
 	            "product_name": "Fake"
             },
             "settings": {
-                "gui": {
-                    "screen": {
-                        "rotation": 270
-                    }
+                "screen": {
+                    "rotation": 270
                 },
                 "pci": {
                     "blacklist": [ "00:00.0" ]

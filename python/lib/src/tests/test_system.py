@@ -57,14 +57,12 @@ class TestSystem(unittest.TestCase):
         self.assertNotEqual(topo, {})
  
         self.assertEqual(topo.get("product", {}).get("name", ""), "Safecor Tests")
-        self.assertEqual(topo.get("product", {}).get("languages"), [])
-        self.assertEqual(topo.get("product", {}).get("default_language"), "en")
+        self.assertEqual(topo.get("product", {}).get("languages", []), [])
+        self.assertEqual(topo.get("product", {}).get("default_language", ""), "")
         self.assertEqual(topo.get("pci", {}).get("blacklist", ""), ["00:0d.0"])
         self.assertEqual(topo.get("usb", {}).get("use", 0), 1)
-        self.assertEqual(topo.get("gui", {}).get("use", 0), 1)
-        self.assertEqual(topo.get("gui", {}).get("memory", 0), 2000)
-        self.assertEqual(topo.get("gui", {}).get("app-package", ""), "safecor-tests-gui")
-        self.assertEqual(topo.get("gui", {}).get("screen", {}).get("rotation", 0), 90)        
+        self.assertEqual(topo.get("screen", {}).get("enabled", 0), 1)
+        self.assertEqual(topo.get("screen", {}).get("rotation", 0), 90)
         self.assertEqual(topo.get("business", {}).get("repository", ""), "https://www.alefbet.net/wp-content/uploads/repositories/Safecor")
         self.assertEqual(len(topo.get("business", {}).get("domains", "")), 2)
         
@@ -92,13 +90,11 @@ class TestSystem(unittest.TestCase):
 
         system = topo.get("system", {})
         self.assertEqual(system.get("use_usb", False), True)
-        self.assertEqual(system.get("use_gui", False), True)
         self.assertEqual(system.get("screen_rotation", 0), 90)
-        self.assertEqual(system.get("gui_app_package", ""), "safecor-tests-gui")
-        self.assertEqual(system.get("memory", 0), 2000)        
-
+        self.assertEqual(system.get("screen_enabled", -1), 1)
+        
         domains = topo.get("domains", [])
-        self.assertEqual(len(domains), 4)
+        self.assertEqual(len(domains), 3)
 
         dom = domains["sys-usb"]
         self.assertIsNotNone(dom)
@@ -108,14 +104,6 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom["vcpus"], 2)
         self.assertEqual(dom["cpus"], [0, 1])
 
-        dom = domains["sys-gui"]
-        self.assertIsNotNone(dom)
-        self.assertEqual(dom["name"], "sys-gui")
-        self.assertEqual(dom["type"], DomainType.CORE)
-        self.assertEqual(dom["memory"], 2000)
-        self.assertEqual(dom["vcpus"], 14)
-        self.assertEqual(dom["cpus"], [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
-
         dom = domains["test-domain"]
         self.assertIsNotNone(dom)
         self.assertEqual(dom["name"], "test-domain")
@@ -123,6 +111,7 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom["memory"], 100)
         self.assertEqual(dom["vcpus"], 14)
         self.assertEqual(dom["cpus"], [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+        self.assertEqual(dom["has_gui"], 1)
 
         dom = domains["another-domain"]
         self.assertIsNotNone(dom)
@@ -145,13 +134,11 @@ class TestSystem(unittest.TestCase):
 
         system = topo.get("system", {})
         self.assertEqual(system.get("use_usb", False), True)
-        self.assertEqual(system.get("use_gui", False), True)
         self.assertEqual(system.get("screen_rotation", 0), 90)
-        self.assertEqual(system.get("gui_app_package", ""), "safecor-tests-gui")
-        self.assertEqual(system.get("memory", 0), 2000)
-
+        self.assertEqual(system.get("screen_enabled", 0), 1)
+        
         domains = topo.get("domains", [])
-        self.assertEqual(len(domains), 4)
+        self.assertEqual(len(domains), 3)
 
         dom = domains["sys-usb"]
         self.assertIsNotNone(dom)
@@ -161,14 +148,6 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom["vcpus"], 2)
         self.assertEqual(dom["cpus"], [0, 1])
 
-        dom = domains["sys-gui"]
-        self.assertIsNotNone(dom)
-        self.assertEqual(dom["name"], "sys-gui")
-        self.assertEqual(dom["type"], DomainType.CORE)
-        self.assertEqual(dom["memory"], 2000)
-        self.assertEqual(dom["vcpus"], 6)
-        self.assertEqual(dom["cpus"], [2,3,4,5,6,7])
-
         dom = domains["test-domain"]
         self.assertIsNotNone(dom)
         self.assertEqual(dom["name"], "test-domain")
@@ -176,6 +155,7 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom["memory"], 100)
         self.assertEqual(dom["vcpus"], 8)
         self.assertEqual(dom["package"], "bash")
+        self.assertEqual(dom["has_gui"], 1)
         self.assertEqual(dom["cpus"], [4,5,6,7,8,9,10,11])
 
         dom = domains["another-domain"]
@@ -185,6 +165,7 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom["memory"], 1024)
         self.assertEqual(dom["vcpus"], 8)
         self.assertEqual(dom["package"], "my-domain")
+        self.assertEqual(dom["has_gui"], 0)
         self.assertEqual(dom["cpus"], [4,5,6,7,8,9,10,11])
 
     def test_languages(self):
@@ -217,16 +198,14 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(len(topo.colors()), 1)
         self.assertEqual(topo.colors().get("splash_bgcolor", ""), (0,0,0,0))
         self.assertEqual(topo.use_usb, True)
-        self.assertEqual(topo.use_gui, True)
         self.assertEqual(topo.screen.width, 1100)
         self.assertEqual(topo.screen.height, 750)
         self.assertEqual(topo.screen.rotation, 90)
-        self.assertEqual(topo.gui.use, True)
-        self.assertEqual(topo.gui.memory, 2000)
-        self.assertEqual(topo.gui.app_package, "safecor-tests-gui")
+        self.assertEqual(topo.screen.default_focus, "test-domain")
+        self.assertTrue(topo.screen.enabled)
         self.assertEqual(topo.pci.blacklist, [ "00:0d.0" ])
 
-        self.assertEqual(len(topo.domain_names()), 4)
+        self.assertEqual(len(topo.domain_names()), 3)
 
         dom = topo.domain("sys-usb")
         self.assertIsNotNone(dom)
@@ -236,20 +215,14 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom.vcpus, 2)
         self.assertEqual(dom.cpu_affinity, [0, 1])
 
-        dom = topo.domain("sys-gui")
-        self.assertIsNotNone(dom)
-        self.assertEqual(dom.name, "sys-gui")
-        self.assertEqual(dom.domain_type, DomainType.CORE)
-        self.assertEqual(dom.memory, 2000)
-        self.assertEqual(dom.vcpus, 14)
-        self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
-
         dom = topo.domain("test-domain")
         self.assertIsNotNone(dom)
         self.assertEqual(dom.name, "test-domain")
         self.assertEqual(dom.domain_type, DomainType.BUSINESS)
         self.assertEqual(dom.memory, 100)
         self.assertEqual(dom.vcpus, 14)
+        self.assertEqual(dom.temp_disk_size, 4096)
+        self.assertTrue(dom.has_gui)
         self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
 
         dom = topo.domain("another-domain")
@@ -258,16 +231,10 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom.domain_type, DomainType.BUSINESS)
         self.assertEqual(dom.memory, 1024)
         self.assertEqual(dom.vcpus, 14)
-        self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
-
-        bus_doms = topo.business_domains()
-        self.assertEqual(len(bus_doms), 2)
-        dom = bus_doms[0]
-        self.assertEqual(dom.name, "test-domain")
-        self.assertEqual(dom.temp_disk_size, 4096)
-        dom = bus_doms[1]
-        self.assertEqual(dom.name, "another-domain")
+        self.assertFalse(dom.has_gui)
         self.assertEqual(dom.temp_disk_size, 0)
+        self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+        
 
     def test_parse_range(self):
         self.assertEqual(System.parse_range("1-2"), (1,2))
@@ -388,13 +355,12 @@ class TestSystem(unittest.TestCase):
         self.assertNotEqual(topo, {})
 
         self.assertEqual(topo.use_usb, True)
-        self.assertEqual(topo.use_gui, True)
+        self.assertEqual(topo.screen.enabled, True)
         self.assertEqual(topo.screen.rotation, 0)
+        self.assertEqual(topo.screen.default_focus, "controller")
         self.assertEqual(topo.pci.blacklist, [])
         self.assertEqual(topo.product_name, "Saphir")
         self.assertEqual(topo.color_as_hex("splash_bgcolor"), "#3a414dff")
-        self.assertEqual(topo.gui.memory, 2000)
-        self.assertEqual(topo.gui.app_package, "saphir-gui")
         self.assertEqual(len(topo.domains), 4)
 
         dom = topo.domain("saphir-av-clamav")
@@ -410,6 +376,7 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(dom.vcpus, 11)
 
         # Test the configuration with the mocked system
+        # This results in activating the configuration Durabook R8
         System.reset_topology()
         with patch("builtins.open", side_effect=open_side_effect), \
              patch("os.path.exists", side_effect=path_exists_side_effect):
@@ -417,13 +384,11 @@ class TestSystem(unittest.TestCase):
                 self.assertNotEqual(topo, {})
 
                 self.assertEqual(topo.use_usb, True)
-                self.assertEqual(topo.use_gui, True)
+                self.assertEqual(topo.screen.enabled, True)
                 self.assertEqual(topo.screen.rotation, 90)
                 self.assertEqual(topo.pci.blacklist, [ "00:0d.0" ])
                 self.assertEqual(topo.product_name, "Saphir")
                 self.assertEqual(topo.color_as_hex("splash_bgcolor"), "#3a414dff")
-                self.assertEqual(topo.gui.memory, 2000)
-                self.assertEqual(topo.gui.app_package, "saphir-gui")
                 self.assertEqual(len(topo.domains), 4)
 
                 dom = topo.domain("saphir-av-clamav")

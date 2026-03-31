@@ -51,8 +51,8 @@ if __name__ == "__main__":
     #config = ConfigurationReader.get_configuration_for_system()   
     topology = System.get_topology()
     
-    if not topology.use_gui:
-        SysLogger("Screen rotation").info("No GUI in topology")
+    if not topology.screen.enabled:
+        SysLogger("Screen rotation").info("The screen is disabled in the topology")
         sys.exit(0)
 
     if topology.screen.rotation != 0:

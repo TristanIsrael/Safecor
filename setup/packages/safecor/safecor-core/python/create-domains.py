@@ -3,7 +3,7 @@
 import subprocess
 import tempfile
 import os
-from safecor import System, Domain, DomainType, SysLogger
+from safecor import System, Domain, DomainType, SysLogger, XenStore, topology
 
 DEFAULT_SAFECOR_VIRT_ISO_FILEPATH = "/var/lib/xen/images/alpine-virt.iso"
 
@@ -12,7 +12,7 @@ class DomainsFactory:
     setup process of a system based on Safecor.
     
     The Domains are defined in the file /etc/safecor/topology.json.
-    """    
+    """
 
     @staticmethod
     def create_domains():
@@ -27,17 +27,13 @@ class DomainsFactory:
             DomainsFactory.__provision_domain("sys-usb", "safecor-sys-usb", "virt", blacklist_conf)
             DomainsFactory.__create_domd_usb()
 
-        if topology.use_gui:
-            blacklist_conf = DomainsFactory.__create_blacklist_conf("sys-gui")
-            package = package = topology.gui.app_package
-            DomainsFactory.__provision_domain("sys-gui", "safecor-sys-gui" if package is None else package, "virt", blacklist_conf)
-            DomainsFactory.__create_domd_gui()
-            DomainsFactory.__fetch_alpine_packages(package)
-        
         DomainsFactory.__create_business_domains()
 
+        # After creating the business domains we set the focused domain information in the XenStore
+        XenStore().write(XenStore.XsDomain.System, XenStore.XsKey.InputFocus, topology.screen.default_focus)
+
         SysLogger("DomainsFactory").info("Finished creating domains")
-            
+
 
     ###
     # Private functions
@@ -60,23 +56,6 @@ class DomainsFactory:
 
         SysLogger("DomainsFactory").info("Configuration for Domain sys-usb created successfully")
 
-    @staticmethod
-    def __create_domd_gui():
-        SysLogger("DomainsFactory").info("Create configuration for Driver Domain sys-gui")
-
-        conf = DomainsFactory.__create_xl_conf_sys_gui()
-
-        if conf is not None:
-            filename = '/etc/safecor/xen/sys-gui.conf'
-            with open(filename, 'w') as f:
-                f.write(conf)
-
-            try:
-                os.chmod(filename, 0o770)
-            except Exception as e:
-                SysLogger("DomainsFactory").info(f"Could not set permission on file {filename} : {e}")
-
-        SysLogger("DomainsFactory").info("Configuration for Domain sys-gui created successfully")
     
     @staticmethod
     def __create_business_domains():
@@ -219,7 +198,7 @@ disk = [
         # The diskfile is prepared by the orchestrator
         if domain.temp_disk_size > 0:
             txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
-        
+
         txt += '''
 ]
 device_model_override = "/usr/bin/qemu-system-x86_64"
@@ -227,6 +206,20 @@ device_model_version = "qemu-xen"
 vnc=0
 usb=0
 vif=[]
+'''
+
+        # Add vGPU if needed
+        if domain.has_gui:
+            txt += '''
+device_model_override = "/usr/bin/qemu-system-x86_64"
+device_model_version = "qemu-xen"
+device_model_args = [
+     '-device', 'virtio-gpu-pci',
+     '-display', 'gtk,full-screen=on,zoom-to-fit=on,gl=on',
+     '-device', 'virtio-input-host,id=virtio-mouse,evdev=/var/run/safecor/virtual_mouse',
+     '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/var/run/safecor/virtual_keyboard',
+     '-device', 'virtio-input-host,id=virtio-touch,evdev=/var/run/safecor/virtual_touch'
+]
 '''
         
         # Add P9 shares

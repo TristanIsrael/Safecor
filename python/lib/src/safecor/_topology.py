@@ -22,6 +22,7 @@ class Domain:
     package = ""
     domain_type = DomainType.BUSINESS
     temp_disk_size = 0
+    has_gui = False
     
     def __init__(self, domain_name:str, domain_type:DomainType):
         self.name = domain_name
@@ -33,13 +34,8 @@ class Screen:
     width = 0
     height = 0
     rotation = 0
-
-class Gui:
-    """ This class encapsulates information about the GUI of a product """
-    
-    use = False
-    app_package = ""
-    memory = 1000
+    enabled = False
+    default_focus = ""
 
 class Pci:
     """ This class encapsulates information about the PCI buses of a system """
@@ -58,9 +54,7 @@ class Topology:
     domains = List[Domain]
     product_name = "No Name"
     use_usb = False
-    use_gui = False
     uuid = ""
-    gui: Gui
     screen: Screen
     configurations = []
     pci: Pci
@@ -72,7 +66,6 @@ class Topology:
 
         if other is None:
             self.domains = []
-            self.gui = Gui()
             self.screen = Screen()
             self.pci = Pci()
             self.__colors = {}
@@ -80,11 +73,9 @@ class Topology:
         else:
             self.domains = copy.deepcopy(other.domains)
             self.product_name = copy.deepcopy(other.product_name)
-            self.use_gui = copy.deepcopy(other.use_gui)
             self.use_usb = copy.deepcopy(other.use_usb)
             self.uuid = copy.deepcopy(other.uuid)
-            self.gui = copy.deepcopy(other.gui)
-            self.screen = copy.deepcopy(other.screen)
+            self.screen = copy.deepcopy(other.screen)            
             self.configurations = copy.deepcopy(other.configurations)
             self.pci = copy.deepcopy(other.pci)
             self.languages = copy.deepcopy(other.languages)

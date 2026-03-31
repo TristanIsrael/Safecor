@@ -10,13 +10,9 @@
     "usb": {
         "use": 1
     },
-    "gui": {
-        "use": 1,
-        "memory": 2000,
-        "app-package": "safecor-tests-gui",
-        "screen": {
-            "rotation": 90
-        }
+    "screen": {
+        "enabled": 1,        
+        "rotation": 90        
     },
     "vcpu": {
         "groups": {
@@ -31,7 +27,8 @@
                 "name": "test-domain",
                 "app-package": "bash",
                 "memory": 100,
-                "vcpu_group": "group-1"
+                "vcpu_group": "group-1",
+                "has_gui": 1
             },
             {
                 "name": "another-domain",

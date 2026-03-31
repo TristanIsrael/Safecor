@@ -240,15 +240,13 @@ class System(metaclass=SingletonMeta):
 
         # System information
         _topology.use_usb = topo.get("system", {}).get("use_usb", False)
-        _topology.use_gui = topo.get("system", {}).get("use_gui", False)
         _topology.screen.rotation = topo.get("system", {}).get("screen_rotation", 0)
         screen = System.get_framebuffer_dimension()
+        _topology.screen.enabled = topo.get("system", {}).get("screen_enabled", False)
+        _topology.screen.default_focus = topo.get("system", {}).get("default_focus", "")
         _topology.screen.width = screen[0] if screen is not None else 0
         _topology.screen.height = screen[1] if screen is not None else 0
-        _topology.uuid = System().get_system_uuid()
-        _topology.gui.app_package = topo.get("system", {}).get("gui_app_package", "error")
-        _topology.gui.memory = topo.get("system", {}).get("gui_memory", 2000)
-        _topology.gui.use = _topology.use_gui
+        _topology.uuid = System().get_system_uuid()        
         _topology.pci.blacklist = topo.get("system", {}).get("pci", {}).get("blacklist", [])
 
         # Domains information
@@ -260,7 +258,8 @@ class System(metaclass=SingletonMeta):
             domain.vcpus = domain_desc.get("vcpus", "")
             domain.cpu_affinity = domain_desc.get("cpus", []) #System.parse_range(domain.vcpus)
             domain.package = domain_desc.get("package", "")
-            domain.temp_disk_size = domain_desc.get("temp_size_size", 0)
+            domain.temp_disk_size = domain_desc.get("temp_disk_size", 0)
+            domain.has_gui = domain_desc.get("has_gui", False)
 
             _topology.add_domain(domain)
 
@@ -314,15 +313,15 @@ class System(metaclass=SingletonMeta):
                         "vcpus": 2,
                         "cpus": "3-4",
                         "package": "",
-                        "temp_disk_size": 4096
+                        "temp_disk_size": 4096,
+                        "has_gui": False
                     }
                 ],
                 "system": {
                     "use_usb": 1,
-                    "use_gui": 1,
                     "screen_rotation": 0,
-                    "gui_app_package": "",
-                    "gui_memory": 1000,
+                    "screen_enabled": False,
+                    "default_focus": "my-gui"
                 },
                 "product": {
                     "name": "Safecor"
@@ -351,8 +350,7 @@ class System(metaclass=SingletonMeta):
         topo_struct = {}
 
         usb = topo_data.get("usb", {})
-        gui = topo_data.get("gui", {})
-        screen = gui.get("screen", {})
+        screen = topo_data.get("screen", {})
         vcpu = topo_data.get("vcpu", {})
         business = topo_data.get("business", {})
         business_domains = business.get("domains", [])
@@ -361,17 +359,15 @@ class System(metaclass=SingletonMeta):
         pci_blacklist = topo_data_pci.get("blacklist", [])
 
         use_usb = usb.get("use", False)
-        use_gui = gui.get("use", False)
-        gui_app_package = gui.get("app-package", "")
+        screen_enabled = screen.get("enabled", False)
+        default_focus = screen.get("default_focus", "")
         screen_rotation = screen.get("rotation", 0)
-        gui_memory = gui.get("memory", 128)
                 
         topo_struct["system"] = {
             "use_usb": use_usb,
-            "use_gui": use_gui,
+            "screen_enabled": screen_enabled,
             "screen_rotation": screen_rotation,
-            "gui_app_package": gui_app_package,
-            "memory": gui_memory,
+            "default_focus": default_focus,
             "pci": {
                 "blacklist": pci_blacklist
             }
@@ -388,18 +384,19 @@ class System(metaclass=SingletonMeta):
             "memory": 350,
             "vcpus": System.compute_vcpus_for_group("sys-usb", vcpu_groups),
             "cpus": System().compute_cpus_for_group("sys-usb", vcpu_groups),
-            "vcpu_groups": vcpu_groups
+            "vcpu_groups": vcpu_groups,
+            "has_gui": False
         }
 
         # sys-gui domain
-        topo_domains["sys-gui"] = {
-            "name": "sys-gui",
-            "type": DomainType.CORE,
-            "memory": gui.get("memory"),
-            "vcpus": System.compute_vcpus_for_group("sys-gui", vcpu_groups),
-            "cpus": System().compute_cpus_for_group("sys-gui", vcpu_groups),  
-            "vcpu_groups": vcpu_groups          
-        }
+        #topo_domains["sys-gui"] = {
+        #    "name": "sys-gui",
+        #    "type": DomainType.CORE,
+        #    "memory": gui.get("memory"),
+        #    "vcpus": System.compute_vcpus_for_group("sys-gui", vcpu_groups),
+        #    "cpus": System().compute_cpus_for_group("sys-gui", vcpu_groups),  
+        #    "vcpu_groups": vcpu_groups          
+        #}
         
         for domain in business_domains:
             # Business domains
@@ -413,7 +410,8 @@ class System(metaclass=SingletonMeta):
                 "vcpus": System.compute_vcpus_for_group(group_name, vcpu_groups),
                 "cpus": System().compute_cpus_for_group(group_name, vcpu_groups),
                 "vcpu_groups": vcpu_groups,
-                "temp_disk_size": domain.get("temp_disk_size", 0)
+                "temp_disk_size": domain.get("temp_disk_size", 0),
+                "has_gui": domain.get("has_gui", False)
             }
 
         topo_struct["domains"] = topo_domains

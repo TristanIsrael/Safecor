@@ -6,15 +6,12 @@
         "blacklist": [ "00:0d.0" ]
     },
     "usb": {
-        "use": 1
+        "use": 1        
     },
-    "gui": {
-        "use": 1,
-        "memory": 2000,
-        "app-package": "safecor-tests-gui",
-        "screen": {
-            "rotation": 90
-        }
+    "screen": {
+        "enabled": 1,        
+        "rotation": 90,
+        "default_focus": "test-domain"
     },
     "business": {
         "repository": "https://www.alefbet.net/wp-content/uploads/repositories/Safecor",
@@ -23,7 +20,8 @@
                 "name": "test-domain",
                 "app-package": "bash",
                 "memory": 100,
-                "temp_disk_size": 4096
+                "temp_disk_size": 4096,
+                "has_gui": 1
             },
             {
                 "name": "another-domain",

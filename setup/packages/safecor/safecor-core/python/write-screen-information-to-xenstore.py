@@ -2,13 +2,13 @@ import subprocess
 import sys
 from safecor import System, SysLogger
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     SysLogger("write-screen-information-to-xenstore").info("Write screen information into Xenstore...")
 
     topology = System.get_topology()
 
-    if not topology.use_gui:
-        SysLogger("write-screen-information-to-xenstore").info("No GUI in topology")
+    if not topology.screen.enabled:
+        SysLogger("write-screen-information-to-xenstore").info("The screen is disabled in the topology")
         sys.exit(0)
             
     command = f"xenstore-write /local/domain/system/screen_rotation {topology.screen.rotation}"
