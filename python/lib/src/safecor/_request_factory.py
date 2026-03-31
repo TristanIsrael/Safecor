@@ -193,3 +193,11 @@ class RequestFactory():
         return {
             "disk": disk
         }
+    
+    @staticmethod
+    def create_request_set_language(lang:str):
+        """ Create a request to set the language of the system """
+
+        return {
+            "language": lang
+        }

@@ -616,28 +616,29 @@ class Api(metaclass=SingletonMeta):
         Asks for the languages defined in the product
         """
         
-        self.__mqtt_client.publish(f"{Topics.LANGUAGES}/request")
+        self.__mqtt_client.publish(f"{Topics.LANGUAGES}/request", {})
 
     def get_default_language(self):
         """
         Asks for the default language of the system
         """
 
-        self.__mqtt_client.publish(f"{Topics.DEFAULT_LANGUAGE}/request")
+        self.__mqtt_client.publish(f"{Topics.DEFAULT_LANGUAGE}/request", {})
 
     def get_current_language(self):
         """
         Asks for the current system language
         """
 
-        self.__mqtt_client.publish(f"{Topics.CURRENT_LANGUAGE}/request")
+        self.__mqtt_client.publish(f"{Topics.CURRENT_LANGUAGE}/request", {})
 
-    def set_current_language(self):
+    def set_current_language(self, lang:str):
         """
         Sets the current system language
         """
 
-        self.__mqtt_client.publish(f"{Topics.SET_LANGUAGE}/request")
+        payload = RequestFactory.create_request_set_language(lang)
+        self.__mqtt_client.publish(f"{Topics.SET_LANGUAGE}/request", payload)
 
     ####
     # Notifications
