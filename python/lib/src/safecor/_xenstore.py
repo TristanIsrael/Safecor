@@ -1,22 +1,23 @@
-import xen.lowlevel.xs
+import xen.lowlevel.xs as xapi
 from threading import Thread
 from enum import Enum
+from . import SysLogger
+
+class XsDomain(Enum):
+    System = "system"
+    SysUsb = "sys-usb"
+
+class XsKey(Enum):
+    InputFocus = "input-focus"
 
 class XenStore:
-    """ This class offers function to read and write to the XenStore """
-
-    class XsDomain(Enum):
-        System = "system"
-        SysUsb = "sys-usb"
-
-    class XsKey(Enum):
-        InputFocus = "input-focus"
+    """ This class offers function to read and write to the XenStore """    
 
     __monitoring_callbacks = {}
     __monitoring_running = False
 
     def __init__(self):
-        self.__xs = xen.lowlevel.xs.xs()
+        self.__xs = xapi.xs()
 
     def read(self, domain_name:str, key:str):
         """ Read information from the XenStore """
@@ -34,8 +35,15 @@ class XenStore:
         """ Write information in the XenStore """
 
         dom_id = self.__get_domain_id(domain_name)
+        txn_id = self.__start_transaction()
 
-        self.__xs.write(f"/local/domain/{dom_id}/{key}".encode(), value)
+        try:
+            self.__xs.write(txn_id, f"/local/domain/{dom_id}/{key}", value)
+            self.__end_transaction(txn_id, True)
+        except Exception as e:
+            self.__end_transaction(txn_id)
+            SysLogger("XenStore").error(f"Could not write to the XenStore: {str(e)}")
+            SysLogger("XenStore").error(f"domain_name={domain_name}, dom_id={dom_id}, key={key}, value={value}")
 
     def monitor(self, domain_name:str, key:str, token:str, callback):
         """ Monitors a key in the XenStore and get notified in cas of a change """
@@ -67,11 +75,21 @@ class XenStore:
     def __get_domain_id(self, domain_name:str):
         _domain = ""
 
-        if domain_name == XenStore.XsDomain.System:
-            _domain = XenStore.XsDomain.System
+        if domain_name == XsDomain.System.value:
+            _domain = XsDomain.System.value
         else:
             # We should look at the Domain id
             # to do later
             pass
 
         return _domain
+
+    def __start_transaction(self) -> int:
+        """ Starts a transaction for writing """
+
+        return self.__xs.transaction_start()
+
+    def __end_transaction(self, transaction_id:int, abort:bool = False):
+        """ Ends a transaction after writing """
+
+        return self.__xs.transaction_end(transaction_id, abort)

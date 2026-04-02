@@ -1,0 +1,44 @@
+{
+    "usb": {
+        "use": 1
+    },
+    "pci": {
+        "blacklist": [ "00:0d.0" ]
+    },
+    "gui": {
+        "use": 1,
+        "screen": {
+            "rotation": 90
+        }
+    },    
+    "vcpu": {
+        "groups": {
+            "group1": 0.8
+        }
+    },
+    "business": {
+        "domains": [
+            {
+                "name": "gui1",
+                "app-package": "bash",
+                "memory": 1000,
+                "vcpu_group": "group1",
+                "has_gui": 1
+            },
+            {
+                "name": "gui2",
+                "app-package": "bash",
+                "memory": 1000,
+                "vcpu_group": "group1",
+                "has_gui": 1
+            }
+        ]
+    },
+    "product": {
+        "name": "Safecor",
+        "splash_bgcolor": "#1ca9f7",
+        "languages": [ "en", "fr" ],
+        "default_language": "en"
+    }
+
+}

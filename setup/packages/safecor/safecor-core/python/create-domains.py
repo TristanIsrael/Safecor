@@ -3,7 +3,10 @@
 import subprocess
 import tempfile
 import os
-from safecor import System, Domain, DomainType, SysLogger, XenStore, topology
+from safecor import (
+    System, Domain, DomainType, SysLogger, 
+    XenStore, XsDomain, XsKey
+)
 
 DEFAULT_SAFECOR_VIRT_ISO_FILEPATH = "/var/lib/xen/images/alpine-virt.iso"
 
@@ -18,7 +21,7 @@ class DomainsFactory:
     def create_domains():
         """ Creates all the Domains of a Safecor system """
 
-        SysLogger("DomainsFactory").info("Start creating domains from topology")
+        SysLogger("create-domains").info("Start creating domains from topology")
 
         topology = System.get_topology()
 
@@ -30,9 +33,17 @@ class DomainsFactory:
         DomainsFactory.__create_business_domains()
 
         # After creating the business domains we set the focused domain information in the XenStore
-        XenStore().write(XenStore.XsDomain.System, XenStore.XsKey.InputFocus, topology.screen.default_focus)
+        # If the default focus is not set in the topology we use the first domain with gui
+        default_focus = topology.screen.default_focus
+        gui_domains = topology.graphical_domains()
+        if default_focus == "" and len(gui_domains) > 0:
+            default_focus = topology.graphical_domains()[0].name
 
-        SysLogger("DomainsFactory").info("Finished creating domains")
+        if default_focus != "":
+            SysLogger("create-domains").info(f"Set focus to the domain {default_focus}.")
+            XenStore().write(XsDomain.System.value, XsKey.InputFocus.value, default_focus)
+
+        SysLogger("create-domains").info("Finished creating domains")
 
 
     ###
@@ -40,7 +51,7 @@ class DomainsFactory:
     #
     @staticmethod
     def __create_domd_usb():
-        SysLogger("DomainsFactory").info("Create configuration for Driver Domain sys-usb")
+        SysLogger("create-domains").info("Create configuration for Driver Domain sys-usb")
 
         conf = DomainsFactory.__create_xl_conf_sys_usb()
 
@@ -52,20 +63,21 @@ class DomainsFactory:
             try:
                 os.chmod(filename, 0o770)
             except Exception as e:
-                SysLogger("DomainsFactory").info(f"Could not set permission on file {filename} : {e}")
+                SysLogger("create-domains").info(f"Could not set permission on file {filename} : {e}")
 
-        SysLogger("DomainsFactory").info("Configuration for Domain sys-usb created successfully")
+        SysLogger("create-domains").info("Configuration for Domain sys-usb created successfully")
 
     
     @staticmethod
     def __create_business_domains():
-        SysLogger("DomainsFactory").info("Create all the business Domains")
+        SysLogger("create-domains").info("Create all the business Domains")
 
         topology = System.get_topology()
 
         if len(topology.domains) > 0:
             for domain in topology.domains:
                 domain: Domain
+                SysLogger("create-domains").info(f"Creating domain {domain.name}")
 
                 if domain.domain_type is not DomainType.BUSINESS:
                     continue
@@ -89,13 +101,13 @@ class DomainsFactory:
                 try:
                     os.chmod(filename, 0o770)
                 except Exception as e:
-                    SysLogger("DomainsFactory").info(f"Could not set permission on file {filename} : {e}")
+                    SysLogger("create-domains").info(f"Could not set permission on file {filename} : {e}")
 
                 DomainsFactory.__fetch_alpine_packages(package)
 
-                SysLogger("DomainsFactory").info(f"Domain {domain.name} created successfully")                
+                SysLogger("create-domains").info(f"Domain {domain.name} created successfully")                
         else:
-            SysLogger("DomainsFactory").info("There are not business domains to create")
+            SysLogger("create-domains").info("There are not business domains to create")
 
     @staticmethod
     def __create_xl_conf_sys_usb() -> None:
@@ -254,14 +266,15 @@ device_model_args = [
             # When finished we remove the blacklist.conf file
             os.unlink(blacklist_conf)
         except Exception as e:
-            SysLogger("DomainsFactory").error(f"An error occured during the provisioning of the domain {domain_name}")
-            SysLogger("DomainsFactory").error(e)
+            SysLogger("create-domains").error(f"An error occured during the provisioning of the domain {domain_name}")
+            SysLogger("create-domains").error(e)
 
     @staticmethod
     def __fetch_alpine_packages(package):
         # Fetch Alpine packages
         if package is None:
-            SysLogger("DomainsFactory").error("No package name provided")
+            SysLogger("create-domains").error("No package name provided")
+            return
 
         subprocess.run(
             args= ["apk", "fetch", "-R", package],

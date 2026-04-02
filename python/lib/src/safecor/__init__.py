@@ -1,5 +1,5 @@
 __author__ = "Tristan Israël (tristan.israel@alefbet.net)"
-__version__ = '1.2.1'
+__version__ = '1.3.0'
 
 import logging
 from logging import NullHandler
@@ -10,7 +10,7 @@ from ._constants import Constants, InputType, BenchmarkId, ComponentState, DiskS
 from ._syslogger import SysLogger
 
 try:
-    from ._xenstore import XenStore, XsDomains, XsKeys
+    from ._xenstore import XenStore, XsDomain, XsKey
 except ImportError as e:
     print("The class XenSotre won't be available due to missing dependency")
     print(str(e))
@@ -61,7 +61,7 @@ __all__ = [
     "__version__",
     "SingletonMeta",
     "Topology", "Domain", "DomainType", "DiskState",
-    "XenStore", "XsDomains", "XsKeys", 
+    "XenStore", "XsDomain", "XsKey", 
     "Constants", "System", "topology", "Screen", "Constants", "ComponentState", "Topics", "Settings",
     "KeymapFR",
     "InputType", 
