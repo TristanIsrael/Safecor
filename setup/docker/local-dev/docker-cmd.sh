@@ -2,7 +2,15 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PRIVATE_KEY="/Volumes/SECURITY/Safecor/abuild/safecor.rsa"
-SAFECOR_SOURCE_PATH="/Users/tristanisrael/Documents/Sources/Safecor"
+if [ -z "$SAFECOR_SOURCE_PATH" ]; then
+    SAFECOR_SOURCE_PATH="/Users/tristanisrael/Documents/Sources/Safecor"
+fi 
+if [ -z "$LOCAL_CACHE" ]; then 
+    LOCAL_CACHE="/Users/tristanisrael/Downloads/abuild_cache"
+fi
+if [ -z "$OUTPUT_REPOSITORY" ]; then 
+    OUTPUT_REPOSITORY="Users/tristanisrael/Downloads/abuild_repo"
+fi
 DOCKER_PATH="/usr/local/bin"
 IMAGE_NAME="safecor-dev"
 DOCKER_NAME="safecor-dev"
@@ -12,7 +20,7 @@ EMULATE=0
 MOUNT_REPO=""
 INTERACTIVE=""
 
-if [ $LOCAL_ARCH != "amd64" ]; then
+if [ $LOCAL_ARCH != "amd64" ] && [ $LOCAL_ARCH != "x86_64" ]; then
     echo "Must emulate x86_64 architecture..."
     EMULATE=1
 fi
@@ -38,8 +46,11 @@ if [ $EMULATE -eq 1 ]; then
         $PIP_REPO \
         --mount type=bind,source=$PRIVATE_KEY,target=/home/builder/.abuild/safecor.rsa,readonly \
         -v "$SAFECOR_SOURCE_PATH:/home/builder/src/safecor" \
+        -v "$LOCAL_CACHE:/var/cache/distfiles" \
+        -v "$OUTPUT_REPOSITORY:/home/builder/packages/safecor" \
         -e STAGE="$STAGE" \
         --name "$DOCKER_NAME" \
+        --network safecor_safecor \
         "$IMAGE_NAME" 
     else 
         echo "Starting docker with a command"
@@ -52,8 +63,11 @@ if [ $EMULATE -eq 1 ]; then
         $PIP_REPO \
         --mount type=bind,source=$PRIVATE_KEY,target=/home/builder/.abuild/safecor.rsa,readonly \
         -v "$SAFECOR_SOURCE_PATH:/home/builder/src/safecor" \
+        -v "$LOCAL_CACHE:/var/cache/distfiles" \
+        -v "$OUTPUT_REPOSITORY:/home/builder/packages/safecor" \
         -e STAGE="$STAGE" \
         --name "$DOCKER_NAME" \
+        --network safecor_safecor \
         "$IMAGE_NAME" \
         sh -c "$@"
     fi
@@ -69,10 +83,13 @@ else
         -it \
         $MOUNT_REPO \
         $PIP_REPO \
-        --mount type=bind,source=$PRIVATE_KEY,target=/home/builder/.abuild/safecor.rsa,readonly \
+        -v "$PRIVATE_KEY:/home/builder/.abuild/safecor.rsa:ro" \
         -v "$SAFECOR_SOURCE_PATH:/home/builder/src/safecor" \
+        -v "$LOCAL_CACHE:/var/cache/distfiles" \
+        -v "$OUTPUT_REPOSITORY:/home/builder/packages/safecor" \
         -e STAGE="$STAGE" \
         --name "$DOCKER_NAME" \
+        --network safecor_safecor \
         "$IMAGE_NAME" 
     else 
         echo "Starting docker with a command"
@@ -84,8 +101,11 @@ else
         $PIP_REPO \
         --mount type=bind,source=$PRIVATE_KEY,target=/home/builder/.abuild/safecor.rsa,readonly \
         -v "$SAFECOR_SOURCE_PATH:/home/builder/src/safecor" \
+        -v "$LOCAL_CACHE:/var/cache/distfiles" \
+        -v "$OUTPUT_REPOSITORY:/home/builder/packages/safecor" \
         -e STAGE="$STAGE" \
         --name "$DOCKER_NAME" \
+        --network safecor_safecor \
         "$IMAGE_NAME" \
         sh -c "$@"
     fi
