@@ -37,7 +37,7 @@ class DomainsFactory:
         default_focus = topology.screen.default_focus
         gui_domains = topology.graphical_domains()
         if default_focus == "" and len(gui_domains) > 0:
-            default_focus = topology.graphical_domains()[0].name
+            default_focus = gui_domains[0].name
 
         if default_focus != "":
             SysLogger("create-domains").info(f"Set focus to the domain {default_focus}.")
