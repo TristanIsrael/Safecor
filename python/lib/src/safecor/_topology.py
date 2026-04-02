@@ -213,3 +213,14 @@ class Topology:
                 return True
             
         return False
+
+    def graphical_domains(self) -> list[Domain]:
+        """ Returns all the domains that have graphical content """
+
+        doms = []
+
+        for dom in self.domains:
+            if dom.has_gui:
+                doms.append(dom)
+
+        return doms

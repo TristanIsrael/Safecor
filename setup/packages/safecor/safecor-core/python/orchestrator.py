@@ -10,9 +10,9 @@ from inputs_proxy import InputsProxy
 
 mqtt_lock = threading.Event()
 mqtt = MqttFactory.create_mqtt_client_dom0("Orchestrator")
-MOUSE_NAME="Safecor virtual mouse"
-TOUCH_NAME="Safecor virtual touchscreen"
-KEYBOARD_NAME="Safecor virtual keyboard"
+MOUSE_NAME_PREFIX="Safecor virtual mouse"
+TOUCH_NAME_PREFIX="Safecor virtual touchscreen"
+KEYBOARD_NAME_PREFIX="Safecor virtual keyboard"
 INPUTS_SOCKET_PATH="/var/run/safecor"
 INPUTS_SOCKET_FILENAME="sys-usb-input.sock"
 VIRTUAL_MOUSE_PATH="/var/run/safecor/virtual_mouse"
@@ -20,13 +20,13 @@ VIRTUAL_TOUCH_PATH="/var/run/safecor/virtual_touch"
 VIRTUAL_KEYBOARD_PATH="/var/run/safecor/virtual_keyboard"
 inputs_proxy = InputsProxy()
 
-def create_virtual_devices() -> tuple[InputDevice, InputDevice, InputDevice]:
-    """ Creates virtual devices for the mouse, keyboard and touch """
+def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, InputDevice]:
+    """ Creates virtual devices for the mouse, keyboard and touch for a specific domain """
 
     # Create virtual input devices
-    virtual_mouse = create_virtual_mouse()
+    virtual_mouse, device_name = create_virtual_mouse(domain_name)
     # Create symlinks for the virtual inputs which act as a permalinks
-    mouse_path = get_device_path(MOUSE_NAME)
+    mouse_path = get_device_path(device_name)
     if mouse_path == "":
         SysLogger("Orchestrator").warn("The mouse device path has not been found")
     else:
@@ -42,9 +42,9 @@ def create_virtual_devices() -> tuple[InputDevice, InputDevice, InputDevice]:
         except Exception as e:
             SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual mouse device. {e}")
 
-    virtual_keyboard = create_virtual_keyboard()
+    virtual_keyboard, device_name = create_virtual_keyboard(domain_name)
     # Create symlinks for the virtual inputs which act as a permalinks
-    keyboard_path = get_device_path(KEYBOARD_NAME)
+    keyboard_path = get_device_path(device_name)
     if keyboard_path == "":
         SysLogger("Orchestrator").error("The keyboard device path has not been found")
     else:
@@ -67,8 +67,8 @@ def create_virtual_devices() -> tuple[InputDevice, InputDevice, InputDevice]:
     #    virtual_touch = None
     #else:
         #print(touch_caps)
-    virtual_touch = create_virtual_touch()
-    touch_path = get_device_path(TOUCH_NAME)
+    virtual_touch, device_name = create_virtual_touch(domain_name)
+    touch_path = get_device_path(device_name)
     if touch_path == "":
         SysLogger("Orchestrator").error("The touch device path has not been found")
     else:
@@ -123,8 +123,8 @@ def get_device_path(devname:str) -> str:
     return ""
 
 
-def create_virtual_mouse() -> InputDevice:
-    """ Creates a new virtual mouse device 
+def create_virtual_mouse(domain_name:str) -> tuple[InputDevice, str]:
+    """ Creates a new virtual mouse device for a specific domain
     
     The device created has the following capabilities: 
         - EV_KEY: BTN_LEFT, BTN_RIGHT
@@ -136,15 +136,17 @@ def create_virtual_mouse() -> InputDevice:
         ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y, ecodes.REL_WHEEL, ecodes.REL_WHEEL_HI_RES],
     }
 
+    device_name = f"{MOUSE_NAME_PREFIX} @ {domain_name}"
+
     try:
-        input = UInput(capabilities, name=MOUSE_NAME)
+        input = UInput(capabilities, name=device_name)
         SysLogger("Orchestrator").info(f"Created device {input.name}")
-        return input
+        return input, device_name
     except Exception as e:
-        SysLogger("Orchestrator").error(f"Error while creating the virtual mouse: {e}")    
+        SysLogger("Orchestrator").error(f"Error while creating the virtual mouse: {e}")
     
 
-def create_virtual_keyboard() -> InputDevice:
+def create_virtual_keyboard(domain_name:str) -> tuple[InputDevice, str]:
     """ Creates a new virtual keyboard device 
     
     The keyboard created has the following capabilities:
@@ -156,15 +158,17 @@ def create_virtual_keyboard() -> InputDevice:
         ecodes.EV_MSC: [ ecodes.MSC_SCAN ],
     }
 
+    device_name = f"{KEYBOARD_NAME_PREFIX} @ {domain_name}"
+
     try:
-        input = UInput(capabilities, name=KEYBOARD_NAME)
+        input = UInput(capabilities, name=device_name)
         SysLogger("Orchestrator").info(f"Created device{input.name}")
-        return input
+        return input, device_name
     except Exception as e:
         SysLogger("Orchestrator").error(f"Error while creating the virtual keyboard: {e}")        
 
 
-def create_virtual_touch() -> InputDevice:
+def create_virtual_touch(domain_name:str) -> tuple[InputDevice, str]:
     """ Creates a new virtual touchscreen device 
     
     The touch device created has the following capabilities:
@@ -199,12 +203,14 @@ def create_virtual_touch() -> InputDevice:
         }
         original_touch.close()
 
+    device_name = f"{TOUCH_NAME_PREFIX} @ {domain_name}"
+
     try:
-        input = UInput(touch_caps, name=TOUCH_NAME)
+        input = UInput(touch_caps, name=device_name)
         SysLogger("Orchestrator").info(f"Created device {input.name}")
         return input
     except Exception as e:
-        SysLogger("Orchestrator").error(f"Error while creating the virtual touchscreen: {e}")    
+        SysLogger("Orchestrator").error(f"Error while creating the virtual touchscreen: {e}")
 
 
 def get_pci_usb_devices():
@@ -348,18 +354,26 @@ def on_mqtt_ready():
 
     mqtt.add_message_callback(on_mqtt_message)
 
-    # Create virtual devices
-    virtual_mouse, virtual_keyboard, virtual_touch = create_virtual_devices()
-    inputs_proxy.virtual_mouse = virtual_mouse
-    inputs_proxy.virtual_keyboard = virtual_keyboard
-    inputs_proxy.virtual_touch = virtual_touch
+    # Create virtual devices for each graphical domain
+    topology = System().get_topology()
+    gui_domains = topology.graphical_domains()
+
+    for domain in gui_domains:
+        # We create new virtual devices
+        virtual_mouse, virtual_keyboard, virtual_touch = create_virtual_devices(domain.name)
+        inputs_proxy.set_virtual_devices_for_domain(
+            domain.name,
+            virtual_mouse,
+            virtual_keyboard,
+            virtual_touch
+        )
 
     # Attach PCI devices
     expose_pci_devices()
 
     # Start sys-usb
     if can_create_domains():
-        # The monitor will look at the inputs file fomr sys-usb
+        # The monitor will look at the inputs file from sys-usb
         # and when sys-usb is rebooted, the events listener will stop and start
         # back after the reboor
         SysLogger("Orchesrtrator").info("Wait for the input socket to be ready")
@@ -372,16 +386,7 @@ def on_mqtt_ready():
             SysLogger("Orchestrator").info("Started Domain sys-usb")
         else:
             SysLogger("Orchestrator").critical("Domain sys-usb did not start")
-
-        # Start sys-gui
-        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-sys-gui.sh"]
-        res = subprocess.run(cmd, check= True)
-
-        if res.returncode == 0:
-            SysLogger("Orchestrator").info("Started Domain sys-gui")
-        else:
-            SysLogger("Orchestrator").critical("Domain sys-gui did not start")
-
+        
         # Start all other domains
         start_business_domains()
         
