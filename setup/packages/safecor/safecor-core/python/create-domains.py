@@ -4,8 +4,7 @@ import subprocess
 import tempfile
 import os
 from safecor import (
-    System, Domain, DomainType, SysLogger, 
-    XenStore, XsDomain, XsKey
+    System, Domain, DomainType, SysLogger    
 )
 
 DEFAULT_SAFECOR_VIRT_ISO_FILEPATH = "/var/lib/xen/images/alpine-virt.iso"
@@ -31,18 +30,7 @@ class DomainsFactory:
             DomainsFactory.__create_domd_usb()
 
         DomainsFactory.__create_business_domains()
-
-        # After creating the business domains we set the focused domain information in the XenStore
-        # If the default focus is not set in the topology we use the first domain with gui
-        default_focus = topology.screen.default_focus
-        gui_domains = topology.graphical_domains()
-        if default_focus == "" and len(gui_domains) > 0:
-            default_focus = gui_domains[0].name
-
-        if default_focus != "":
-            SysLogger("create-domains").info(f"Set focus to the domain {default_focus}.")
-            XenStore().write(XsDomain.System.value, XsKey.InputFocus.value, default_focus)
-
+        
         SysLogger("create-domains").info("Finished creating domains")
 
 
@@ -198,6 +186,7 @@ vif=[]
         txt = f'''
 type = "hvm"
 serial = "pty" 
+boot = "d"
 name = "{ domain.name }"
 memory = { domain.memory }
 vcpus = { domain.vcpus }

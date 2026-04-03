@@ -9,7 +9,11 @@ from . import Logger, FileHelper
 from . import ResponseFactory
 from . import MqttClient, Topics, MqttHelper, NotificationFactory
 from . import System, ComponentState, topology
-from . import XcbController
+try:
+    from . import XcbController
+except ImportError:
+    pass 
+
 LIBVIRT_UNAVAILABLE = False
 try:
     from . import LibvirtHelper

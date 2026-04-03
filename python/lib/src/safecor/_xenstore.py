@@ -39,9 +39,9 @@ class XenStore:
 
         try:
             self.__xs.write(txn_id, f"/local/domain/{dom_id}/{key}", value)
-            self.__end_transaction(txn_id, True)
+            self.__end_transaction(txn_id, False)
         except Exception as e:
-            self.__end_transaction(txn_id)
+            self.__end_transaction(txn_id, True)
             SysLogger("XenStore").error(f"Could not write to the XenStore: {str(e)}")
             SysLogger("XenStore").error(f"domain_name={domain_name}, dom_id={dom_id}, key={key}, value={value}")
 

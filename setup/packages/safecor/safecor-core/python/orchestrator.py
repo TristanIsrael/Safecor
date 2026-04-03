@@ -5,7 +5,10 @@ import time
 import threading
 import evdev
 from evdev import InputDevice, ecodes, UInput, AbsInfo
-from safecor import MqttFactory, Logger, SysLogger, System
+from safecor import (
+    MqttFactory, Logger, SysLogger, System,
+    XenStore, XsDomain, XsKey
+)
 from inputs_proxy import InputsProxy
 
 mqtt_lock = threading.Event()
@@ -23,7 +26,7 @@ inputs_proxy = InputsProxy()
 def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, InputDevice]:
     """ Creates virtual devices for the mouse, keyboard and touch for a specific domain 
     
-    These devices will be accessible via a symlink in /var/run/safecor with the name \c virtual_mouse_<domain name>
+    These devices will be accessible via a symlink in /var/run/safecor with the name virtual_mouse_<domain name>
     """
 
     # Create virtual input devices
@@ -303,20 +306,29 @@ def create_temp_disk(domain_name:str, size_in_mb:int):
     """ Create a temporary file for the /tmp in a Domain """
 
     filename = f"{domain_name}-tmp.img"
-    
+    filepath = f"/usr/lib/safecor/tmp/{filename}"
+
     # Remove any existing file
-    os.remove(filename)
+    if os.path.exists(filename):
+        os.remove(filename)
 
-    cmd = f"truncate -s {size_in_mb*1024} /usr/lib/safecor/tmp/{filename}"
-
-    res = subprocess.run(cmd)
+    cmd = [ "/usr/bin/truncate", "-s" ,f"{size_in_mb*1024*1024}", filepath ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode > 0:
-        SysLogger("Orchestrator").error(f"Cannot create the temporary diskfile for {domain_name}")
+        SysLogger("Orchestrator").error(f"Cannot create the temporary diskfile for {domain_name}: {res.stderr}")
         return
     
-    cmd = f"mkfs.ext4 -L TMPFILE {filename}"
+    # Modify the permissions
+    # The created file should belong to svc-orchestrator:safecor
+    os.chmod(filepath, 0o770)
+    #grp_safecor = grp.getgrnam("safecor").gr_gid
+    #uid_safecor = pwd.getpwnam("svc-orchestrator").pw_uid
+    #os.chown(filepath, uid_safecor, grp_safecor)
+    
+    cmd = [ "mkfs.ext4", "-L", "TMPFILE", filepath ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode > 0:
-        SysLogger("Orchestrator").error(f"Cannot format the temporary diskfile for {domain_name}")
+        SysLogger("Orchestrator").error(f"Cannot format the temporary diskfile for {domain_name}: {res.stderr}")
         return
 
     SysLogger("Orchestrator").debug(f"Temporary diskfile of size {size_in_mb} MB created for {domain_name}")
@@ -328,16 +340,29 @@ def start_business_domains():
 
     topology = System.get_topology()
 
+    # We handle the default focus
+    # If the default focus is not set in the topology we use the first domain with gui
+    default_focus = topology.screen.default_focus
+    gui_domains = topology.graphical_domains()
+    if default_focus == "" and len(gui_domains) > 0:
+        default_focus = gui_domains[0].name
+
+    if default_focus != "":
+        SysLogger("create-domains").info(f"Set focus to the domain {default_focus}.")
+        XenStore().write(XsDomain.System.value, XsKey.InputFocus.value, default_focus)
+
+
     domains = topology.business_domains()
     for domain in domains:
         if domain.name == "":
             continue
 
-        # Create a temporary disk if needed
+        # Create a temporary disk if needed        
         if domain.temp_disk_size > 0:
+            SysLogger("Orchestrator").info(f"Create a temporary disk for {domain.name}")      
             create_temp_disk(domain.name, domain.temp_disk_size)
 
-        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain.name]
+        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain.name, "1" if domain.has_gui else "0"]
         res = subprocess.run(cmd)
 
         if res.returncode == 0:

@@ -8,7 +8,12 @@ from ._topology import Topology, Domain, Screen, DomainType
 from ._singleton import SingletonMeta
 from ._constants import Constants, InputType, BenchmarkId, ComponentState, DiskState, Settings
 from ._syslogger import SysLogger
-from ._xcb_controller import XcbController
+
+try:
+    from ._xcb_controller import XcbController
+except ImportError as e:
+    print("The class XcbController won't be available due to missing dependency")
+    print(str(e))
 
 try:
     from ._xenstore import XenStore, XsDomain, XsKey

@@ -3,10 +3,12 @@
 SCRIPT_NAME=$(basename "$0")
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting Domain $1..."
 
+IS_GUI=$2
+
 # We need to know whether this Domain has a graphical interface and set different
 # settings and manage its position
 # The information is given by the caller as the first argument
-if [ -z "$IS_GUI" ]; then
+if [ -z "$IS_GUI" ] || [ "$IS_GUI" == 0 ]; then
     # This is not a GUI Domain
     IS_GUI=0
 else 
@@ -50,6 +52,7 @@ else
     esac
 
     # Start the domain
+    umask 007
     DISPLAY=:0 /usr/sbin/xl create -f /etc/safecor/xen/$1.conf
     sleep 1
 
@@ -63,6 +66,8 @@ else
         logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "This Domain does not have the focus, hiding the window"
         DISPLAY=:0 xdotool windowunmap `DISPLAY=:0 xdotool search --name "$1"`
     fi
+
+    exit 0
 
 fi
 
