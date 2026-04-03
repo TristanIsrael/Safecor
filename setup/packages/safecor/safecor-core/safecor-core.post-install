@@ -43,6 +43,8 @@ addgroup svc-orchestrator input
 addgroup svc-safecor-controller input
 addgroup svc-tty-tunnels tty
 addgroup svc-tty-terminal tty
+addgroup xenstore
+addgroup svc-orchestrator xenstore
 
 logger -t "Safecor/core-post-install" "Settings permissions on system files"
 mkdir -p /var/log/safecor
@@ -50,6 +52,9 @@ chown -R nobody:safecor /var/log/safecor
 chmod 770 /var/log/safecor
 chown -R nobody:safecor /usr/lib/safecor
 chgrp safecor /dev/uinput
+mkdir -p /var/run/xenstored
+chown -R root:xenstore /var/run/xenstored
+chmod 770 /var/run/xenstored
 
 logger -t "Safecor/core-post-install" "Reorganizing services"
 rc-service xenstored start
@@ -118,5 +123,6 @@ mkdir -p /var/run/safecor
 chown root:safecor /var/run/safecor
 chmod 2770 /var/run/safecor
 logger -t "Safecor/core-post-install" "...done"
+chmod 660 /var/run/xenstored/socket
 
 exit 0

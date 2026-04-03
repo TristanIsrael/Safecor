@@ -222,15 +222,15 @@ vif=[]
 
         # Add vGPU if needed
         if domain.has_gui:
-            txt += '''
+            txt += f'''
 device_model_override = "/usr/bin/qemu-system-x86_64"
 device_model_version = "qemu-xen"
 device_model_args = [
      '-device', 'virtio-gpu-pci',
      '-display', 'gtk,full-screen=on,zoom-to-fit=on,gl=on',
-     '-device', 'virtio-input-host,id=virtio-mouse,evdev=/var/run/safecor/virtual_mouse',
-     '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/var/run/safecor/virtual_keyboard',
-     '-device', 'virtio-input-host,id=virtio-touch,evdev=/var/run/safecor/virtual_touch'
+     '-device', 'virtio-input-host,id=virtio-mouse,evdev=/var/run/safecor/virtual_mouse_{domain.name}',
+     '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/var/run/safecor/virtual_keyboard_{domain.name}',
+     '-device', 'virtio-input-host,id=virtio-touch,evdev=/var/run/safecor/virtual_touch_{domain.name}'
 ]
 '''
         

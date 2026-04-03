@@ -2,8 +2,8 @@
     "usb": {
         "use": 0
     },
-    "gui": {
-        "use": 0
+    "screen": {
+        "enabled": 0
     },
     "product": {
         "name": "Safecor",

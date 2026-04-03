@@ -1,5 +1,5 @@
 __author__ = "Tristan Israël (tristan.israel@alefbet.net)"
-__version__ = '1.3.0'
+__version__ = '1.3.1'
 
 import logging
 from logging import NullHandler

@@ -19,9 +19,9 @@ class InputsProxy:
     __virtual_mouses = {}
     __virtual_keyboards = {}
     __virtual_touches = {}
-    __virtual_mouse = None 
-    __virtual_keyboard = None
-    __virtual_touch = None
+    __virtual_mouse = None # The current virtual mouse
+    __virtual_keyboard = None # The current virtual keyboard
+    __virtual_touch = None # The current virtual touch
     __xenstore = XenStore()
     __can_run = False
     __is_running = False

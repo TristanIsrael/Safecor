@@ -36,6 +36,18 @@ start() {
     mkdir -p /var/run/safecor
     chown root:safecor /var/run/safecor
     chmod 2770 /var/run/safecor
+    eend 0
+
+    ebegin "Set permissions for XenStore"
+    chown root:xenstore /var/run/xenstored    
+    chmod 660 /var/run/xenstored/socket
+    chown root:xenstore /var/run/xenstored/socket
+    eend 0
+
+    ebegin "Set permissions on Safecor directories"
+    chown root:safecor /usr/lib/safecor/tmp
+    chmod 770 /usr/lib/safecor/tmp
+    eend 0 
 
     ebegin "Starting Safecor orchestrator"
     start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --pidfile /var/run/$name.pid --background --user "$user" --stdout "$logfile" --stderr "$logfile"  -- /usr/lib/safecor/bin/orchestrator.py

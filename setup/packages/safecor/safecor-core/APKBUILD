@@ -2,7 +2,7 @@
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=safecor-core
 pkgver=1.4
-pkgrel=0
+pkgrel=1
 pkgdesc="Safecor - Core of the system"
 url="https://www.alefbet.net/"
 arch="noarch"
@@ -10,7 +10,7 @@ license="MIT"
 depends="openrc xorriso safecor-lib xen xen-hypervisor qemu-system-x86_64 qemu-ui-gtk seabios abuild pciutils xorg-server 
 gtk+3.0 sdl2 sdl2_image mosquitto mosquitto-openrc mosquitto-clients socat py3-evdev py3-udev feh jq xdotool syslog-ng xrandr font-terminus 
 qemu-hw-display-virtio-gpu-pci qemu-hw-display-virtio-gpu apparmor apparmor-profiles py3-pillow fsverity-utils py3-libvirt libvirt libvirt-xen
-py3-rich
+py3-rich py3-xcffib
 "
 makedepends=""
 builddir="$srcdir/$pkgname-$pkgver"
@@ -42,7 +42,6 @@ scripts/get-sys-gui-domid.sh
 scripts/post-install.sh
 scripts/show-logs.sh
 scripts/show-messages.sh
-scripts/start-sys-gui.sh
 scripts/start-sys-usb.sh
 scripts/start-business-domain.sh
 scripts/set-xenstore-permissions.sh
@@ -142,7 +141,7 @@ package() {
     install -D -m750 "$srcdir"/show-logs.sh "$pkgdir/$BINDIR"/show-logs.sh
     install -D -m750 "$srcdir"/show-messages.sh "$pkgdir/$BINDIR"/show-messages.sh
     install -D -m750 "$srcdir"/start-sys-usb.sh "$pkgdir/$BINDIR"/start-sys-usb.sh
-    install -D -m750 "$srcdir"/start-sys-gui.sh "$pkgdir/$BINDIR"/start-sys-gui.sh
+    #install -D -m750 "$srcdir"/start-sys-gui.sh "$pkgdir/$BINDIR"/start-sys-gui.sh
     install -D -m750 "$srcdir"/start-business-domain.sh "$pkgdir/$BINDIR"/start-business-domain.sh
     install -D -m750 "$srcdir"/provision-domain.sh "$pkgdir/$BINDIR"/provision-domain.sh
     install -D -m750 "$srcdir"/create-local-alpine-repository.sh "$pkgdir/$BINDIR"/create-local-alpine-repository.sh
@@ -219,9 +218,8 @@ cdf1bea06615a2444a481b830cbe25a25192067a326e5162cabb462022944d472103d9e283b3b325
 08acee77f95e675105921c7fa3ec0bf95e71f3e56ac5dee7f8f6a1374c90a945956148844e9e8147d3bf9516613242907803c1d1644940387b70ad5010c94d33  post-install.sh
 1366fd934a3b25dd71e9103a8acf9a9b696cfc8b5b280ba8489c5ebb6f3f8a4b4154ed65261fc787cd0be7452f772ce316e470a9749f09458bd0fd376e8cecd8  show-logs.sh
 b676489117ae043b3163f6c0c6bdf8252a1cb8d1666879c9fa00fd99f3064c9f31725325d2b6ef9dfe41fde961d8300b4c78d7e4a3f88e05e5fbb1fa13ba5e1a  show-messages.sh
-5defc2b5341dd6bf68b9d99bb6f9ac3b485b722d5e600d587be8b59688f220176ddb5caa9c8cc5315a35e73d5f10e028ee1565dbc807c114339c0024a9d34345  start-sys-gui.sh
 f09e031ae43cafb230ef11c5644723537b5dd6555e12015d700b3f56e1f6585bb15cfdaac99d59336ece51289f0e35599fcd786b8f32dff9a7d906ea1e87635d  start-sys-usb.sh
-682c9e737ac505a75d8b1e35866c3ad9b9d3658ba830fb1de95ba32a60c27346c760306e5e5b9d4b80feb1bc49062192b1eb2458a7a11180ffc2028469bb3006  start-business-domain.sh
+4aed89f4ff5b0cc089a17afea0c4044c8d6daacd401534ba03e07fe6597b4a623296c8477f69a45facc0cea426ecdbaa47d7b8d7675a9e35ca54e06337771ca3  start-business-domain.sh
 367cadaa6242cdbb214c856b5b00c2280bb604ba814917bc979096ae6b7725da04608b27adb7b52877fc8320e467484872ab48e6c6d6a6aff08f8f168a64bc28  set-xenstore-permissions.sh
 207e5a7fbb526baba6da4c6eef71735dd1126f4cb9735bc10266077f0df998df8a2fea85d64773c393db187d7ac37bf04aa9fec8f2729ed98d3788f366e7d9c8  integrity-setup.sh
 d91cac54fe2bc1b2e65b89a7eb4215915a86031578e27e94a9d47de8c0efbc989e3014b6f4c09462a72a430c58aae89d544047784cb81ee1411f6910463a745e  reboot-domain.sh
@@ -229,7 +227,7 @@ b47dc9669b92a3c19863aebf3b24bf4d1242bc71b67972cf898fb616f93e89192d451341abfcf4f6
 7adb05e95ec41205a309a6217f49eda58bb12312fa642456301e53a1e220fe95df59263802ea3e9a244c4888603989ee7142cba632d6c85e0c1926800cca2d7c  modules-safecor.conf
 928b235c631fc5411aff783abdf5dd830215781ed6e5478591f0b56f6442335eac3025f909b3a523d2940e1bde56bf38ca8e0f7f266b739b00e0caebceb6e810  syslog-safecor.conf
 5fbc7a80ab746b753767092d7905b76967ed3d024ef5f82ad6159c1a56a2983b47e278bf2ff329eb4521916ec560d9734270a98c9b773dd08e9ac00bff9b5f13  10-energy-saving.conf
-141078ade569c2a148c8c8b7af4742f95ec73d169d45715bfdc4caadd7a634817fa8901b07e2686aef172bee9cda2115f85a2dddab22f90d669a5872d2dd4e0b  topology.json
+a2694dda43cb344866a43eb3d7f1942d31e9c26f2d475c71c6971b9903eec65b95b7108b23708e11d8e01fd65656a3c27962611b5ea2b05999c66789685d32bd  topology.json
 9499fd1a6e29118919f0f37b97d942504d004a288ab9a9c2ce5ee7382cb9f168a7d84aba261fc6413e59c8f69733158dded3b8646f4932f630d53d0edee31b77  mosquitto.conf
 4c5d7433c09f11267b161c499f87dd32221497e92bde8864a06edcb320f3b7ac45c07631751093c864834007dcab7c3f08e7eb02893792ff45b4df6c26203064  rc.conf
 ff7132d0e72949467a3a6be17201f06aca24737adcabb5867d8ffe620791fabe34e881766d0da9a323f5d583eb556b638685743d609230b411879bad70fd8510  motd
@@ -242,7 +240,7 @@ e166dc0f3e2fa5911dbf3f57b838211e28da95b9cd93374f8db3b7fe3384a1c4befddf6152b41fa7
 104f072b182bebcc7d51e9da167d245b4025ec16db4266baeb2ab6235cb5b559a8aa0f56dfeeaae7054bde8cc7fb037be0bf4169f9f9d89357b425b590905a6a  doas-svc-safecor-controller.conf
 dff4c20c1b4195095824bfbff01e0fccb4818798b82693b1e039d9e7a79dec7e9479603f9c988cabef82e63951adc76c32bd1a49bf0064aad9cd0d28d6eb5fc7  issue
 8b65f28aaea16505c3f6d2f00de8fa4b4172f0451c47682f42e036e083374afe213c358e612be50a9db01f58803fe9a3f25d6c204cd69d76e2b048580b613341  rotate-screen.py
-add5b8b81910bff02971a07a39da0777519b6657716ee0c272b547ccc8be91a74fed429852a0c11e91fabc36219aa4708c87936cd6b00ba5dcc9efd680012ca9  create-domains.py
+9f9f4f98555f897a06fd77e5d462f9d3b5118b5876e6204a2f2fcf0f34ea9e0cab2b857840f00e22ae32e6f6bae50237d857a3e6d51c733716c238fe9e27c8ce  create-domains.py
 9b3a99afa3c76a2d3b89ac73cdfb0c475b6f156147d8154aad97b472f5febcc5a7a77b7c674040018f2e19e87de714254dd53c3830f7fb47530ef8c82bd7247c  start-safecor-core-controller.py
 f37da1891966fa56dd128b4b50a7e3875f641f5df6ecc490a6aa26f66f86a6128b07dd64839f615ebc23f847315195be2b92f3c0eccba8c908060adf0a62bc79  write-screen-information-to-xenstore.py
 d2724e61acf44c5c1bf3276bbff44b6492556ad2b50967d2ac09d86d2f5bf559dff03eee1a15fb46979ee3466c18a7fdd37668683169e18ed173da095246f8a7  generate-x-config.py

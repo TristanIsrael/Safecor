@@ -5,11 +5,10 @@
     "pci": {
         "blacklist": [ "00:0d.0" ]
     },
-    "gui": {
-        "use": 1,
-        "screen": {
-            "rotation": 90
-        }
+    "screen": {
+        "enabled": 1,
+        "rotation": 90,
+        "default_focus": "gui1"
     },    
     "vcpu": {
         "groups": {

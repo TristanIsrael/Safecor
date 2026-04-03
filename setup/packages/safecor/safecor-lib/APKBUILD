@@ -2,7 +2,7 @@
 # Maintainer: Tristan Isra..l <tristan.israel@alefbet.net>
 pkgname=safecor-lib
 pkgver=1.3
-pkgrel=0
+pkgrel=1
 pkgdesc="Safecor - Python library"
 url="https://www.alefbet.net/"
 arch="noarch"

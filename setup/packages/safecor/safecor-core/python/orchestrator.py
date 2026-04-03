@@ -21,7 +21,10 @@ VIRTUAL_KEYBOARD_PATH="/var/run/safecor/virtual_keyboard"
 inputs_proxy = InputsProxy()
 
 def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, InputDevice]:
-    """ Creates virtual devices for the mouse, keyboard and touch for a specific domain """
+    """ Creates virtual devices for the mouse, keyboard and touch for a specific domain 
+    
+    These devices will be accessible via a symlink in /var/run/safecor with the name \c virtual_mouse_<domain name>
+    """
 
     # Create virtual input devices
     virtual_mouse, device_name = create_virtual_mouse(domain_name)
@@ -30,15 +33,17 @@ def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, I
     if mouse_path == "":
         SysLogger("Orchestrator").warn("The mouse device path has not been found")
     else:
-        if os.path.exists(VIRTUAL_MOUSE_PATH) or os.path.islink(VIRTUAL_MOUSE_PATH):
+        virtual_device_filepath = f"{VIRTUAL_MOUSE_PATH}_{domain_name}"
+
+        if os.path.exists(virtual_device_filepath) or os.path.islink(virtual_device_filepath):
             try:
-                os.remove(VIRTUAL_MOUSE_PATH)
+                os.remove(virtual_device_filepath)
                 time.sleep(0.1)
             except Exception as e:
                 SysLogger("Orchestrator").error(f"Could not remove current virtual mouse device. {e}")
 
         try:
-            os.symlink(mouse_path, VIRTUAL_MOUSE_PATH)
+            os.symlink(mouse_path, virtual_device_filepath)
         except Exception as e:
             SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual mouse device. {e}")
 
@@ -48,15 +53,17 @@ def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, I
     if keyboard_path == "":
         SysLogger("Orchestrator").error("The keyboard device path has not been found")
     else:
-        if os.path.exists(VIRTUAL_KEYBOARD_PATH) or os.path.islink(VIRTUAL_KEYBOARD_PATH):
+        virtual_device_filepath = f"{VIRTUAL_KEYBOARD_PATH}_{domain_name}"
+
+        if os.path.exists(virtual_device_filepath) or os.path.islink(virtual_device_filepath):
             try:
-                os.remove(VIRTUAL_KEYBOARD_PATH)
+                os.remove(virtual_device_filepath)
                 time.sleep(0.1)
             except Exception as e:
                 SysLogger("Orchestrator").error(f"Could not remove current virtual keyboard device. {e}")
 
         try:
-            os.symlink(keyboard_path, VIRTUAL_KEYBOARD_PATH)
+            os.symlink(keyboard_path, virtual_device_filepath)
         except Exception as e:
             SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual keyboard device. {e}")
 
@@ -72,15 +79,17 @@ def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, I
     if touch_path == "":
         SysLogger("Orchestrator").error("The touch device path has not been found")
     else:
-        if os.path.exists(VIRTUAL_TOUCH_PATH) or os.path.islink(VIRTUAL_TOUCH_PATH):
+        virtual_device_filepath = f"{VIRTUAL_TOUCH_PATH}_{domain_name}"
+
+        if os.path.exists(virtual_device_filepath) or os.path.islink(virtual_device_filepath):
             try:
-                os.remove(VIRTUAL_TOUCH_PATH)
+                os.remove(virtual_device_filepath)
                 time.sleep(0.1)
             except Exception as e:
                 SysLogger("Orchestrator").error(f"Could not remove current virtual touch device. {e}")
 
         try:
-            os.symlink(touch_path, VIRTUAL_TOUCH_PATH)
+            os.symlink(touch_path, virtual_device_filepath)
         except Exception as e:
             SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual touch device. {e}")
 
@@ -162,7 +171,7 @@ def create_virtual_keyboard(domain_name:str) -> tuple[InputDevice, str]:
 
     try:
         input = UInput(capabilities, name=device_name)
-        SysLogger("Orchestrator").info(f"Created device{input.name}")
+        SysLogger("Orchestrator").info(f"Created device {input.name}")
         return input, device_name
     except Exception as e:
         SysLogger("Orchestrator").error(f"Error while creating the virtual keyboard: {e}")        
@@ -208,7 +217,7 @@ def create_virtual_touch(domain_name:str) -> tuple[InputDevice, str]:
     try:
         input = UInput(touch_caps, name=device_name)
         SysLogger("Orchestrator").info(f"Created device {input.name}")
-        return input
+        return input, device_name
     except Exception as e:
         SysLogger("Orchestrator").error(f"Error while creating the virtual touchscreen: {e}")
 
@@ -323,6 +332,10 @@ def start_business_domains():
     for domain in domains:
         if domain.name == "":
             continue
+
+        # Create a temporary disk if needed
+        if domain.temp_disk_size > 0:
+            create_temp_disk(domain.name, domain.temp_disk_size)
 
         cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain.name]
         res = subprocess.run(cmd)
