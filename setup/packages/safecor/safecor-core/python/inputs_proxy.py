@@ -1,8 +1,9 @@
 import threading
 import socket
 import msgpack
+import atexit
 from evdev import InputDevice, ecodes, UInput
-from safecor import SysLogger, InputType, XenStore
+from safecor import SysLogger, InputType, XenStore, System, XsDomain, XsKey
 
 class InputsProxy:
     """ The inputs proxy monitors the inputs socket of sys-usb and serializes the events on the 
@@ -41,12 +42,16 @@ class InputsProxy:
         self.__thread.start()
 
         # Monitor the focused domain from the XenStore
-        self.__xenstore.monitor(XenStore.XsDomain.System, XenStore.XsKey.InputFocus, "inputs-focus", self.__on_focus_changed)
+        self.__xenstore.monitor(XsDomain.System.value, XsKey.InputFocus.value, "inputs-focus", self.__on_focus_changed)
+
+    def __del__(self):
+        self.stop()
 
     def stop(self):
         """ Stops the inputs proxy """
 
         self.__can_run = False
+        self.__xenstore.stop()
 
     def events_proxy_worker(self):
         """ Starts the inputs proxy """

@@ -15,6 +15,7 @@ class XenStore:
 
     __monitoring_callbacks = {}
     __monitoring_running = False
+    __can_run = False
 
     def __init__(self):
         self.__xs = xapi.xs()
@@ -22,14 +23,18 @@ class XenStore:
     def read(self, domain_name:str, key:str):
         """ Read information from the XenStore """
 
-        dom_id = self.__get_domain_id(domain_name)
-
-        return self.__xs.read(f"/local/domain/{dom_id}/{key}".encode())
+        dom_id = self.__get_domain_id(domain_name)        
+        path = f"/local/domain/{dom_id}/{key}"
+        return self.read_path(path)
     
     def read_path(self, key_path:str):
         """ Read information from the XenStore using a key path """
 
-        return self.__xs.read(f"{key_path}".encode())
+        txn_id = self.__start_transaction()
+        val = self.__xs.read(txn_id, f"{key_path}")
+        self.__end_transaction(txn_id)
+
+        return val
 
     def write(self, domain_name:str, key:str, value:str):
         """ Write information in the XenStore """
@@ -50,16 +55,20 @@ class XenStore:
 
         dom_id = self.__get_domain_id(domain_name)
 
-        self.__xs.watch(f"/local/domain/{dom_id}/{key}".encode(), token.encode())
+        self.__xs.watch(f"/local/domain/{dom_id}/{key}", token)
         self.__monitoring_callbacks[token] = callback
         
         if not self.__monitoring_running:
+            self.__can_run = True
             Thread(target=self.__do_monitor).start()
+
+    def stop(self):
+        self.__can_run = False
 
     def __do_monitor(self):
         self.__monitoring_running = True
 
-        while True:
+        while self.__can_run:
             # Wait for a change
             path, token = self.__xs.read_watch()
 
