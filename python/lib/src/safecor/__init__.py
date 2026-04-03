@@ -8,6 +8,7 @@ from ._topology import Topology, Domain, Screen, DomainType
 from ._singleton import SingletonMeta
 from ._constants import Constants, InputType, BenchmarkId, ComponentState, DiskState, Settings
 from ._syslogger import SysLogger
+from ._xcb_controller import XcbController
 
 try:
     from ._xenstore import XenStore, XsDomain, XsKey
@@ -65,6 +66,7 @@ __all__ = [
     "Constants", "System", "topology", "Screen", "Constants", "ComponentState", "Topics", "Settings",
     "KeymapFR",
     "InputType", 
+    "XcbController",
     "Configuration", "ConfigurationHelper",
     "RequestFactory",
     "LibvirtHelper",

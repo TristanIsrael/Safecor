@@ -13,6 +13,7 @@ class Topics():
     ENERGY = f"{SYSTEM}/energy"
     SYS_USB = f"{SYSTEM}/sys-usb"
     SETTINGS = f"{SYSTEM}/settings"
+    GUI = f"{SYSTEM}/gui"
 
     DEBUGGING = f"{SYSTEM}/debugging"
 
@@ -61,3 +62,6 @@ class Topics():
     DEFAULT_LANGUAGE = f"{LANGUAGES}/default"
     CURRENT_LANGUAGE = f"{LANGUAGES}/current"
     SET_LANGUAGE = f"{LANGUAGES}/set"
+
+    # GUI
+    SWITCH_GUI = f"{GUI}/switch"

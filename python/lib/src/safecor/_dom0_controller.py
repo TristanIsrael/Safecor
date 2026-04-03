@@ -94,6 +94,7 @@ class Dom0Controller():
         self.mqtt_client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/request")
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
         self.mqtt_client.subscribe(f"{Topics.SETTINGS}/#/request")
+        self.mqtt_client.subscribe(f"{Topics.SWITCH_GUI}/request")
 
         # Handle the kernel's or configuration command line settings
         self.__handle_settings()
@@ -132,6 +133,8 @@ class Dom0Controller():
                 self.__handle_ping(payload)
             elif topic.startswith(Topics.SETTINGS):
                 self.__handle_settings(topic, payload)
+            elif topic == f"{Topics.SWITCH_GUI}/request":
+                self.__handle_switch_gui(payload)
         except Exception:
             Logger.print("An exception occured while handling the message")
 
@@ -367,3 +370,8 @@ class Dom0Controller():
         else:
             Logger().info(f"Default language defined on the kernel's command line is {topology.default_language}")
             System().set_setting(Settings.CURRENT_LANGUAGE, topology.default_language)
+
+    def __handle_switch_gui(self, payload:dict):
+        """ Handle the Graphical Domain switching """
+
+        

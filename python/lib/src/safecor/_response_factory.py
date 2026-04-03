@@ -105,7 +105,7 @@ class ResponseFactory():
     
     
     @staticmethod
-    def create_response_shutdown(accepted:bool):
+    def create_response_shutdown(accepted:bool) -> dict:
         payload = {
             "state": "accepted" if accepted else "refused",
             "reason": ""
@@ -115,7 +115,7 @@ class ResponseFactory():
     
 
     @staticmethod
-    def create_response_restart_domain(domain_name:str, accepted:bool, reason:str):
+    def create_response_restart_domain(domain_name:str, accepted:bool, reason:str) -> dict:
         payload = {
             "domain_name": domain_name,
             "state": "accepted" if accepted else "refused",
@@ -125,7 +125,7 @@ class ResponseFactory():
         return payload
     
     @staticmethod
-    def create_response_ping(ping_id, source_name, data, sent_at):
+    def create_response_ping(ping_id, source_name, data, sent_at) -> dict:
         return {
             "id": ping_id,
             "source": source_name,
@@ -134,28 +134,35 @@ class ResponseFactory():
         }
 
     @staticmethod
-    def create_response_languages_list(languages:list):
+    def create_response_languages_list(languages:list) -> dict:
         return {
             "languages": languages
         }
     
 
     @staticmethod
-    def create_response_language_default(language:str):
+    def create_response_language_default(language:str) -> dict:
         return {
             "language": language
         }
     
     @staticmethod
-    def create_response_get_setting(key:str, value):
+    def create_response_get_setting(key:str, value) -> dict:
         return {
             "key": key,
             "value": value
         }
 
     @staticmethod
-    def create_response_set_setting(key:str, value):
+    def create_response_set_setting(key:str, value) -> dict:
         return {
             "key": key,
             "value": value
+        }
+    
+    @staticmethod
+    def create_response_switch_gui(accepted:bool, reason:str) -> dict:
+        return {
+            "state": "accepted" if accepted else "refused",
+            "reason": reason
         }

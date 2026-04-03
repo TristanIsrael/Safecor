@@ -691,6 +691,7 @@ class Api(metaclass=SingletonMeta):
                 "reason": "the reason why the shutdown was refused"
             }
         """       
+
         self.__mqtt_client.publish(f"{Topics.SHUTDOWN}/request", {})
 
 
@@ -709,8 +710,21 @@ class Api(metaclass=SingletonMeta):
         Args:
             domain_name(str): The name of the Domain to restart.
         """
+
         payload = RequestFactory.create_request_restart_domain(domain_name)
         self.__mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/request", payload)
+
+
+    def switch_gui(self, domain_name:str):
+        """
+        Changes the graphical domain that has the focus.
+
+        The Domain that has the focus is shown in fullscreen. Changing this value will lead
+        to hiding the currently visible Domain and showing the other Domain full screen.
+        """
+
+        payload = RequestFactory.create_request_switch_gui(domain_name)
+        self.__mqtt_client.publish(f"{Topics.SWITCH_GUI}/request", payload)
 
 
     ####
