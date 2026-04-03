@@ -212,6 +212,7 @@ vif=[]
         # Add vGPU if needed
         if domain.has_gui:
             txt += f'''
+vga = "none"
 device_model_override = "/usr/bin/qemu-system-x86_64"
 device_model_version = "qemu-xen"
 device_model_args = [
