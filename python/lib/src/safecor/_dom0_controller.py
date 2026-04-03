@@ -9,6 +9,7 @@ from . import Logger, FileHelper
 from . import ResponseFactory
 from . import MqttClient, Topics, MqttHelper, NotificationFactory
 from . import System, ComponentState, topology
+from . import XcbController
 LIBVIRT_UNAVAILABLE = False
 try:
     from . import LibvirtHelper
@@ -374,4 +375,23 @@ class Dom0Controller():
     def __handle_switch_gui(self, payload:dict):
         """ Handle the Graphical Domain switching """
 
+        if not MqttHelper.check_payload(payload, ["domain_name"]):
+            Logger().info("Missing argument for the command switch_gui")
+            return 
+
+        domain_name = payload.get("domain_name", "")
+
+        gui_list = XcbController().get_gui_list()
+        if not domain_name in gui_list.keys():
+            Logger().warn(f"No Graphical Interface found for the domain {domain_name}")
+            return
         
+        new_gui = gui_list[domain_name]        
+
+        # We hide the current GUI
+        current_gui = XcbController().get_current_gui()
+        if current_gui[1] > 0:
+            XcbController().hide_gui(current_gui)
+
+        # Then we show the one asked
+        XcbController().show_gui(new_gui)

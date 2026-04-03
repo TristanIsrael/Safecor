@@ -12,6 +12,7 @@ class XcbController(metaclass=SingletonMeta):
     """
 
     __conn = None
+    __current_gui = 0
 
     def __get_connection(self):
         if self.__conn is None:
@@ -108,7 +109,19 @@ class XcbController(metaclass=SingletonMeta):
         screen = roots[0]
         width = screen.width_in_pixels
         height = screen.height_in_pixels
-
      
         return width, height
     
+    def get_current_gui(self) -> int:
+        """ Finds the currently visible Graphical Interface """
+
+        conn = self.__get_connection()
+
+        windows = self.get_gui_list()
+
+        for domain_name, win_id in windows.items():
+            attrs = conn.core.GetWindowAttributes(win_id).reply()
+            if attrs.map_state == xproto.MapState.Viewable:
+                return domain_name, win_id
+        
+        return "", 0
