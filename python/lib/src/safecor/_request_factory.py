@@ -47,13 +47,14 @@ class RequestFactory():
     """   
 
     @staticmethod
-    def create_request_files_list(disk: str, recursive: bool = False, from_dir: str = "") -> dict:
+    def create_request_files_list(disk: str, recursive: bool = False, from_dir: str = "", name_filters:list=None) -> dict:
         """ Creates a request to receive the files list of a storage """
 
-        return { 
+        return {
             "disk": disk,
             "recursive": recursive,
-            "from_dir": from_dir
+            "from_dir": from_dir,
+            "name_filters": name_filters if name_filters is not None else ""
             }
     
     @staticmethod

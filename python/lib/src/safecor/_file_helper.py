@@ -4,6 +4,7 @@ from . import Constants, Logger
 import os
 import hashlib
 import subprocess
+import fnmatch
 from pathlib import Path
 
 class FileHelper():
@@ -37,7 +38,7 @@ class FileHelper():
         return disks
 
     @staticmethod
-    def get_files_list(disk:str, recursive:bool, from_dir:str="") -> list:
+    def get_files_list(disk:str, recursive:bool, from_dir:str="", name_filter:list=None) -> list:
         """ 
         This function returns the complete directory tree of a mount point.
 
@@ -46,17 +47,20 @@ class FileHelper():
 
         The list can be queried for external storages and files mounted.
 
+        The filename can be filtered using the name_filter. For example: "a.out", "f.*", "*.ext"
+
         For each file or folder, a dictionary is created:
             { "type": "folder", "path": "/", "name": "dossier 1" },
             { "type": "file", "path": "/dossier 1", "name": "fichier 1", "size": 333344 },
             { "type": "file", "path": "/dossier 1/dossier 2", "name": "fichier 4", "size": 12 }
+
+        If name filters are provided the function will return only files.
         """
 
         files_path = ""
         if disk == Constants.STR_REPOSITORY:
             files_path = Constants.DOM0_REPOSITORY_PATH
         else:
-            #mount_point = Constants.USB_MOUNT_POINT
             mount_point = FileHelper.get_mount_point(disk)
             if mount_point is None:
                 print("No mount point defined. Aborting.")
@@ -66,15 +70,18 @@ class FileHelper():
 
         #print(f"Getting files list for mount point {files_path}")
         
-        fichiers = []
-        FileHelper.get_folder_contents(files_path, fichiers, len(files_path), recursive, from_dir)
+        files = []
+        
+        FileHelper.get_folder_contents(files_path, files, len(files_path), recursive, from_dir, name_filter)
 
-        return fichiers
+        return files
        
     @staticmethod
-    def get_folder_contents(path:str, contents_list:list, cutting:int = 0, recursive:bool = False, from_dir:str = ""):
+    def get_folder_contents(path:str, contents_list:list, cutting:int = 0, recursive:bool = False, from_dir:str = "", name_filter=None):
         """ 
         Queries the contents of a folder 
+
+        If name filters are provided the function will return only files.
         
         :param path: The path of the folder
         :param type: str
@@ -85,6 +92,8 @@ class FileHelper():
         :param recursive: If True the contents of each folder will by analyzed recursively
         :param type: bool
         :param from_dir: Specifies a start directory for the analysis. If not specified the analysis will start at the root of the disk.
+        :param type: str
+        :param name_filter: Filters on the name and extension of the file
         :param type: str
         """
 
@@ -98,26 +107,39 @@ class FileHelper():
                 
                 filepath = f"{path[cutting:]}{from_dir}"
                 filename = entry.name
+
                 if entry.is_file():
-                    entryDict = {
+                    entry_dict = {
                         "type": "file",
                         "path": "/" if filepath == "" else filepath,
                         "name": filename,
                         "size": entry.stat().st_size
                     }
-
-                    contents_list.append(entryDict)
+                    
+                    if name_filter is None:
+                        contents_list.append(entry_dict)
+                    elif any(fnmatch.fnmatch(entry.name, f) for f in name_filter):
+                        # We apply the filters
+                        contents_list.append(entry_dict)
                 elif entry.is_dir():
-                    entryDict = {
+                    entry_dict = {
                         "type": "folder",
                         "path": "/" if filepath == "" else filepath,
                         "name": filename
                     }
 
-                    contents_list.append(entryDict)
+                    if name_filter is None:
+                        # If there is a filter we don't return the dirs
+                        contents_list.append(entry_dict)
 
                     if recursive:
-                        FileHelper.get_folder_contents(entry.path, contents_list, cutting, recursive)
+                        FileHelper.get_folder_contents(
+                            path=entry.path,
+                            contents_list=contents_list,
+                            cutting=cutting,
+                            recursive=recursive,
+                            name_filter=name_filter
+                        )
 
 
     #@staticmethod

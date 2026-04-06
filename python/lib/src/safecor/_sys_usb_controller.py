@@ -166,8 +166,8 @@ class SysUsbController():
         self.mqtt_client.publish(f"{topic}/response", response)
 
 
-    def __handle_list_files(self, topic:str, payload: dict) -> None:        
-        # Vérifie les arguments de la commande        
+    def __handle_list_files(self, topic:str, payload: dict) -> None:
+        # Verify the arguments
         if not MqttHelper.check_payload(payload, ["disk", "recursive", "from_dir"]):
             Logger().error(f"Missing arguments for {topic}")
             return
@@ -175,15 +175,16 @@ class SysUsbController():
         disk = payload.get("disk", "")
         recursive = payload.get("recursive", False)
         from_dir = payload.get("from_dir", "")
+        name_filter = payload.get("name_filter", None)
 
         if disk == Constants.STR_REPOSITORY:
             return
 
-        # Récupère la liste des fichiers
-        fichiers = FileHelper.get_files_list(disk, recursive, from_dir)
+        # Get the files list
+        files = FileHelper.get_files_list(disk, recursive, from_dir, name_filter)
 
-        # Génère la réponse
-        response = ResponseFactory.create_response_list_files(disk, fichiers)
+        # Generate the response
+        response = ResponseFactory.create_response_list_files(disk, files)
         self.mqtt_client.publish(f"{topic}/response", response)
 
 

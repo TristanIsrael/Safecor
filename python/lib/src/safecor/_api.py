@@ -343,7 +343,7 @@ class Api(metaclass=SingletonMeta):
         self.__mqtt_client.publish(f"{Topics.LIST_DISKS}/request", {})
 
 
-    def get_files_list(self, disk: str, recursive:bool = False, from_dir:str = ""):
+    def get_files_list(self, disk: str, recursive:bool = False, from_dir:str = "", name_filters:list=None):
         """
         Asks the system to provide the list of files of an external disk or the repository.
 
@@ -378,8 +378,9 @@ class Api(metaclass=SingletonMeta):
             disk(str): The name of the disk.
             recursive(bool): Looks for files recursively if True.
             from_dir(str, optional): The starting directory for the listing.
+            name_filters(list, optional): The list of filters in the form "*.ext" or "name.*"
         """
-        payload = RequestFactory.create_request_files_list(disk, recursive, from_dir)
+        payload = RequestFactory.create_request_files_list(disk, recursive, from_dir, name_filters)
         self.__mqtt_client.publish(f"{Topics.LIST_FILES}/request", payload)
 
 

@@ -152,6 +152,7 @@ class MockSysUsbController():
         disk = payload.get("disk")
         recursive = payload.get("recursive", False)
         from_dir = payload.get("from_dir", "")
+        name_filters = payload.get("name_filters", None)
 
         if disk not in self.__source_disks_list:
             print(f"ERROR: The disk {disk} does not exist.")
@@ -163,7 +164,7 @@ class MockSysUsbController():
             return
 
         files = list()
-        FileHelper.get_folder_contents(root_path, files, len(root_path), recursive, from_dir)
+        FileHelper.get_folder_contents(root_path, files, len(root_path), recursive, from_dir, name_filters)
 
         response = ResponseFactory.create_response_list_files(disk, files)
         self.__mqtt_client.publish(f"{Topics.LIST_FILES}/response", response)
