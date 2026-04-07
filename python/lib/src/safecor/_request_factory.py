@@ -202,3 +202,11 @@ class RequestFactory():
         return {
             "language": lang
         }
+
+    @staticmethod
+    def create_request_switch_gui(domain_name:str):
+        """ Create a request to switch the GUI Domain """
+
+        return {
+            "domain": domain_name
+        }
