@@ -116,7 +116,7 @@ class SerialMQTTClient(mqtt.Client):
 
         while not self._thread_terminate:
             if self._sock is None:
-                SysLogger("MQTT client").warn("No socket found, exiting loop")
+                SysLogger("MQTT-client").warn("No socket found, exiting loop")
                 if self.on_connection_lost is not None:
                     self.on_connection_lost()
                 return
@@ -131,20 +131,20 @@ class SerialMQTTClient(mqtt.Client):
             if rlist and self._sock.in_waiting() > 0:
                 rc = self.loop_read()
                 if rc != MQTTErrorCode.MQTT_ERR_SUCCESS:
-                    SysLogger("MQTT client").warn(f"Read error {rc}")
+                    SysLogger("MQTT-client").warn(f"Read error {rc}")
                     break
 
             if self.want_write():
                 rc = self.loop_write()
                 if rc != MQTTErrorCode.MQTT_ERR_SUCCESS:
-                    SysLogger("MQTT client").warn(f"Write error {rc}")
+                    SysLogger("MQTT-client").warn(f"Write error {rc}")
                     break
 
             rc = self.loop_misc()
             if rc != MQTTErrorCode.MQTT_ERR_SUCCESS:
-                SysLogger("MQTT client").warn(f"Misc error {rc}")
+                SysLogger("MQTT-client").warn(f"Misc error {rc}")
                 if rc == MQTTErrorCode.MQTT_ERR_CONN_LOST:
-                    SysLogger("MQTT client").warn("Connection lost.")
+                    SysLogger("MQTT-client").warn("Connection lost.")
                     if self.on_connection_lost is not None:
                         self.on_connection_lost()
 
@@ -167,8 +167,8 @@ class SerialMQTTClient(mqtt.Client):
             self._sockpairR = self._sock
             return self._sock
         except Exception as e:
-            SysLogger("MQTT client").warn("An error occured while opening the serial port")
-            SysLogger("MQTT client").warn(str(e))
+            SysLogger("MQTT-client").warn("An error occured while opening the serial port")
+            SysLogger("MQTT-client").warn(str(e))
             return None
 
 class MqttClient():
@@ -204,7 +204,7 @@ class MqttClient():
             return
         
         self.is_starting = True
-        SysLogger("MQTT client").info(f"Starting MQTT client {self.identifier}")
+        SysLogger("MQTT-client").info(f"Starting MQTT client {self.identifier}")
 
         if self.connection_type != ConnectionType.SERIAL_PORT:
             self.mqtt_client = mqtt.Client(
@@ -229,11 +229,11 @@ class MqttClient():
                     mqtt_host = self.connection_string
                     self.mqtt_client.connect(host=mqtt_host, port=1, keepalive=30)
                 else:
-                    SysLogger("MQTT client").error(f"The connection type {self.connection_type} is not handled")
+                    SysLogger("MQTT-client").error(f"The connection type {self.connection_type} is not handled")
                     return
             except Exception as e:
-                SysLogger("MQTT client").warn(f"Could not connect to the MQTT broker on {mqtt_host}")
-                SysLogger("MQTT client").warn(str(e))
+                SysLogger("MQTT-client").warn(f"Could not connect to the MQTT broker on {mqtt_host}")
+                SysLogger("MQTT-client").warn(str(e))
                 return
             
             self.mqtt_client.loop_start()
@@ -258,7 +258,7 @@ class MqttClient():
 
             self.mqtt_client.loop_start()
         else:
-            SysLogger("MQTT client").error(f"The connection type {self.connection_type} is not handled")
+            SysLogger("MQTT-client").error(f"The connection type {self.connection_type} is not handled")
             return        
 
     def add_connected_callback(self, callback):
@@ -331,14 +331,14 @@ class MqttClient():
             for cb in self.__message_callbacks:
                 cb(msg.topic, payload)
         except Exception as e:
-            SysLogger("MQTT client").warn("[MQTT Client] Uncaught Exception when handling message:")
-            SysLogger("MQTT client").warn(f"Topic : {msg.topic}")
-            SysLogger("MQTT client").warn(f"Payload : {msg.payload}")
-            SysLogger("MQTT client").warn(f"Exception : {e}")
-            SysLogger("MQTT client").warn("** Notice that the error may come from the client callback **")
+            SysLogger("MQTT-client").warn("[MQTT Client] Uncaught Exception when handling message:")
+            SysLogger("MQTT-client").warn(f"Topic : {msg.topic}")
+            SysLogger("MQTT-client").warn(f"Payload : {msg.payload}")
+            SysLogger("MQTT-client").warn(f"Exception : {e}")
+            SysLogger("MQTT-client").warn("** Notice that the error may come from the client callback **")
 
     def __on_connected(self, client:mqtt.Client, userdata, connect_flags, reason_code, properties):
-        SysLogger("MQTT client").info("Connected to the MQTT broker")
+        SysLogger("MQTT-client").info("Connected to the MQTT broker")
         self.connected = True
         self.is_starting = False
         
@@ -355,13 +355,13 @@ class MqttClient():
             self.on_subscribed(mid)
 
     def __on_connection_lost(self):
-        SysLogger("MQTT client").warn("Connection lost, trying to reconnect.")
+        SysLogger("MQTT-client").warn("Connection lost, trying to reconnect.")
         self.is_starting = False
         self.connected = False
         self.start()
 
     def __on_disconnected(self, *args):
-        SysLogger("MQTT client").info("Disconnected from the broker")
+        SysLogger("MQTT-client").info("Disconnected from the broker")
         #print("Arguments:")
         #for arg in args:
         #    print(arg)

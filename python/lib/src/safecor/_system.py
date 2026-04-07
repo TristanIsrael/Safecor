@@ -815,6 +815,11 @@ class System(metaclass=SingletonMeta):
         if fn_callback is None:
             print("Monitoring of file called without callback. Aborted.")
             return
+        
+        # First we verify whether the file already exists
+        if os.path.exists(f"{path}/{filename}"):
+            threading.Thread(target=fn_callback, args=(path, filename, True,)).start()
+            return
 
         thread = threading.Thread(target=self.__monitor_file_worker, daemon=True, args=(path, filename, fn_callback,))
         thread.start()

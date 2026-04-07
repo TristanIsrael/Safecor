@@ -6,7 +6,7 @@ from evdev import InputDevice, ecodes, UInput
 from safecor import SysLogger, InputType, XenStore, System, XsDomain, XsKey
 
 class InputsProxy:
-    """ The inputs proxy monitors the inputs socket of sys-usb and serializes the events on the 
+    """ The Inputs-proxy monitors the inputs socket of sys-usb and serializes the events on the 
         virtual devices created before.
 
         Data are read from a unique Unix Domain Socket (PV channel) from the sys-usb Domain. All 
@@ -30,16 +30,23 @@ class InputsProxy:
     INPUTS_SOCKET="/var/run/safecor/sys-usb-input.sock"
 
     def start(self):
-        """ Starts the inputs proxy """
+        """ Starts the Inputs-proxy """
 
         if self.__is_running:
             return
         
         self.__can_run = True
 
-        SysLogger("Inputs proxy").info("The inputs proxy is going to start")
+        SysLogger("Inputs-proxy").info("The Inputs-proxy is going to start")
         self.__thread = threading.Thread(target= self.events_proxy_worker, daemon=True)
         self.__thread.start()
+
+        # Find the default GUI
+        default_focus = System().get_topology().default_focus()
+        if default_focus != "":
+            self.__on_focus_changed(default_focus)
+        else:
+            SysLogger("Inputs-proxy").warn("No Domain has the default focus. There is a risk that no inputs are used")
 
         # Monitor the focused domain from the XenStore
         self.__xenstore.monitor(XsDomain.System.value, XsKey.InputFocus.value, "inputs-focus", self.__on_focus_changed)
@@ -48,13 +55,13 @@ class InputsProxy:
         self.stop()
 
     def stop(self):
-        """ Stops the inputs proxy """
+        """ Stops the Inputs-proxy """
 
         self.__can_run = False
         self.__xenstore.stop()
 
     def events_proxy_worker(self):
-        """ Starts the inputs proxy """
+        """ Starts the Inputs-proxy """
 
         SysLogger("Input proxy").info("Start input proxy")
         buffer = bytearray()
@@ -119,6 +126,8 @@ class InputsProxy:
     def set_virtual_devices_for_domain(self, domain_name:str, virtual_mouse:InputDevice, virtual_keyboard:InputDevice, virtual_touch:InputDevice):
         """ Associate a Domain name and its virtual devices """
         
+        print(f"Set virtual mouse of {domain_name} to {virtual_mouse}")
+
         self.__virtual_mouses[domain_name] = virtual_mouse
         self.__virtual_keyboards[domain_name] = virtual_keyboard
         self.__virtual_touches[domain_name] = virtual_touch
@@ -141,6 +150,8 @@ class InputsProxy:
         virtual_mouse = self.__virtual_mouses.get(domain_name, None)
         virtual_keyboard= self.__virtual_keyboards.get(domain_name, None)
         virtual_touch = self.__virtual_touches.get(domain_name, None)
+
+        print(f"virtual mouse of {domain_name} is {virtual_mouse}")
 
         return virtual_mouse, virtual_keyboard, virtual_touch
     

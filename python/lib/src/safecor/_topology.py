@@ -224,3 +224,14 @@ class Topology:
                 doms.append(dom)
 
         return doms
+    
+    def default_focus(self) -> str:
+        """ Returns the name of the Domain that has the default focus """
+
+        default_focus = self.screen.default_focus
+        gui_domains = self.graphical_domains()
+        if default_focus == "" and len(gui_domains) > 0:
+            return gui_domains[0].name
+        else:
+            return default_focus
+            

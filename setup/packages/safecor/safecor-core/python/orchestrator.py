@@ -342,15 +342,11 @@ def start_business_domains():
 
     # We handle the default focus
     # If the default focus is not set in the topology we use the first domain with gui
-    default_focus = topology.screen.default_focus
-    gui_domains = topology.graphical_domains()
-    if default_focus == "" and len(gui_domains) > 0:
-        default_focus = gui_domains[0].name
+    default_focus = topology.default_focus()
 
     if default_focus != "":
         SysLogger("create-domains").info(f"Set focus to the domain {default_focus}.")
         XenStore().write(XsDomain.System.value, XsKey.InputFocus.value, default_focus)
-
 
     domains = topology.business_domains()
     for domain in domains:
@@ -414,7 +410,7 @@ def on_mqtt_ready():
         # The monitor will look at the inputs file from sys-usb
         # and when sys-usb is rebooted, the events listener will stop and start
         # back after the reboor
-        SysLogger("Orchesrtrator").info("Wait for the input socket to be ready")
+        SysLogger("Orchestrator").info("Wait for the input socket to be ready")
         System().monitor_file(INPUTS_SOCKET_PATH, INPUTS_SOCKET_FILENAME, on_inputs_socket_file_changed)
 
         cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-sys-usb.sh"]
