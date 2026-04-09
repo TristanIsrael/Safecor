@@ -78,8 +78,12 @@ class XenStore:
                 # We get the value
                 value = self.read_path(path)
 
+                if value is None:
+                    SysLogger("XenStore").warn(f"No value found in XenStore for {path}")
+                    return
+
                 # Call the callback
-                callback(value)
+                callback(value.decode())
 
     def __get_domain_id(self, domain_name:str):
         _domain = ""

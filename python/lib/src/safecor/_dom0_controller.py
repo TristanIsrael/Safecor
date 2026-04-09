@@ -98,7 +98,7 @@ class Dom0Controller():
         self.mqtt_client.subscribe(f"{Topics.DELETE_FILE}/request")
         self.mqtt_client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/request")
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
-        self.mqtt_client.subscribe(f"{Topics.SETTINGS}/#/request")
+        self.mqtt_client.subscribe(f"{Topics.SETTINGS}/+/request")
         self.mqtt_client.subscribe(f"{Topics.SWITCH_GUI}/request")
 
         # Handle the kernel's or configuration command line settings
@@ -386,7 +386,7 @@ class Dom0Controller():
         domain_name = payload.get("domain_name", "")
 
         gui_list = XcbController().get_gui_list()
-        if not domain_name in gui_list.keys():
+        if domain_name not in gui_list.keys():
             Logger().warn(f"No Graphical Interface found for the domain {domain_name}")
             return
         

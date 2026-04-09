@@ -75,6 +75,7 @@ class XcbController(metaclass=SingletonMeta):
             )
 
         # Show the window
+        SysLogger("XcbController").info(f"Show window {window_id}")
         conn = self.__get_connection()
         conn.core.MapWindow(window_id)
         conn.flush()

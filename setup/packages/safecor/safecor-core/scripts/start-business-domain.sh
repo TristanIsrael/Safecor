@@ -61,11 +61,11 @@ else
 
     if [ "$FOCUS_DOMAIN" = "$1" ]; then
         #logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Giving the focus to this Domain"
-        DISPLAY=:0 xdotool windowunmap `DISPLAY=:0 xdotool search --name "$1"`
-        DISPLAY=:0 xdotool windowsize `DISPLAY=:0 xdotool search --name "$1"` $new_width $new_height        
+        DISPLAY=:0 xdotool windowmap $(DISPLAY=:0 xdotool search --name "$1")
+        DISPLAY=:0 xdotool windowsize $(DISPLAY=:0 xdotool search --name "$1") $new_width $new_height        
     else 
         logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "This Domain does not have the focus, hiding the window"
-        DISPLAY=:0 xdotool windowunmap `DISPLAY=:0 xdotool search --name "$1"`
+        DISPLAY=:0 xdotool windowunmap $(DISPLAY=:0 xdotool search --name "$1")
     fi
 
     exit 0
