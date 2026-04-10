@@ -379,11 +379,11 @@ class Dom0Controller():
     def __handle_switch_gui(self, payload:dict):
         """ Handle the Graphical Domain switching """
 
-        if not MqttHelper.check_payload(payload, ["domain_name"]):
+        if not MqttHelper.check_payload(payload, ["domain"]):
             Logger().info("Missing argument for the command switch_gui")
             return 
 
-        domain_name = payload.get("domain_name", "")
+        domain_name = payload.get("domain", "")
 
         gui_list = XcbController().get_gui_list()
         if domain_name not in gui_list.keys():
