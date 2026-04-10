@@ -83,7 +83,8 @@ class Api(metaclass=SingletonMeta):
         subscriptions = [ "my-topic-1", "my-topic-2" ]
 
         def start():
-            Api().start(domain_identifier="my-domain")
+            c = MqttFactory.create_mqtt_client_domu("a client")
+            Api().start(c, domain_identifier="my-domain")
             Api().add_ready_callback(on_connected)
 
         def on_connected():

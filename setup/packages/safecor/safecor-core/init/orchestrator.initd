@@ -11,7 +11,7 @@ depend() {
     after xserver libvirtd
 }
 
-start() {
+start() {    
     modprobe uinput
     
     # Write screen information in the Xenstore for sys-gui
@@ -48,6 +48,11 @@ start() {
     chown root:safecor /usr/lib/safecor/tmp
     chmod 770 /usr/lib/safecor/tmp
     eend 0 
+
+    if grep -qw "no_autostart" /proc/cmdline; then
+        ewarn "Autostart explicitely disabled on kernel command line"
+        return 0
+    fi
 
     ebegin "Starting Safecor orchestrator"
     start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --pidfile /var/run/$name.pid --background --user "$user" --stdout "$logfile" --stderr "$logfile"  -- /usr/lib/safecor/bin/orchestrator.py

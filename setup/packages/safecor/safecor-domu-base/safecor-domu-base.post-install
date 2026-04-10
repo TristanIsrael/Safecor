@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "Create the safecor group"
-addgroup -g 2000 safecor
+addgroup -g 2000 safecor || true
 
 echo "Set permissions on /mnt/storage"
 if [ -d "/mnt/storage" ]; then
