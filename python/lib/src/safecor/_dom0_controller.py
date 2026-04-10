@@ -395,7 +395,7 @@ class Dom0Controller():
         # We hide the current GUI
         current_gui = XcbController().get_current_gui()
         if current_gui[1] > 0:
-            XcbController().hide_gui(current_gui)
+            XcbController().hide_gui(current_gui[1])
 
         # Then we show the one asked
         XcbController().show_gui(new_gui)
