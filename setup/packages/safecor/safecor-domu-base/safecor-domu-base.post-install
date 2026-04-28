@@ -13,3 +13,4 @@ echo "Mount temp disk on /tmp if required"
 mount LABEL=TMPFILE /tmp || true
 rmdir /var/tmp
 ln -s /tmp /var/tmp
+chmod 777 /tmp
