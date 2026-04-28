@@ -18,7 +18,7 @@ except ImportError as e:
 try:
     from ._xenstore import XenStore, XsDomain, XsKey
 except ImportError as e:
-    print("The class XenSotre won't be available due to missing dependency")
+    print("The class XenStore won't be available due to missing dependency")
     print(str(e))
 
 try:
