@@ -259,6 +259,7 @@ class System(metaclass=SingletonMeta):
             domain.cpu_affinity = domain_desc.get("cpus", []) #System.parse_range(domain.vcpus)
             domain.package = domain_desc.get("package", "")
             domain.temp_disk_size = domain_desc.get("temp_disk_size", 0)
+            domain.swap_size = domain_desc.get("swap_size", 0)
             domain.has_gui = domain_desc.get("has_gui", False)
 
             _topology.add_domain(domain)
@@ -314,6 +315,7 @@ class System(metaclass=SingletonMeta):
                         "cpus": "3-4",
                         "package": "",
                         "temp_disk_size": 4096,
+                        "swap_size": 4096,
                         "has_gui": False
                     }
                 ],
@@ -411,6 +413,7 @@ class System(metaclass=SingletonMeta):
                 "cpus": System().compute_cpus_for_group(group_name, vcpu_groups),
                 "vcpu_groups": vcpu_groups,
                 "temp_disk_size": domain.get("temp_disk_size", 0),
+                "swap_size": domain.get("swap_size", 0),
                 "has_gui": domain.get("has_gui", False)
             }
 

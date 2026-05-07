@@ -200,6 +200,11 @@ disk = [
         if domain.temp_disk_size > 0:
             txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
 
+        # Add a swap diskfile if required
+        # The diskfile is prepared by the orchestrator
+        if domain.swap_size > 0:
+            txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
+
         txt += '''
 ]
 device_model_override = "/usr/bin/qemu-system-x86_64"

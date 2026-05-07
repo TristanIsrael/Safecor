@@ -321,9 +321,6 @@ def create_temp_disk(domain_name:str, size_in_mb:int):
     # Modify the permissions
     # The created file should belong to svc-orchestrator:safecor
     os.chmod(filepath, 0o770)
-    #grp_safecor = grp.getgrnam("safecor").gr_gid
-    #uid_safecor = pwd.getpwnam("svc-orchestrator").pw_uid
-    #os.chown(filepath, uid_safecor, grp_safecor)
     
     cmd = [ "mkfs.ext4", "-L", "TMPFILE", filepath ]
     res = subprocess.run(cmd, capture_output=True, text=True)
@@ -333,7 +330,27 @@ def create_temp_disk(domain_name:str, size_in_mb:int):
 
     SysLogger("Orchestrator").debug(f"Temporary diskfile of size {size_in_mb} MB created for {domain_name}")
 
-    # 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/saphir-av-eset-tmp.img'
+def create_swap_disk(domain_name:str, size_in_mb:int):
+    """ Create a temporary file for the swap in a Domain """
+
+    filename = f"{domain_name}-swap.img"
+    filepath = f"/usr/lib/safecor/tmp/{filename}"
+
+    # Remove any existing file
+    if os.path.exists(filename):
+        os.remove(filename)
+
+    cmd = [ "/usr/lib/safecor/bin/create-swapdisk.sh", filepath ,f"{size_in_mb*1024*1024}" ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode > 0:
+        SysLogger("Orchestrator").error(f"Cannot create the temporary swap disk for {domain_name}: {res.stderr}")
+        return
+    
+    # Modify the permissions
+    # The created file should belong to svc-orchestrator:safecor
+    os.chmod(filepath, 0o770)
+
+    SysLogger("Orchestrator").debug(f"Temporary swap disk of size {size_in_mb} MB created for {domain_name}")
 
 def start_business_domains():
     """ Starts the business Domains"""
@@ -357,6 +374,11 @@ def start_business_domains():
         if domain.temp_disk_size > 0:
             SysLogger("Orchestrator").info(f"Create a temporary disk for {domain.name}")      
             create_temp_disk(domain.name, domain.temp_disk_size)
+
+        # Create a temporary swap if needed        
+        if domain.swap_size > 0:
+            SysLogger("Orchestrator").info(f"Create a swap disk for {domain.name}")      
+            create_swap_disk(domain.name, domain.swap_size)
 
         cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain.name, "1" if domain.has_gui else "0"]
         res = subprocess.run(cmd)
