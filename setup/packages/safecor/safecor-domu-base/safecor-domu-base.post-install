@@ -14,3 +14,9 @@ mount LABEL=TMPFILE /tmp || true
 rmdir /var/tmp
 ln -s /tmp /var/tmp
 chmod 777 /tmp
+
+echo "Activate swap if needed"
+if [ -e /dev/xvdf1 ]; then
+    mkswap /dev/xvdf1
+    swapon /dev/xvdf1
+fi
