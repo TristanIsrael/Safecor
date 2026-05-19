@@ -125,3 +125,14 @@ class ComponentsHelper():
         """ Returns all the components stored by this instance """
 
         return self.__components
+
+    def is_ready(self, component_id:str):
+        """ Returns True if the component is in the list and is ready """
+
+        state = self.get_state(component_id)
+
+        if state == ComponentState.UNKNOWN:
+            return False
+        
+        return state == ComponentState.READY
+    
