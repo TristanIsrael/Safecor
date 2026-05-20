@@ -116,7 +116,7 @@ class FileHelper():
                         "size": entry.stat().st_size
                     }
                     
-                    if name_filter is None:
+                    if name_filter is None or name_filter == "":
                         contents_list.append(entry_dict)
                     elif any(fnmatch.fnmatch(entry.name, f) for f in name_filter):
                         # We apply the filters
@@ -128,7 +128,7 @@ class FileHelper():
                         "name": filename
                     }
 
-                    if name_filter is None:
+                    if name_filter is None or name_filter == "":
                         # If there is a filter we don't return the dirs
                         contents_list.append(entry_dict)
 
