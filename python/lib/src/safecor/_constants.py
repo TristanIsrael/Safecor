@@ -17,6 +17,7 @@ class ComponentState(Enum):
     STARTING = "starting"
     READY = "ready"
     ERROR = "error"
+    OFF = "off"
 
 class DiskState(Enum):
     UNKNOWN = "unknown"

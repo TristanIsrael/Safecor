@@ -77,6 +77,7 @@ class SysUsbController():
         self.mqtt_client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/request")
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
         self.mqtt_client.subscribe(f"{Topics.SYS_USB_CLEAR_QUEUES}/request")
+        self.mqtt_client.subscribe(f"{Topics.RESTART_DOMAIN}/request")
 
         # Démarrage de la surveillance des entrées
         if not NO_INPUTS_MONITORING:
@@ -153,6 +154,8 @@ class SysUsbController():
             self.__handle_mount_file(payload)
         elif topic == Topics.UNMOUNT:
             self.__handle_unmount(payload)
+        elif topic == Topics.RESTART_DOMAIN:
+            self.__handle_restart(payload)
 
     def __handle_list_disks(self, topic:str) -> None:
         Logger().debug("Disks list requested")
@@ -342,7 +345,6 @@ class SysUsbController():
     def __handle_discover_components(self) -> None:
         comp1 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_DISK_CONTROLLER, "System disk controller", "sys-usb", ComponentState.READY, "core")
         comp2 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_INPUT_CONTROLLER, "Input controller", "sys-usb", ComponentState.READY, "core")
-        #comp3 = ResponseFactory.create_entry_component_state(Constants.IO_BENCHMARK, "sys-usb", "System I/O benchmark", ComponentState.READY, "core")        
 
         payload = ResponseFactory.create_response_component_state([comp1, comp2])
 
@@ -375,10 +377,26 @@ class SysUsbController():
         ping_id = payload.get("id", "")
         data = payload.get("data", "")
         sent_at = payload.get("sent_at", "")
+
         payload = ResponseFactory.create_response_ping(ping_id, "sys-usb", data, sent_at)
 
         self.mqtt_client.publish(f"{Topics.PING}/response", payload)
 
+    def __handle_restart(self, payload):
+        if not MqttHelper.check_payload(payload, ["domain_name"]):
+            Logger().error(f"The command {Topics.RESTART_DOMAIN} misses argument(s)", "sys-usb")
+            return
+        
+        domain_name = payload.get("domain_name", "")
+
+        if domain_name == "sys-usb":
+            comp1 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_DISK_CONTROLLER, "System disk controller", "sys-usb", ComponentState.OFF, "core")
+            comp2 = ResponseFactory.create_entry_component_state(Constants.SAFECOR_INPUT_CONTROLLER, "Input controller", "sys-usb", ComponentState.OFF, "core")
+
+            payload = ResponseFactory.create_response_component_state([comp1, comp2])
+            self.mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", payload)
+
+            subprocess.run("reboot", check=False)
 
     def __read_files_worker(self):
         while self.__can_run:
@@ -403,7 +421,7 @@ class SysUsbController():
                 destination_location = next_file.get("destination_location", "")
                 self.__do_copy_file(source_location, filepath, target_disk, destination_location)
             
-            time.sleep(0.1)
+            time.sleep(0.1)        
 
     def __do_read_file(self, source_location:str, source_disk:str, filepath:str, repository_path:str, source_fingerprint:str):
         #self.__debug_threads()

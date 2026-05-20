@@ -137,7 +137,7 @@ class Dom0Controller():
             elif topic == f"{Topics.PING}/request":
                 self.__handle_ping(payload)
             elif topic.startswith(Topics.SETTINGS):
-                self.__handle_settings(topic, payload)
+                self.__handle_system_settings(topic, payload)
             elif topic == f"{Topics.SWITCH_GUI}/request":
                 self.__handle_switch_gui(payload)
         except Exception:
@@ -205,7 +205,10 @@ class Dom0Controller():
             return
         
         domain_name = payload.get("domain_name", "")
-        self.__reboot_domain(domain_name)
+        forced = payload.get("forced", False)
+
+        if forced:
+            self.__reboot_domain(domain_name)
 
 
     def __handle_gui_ready(self, payload:dict):
@@ -304,7 +307,7 @@ class Dom0Controller():
 
         self.mqtt_client.publish(f"{Topics.PING}/response", payload)
 
-    def __handle_settings(self, topic:str, payload:dict):
+    def __handle_system_settings(self, topic:str, payload:dict):
         """
         Handles the settings requests
         """

@@ -135,4 +135,3 @@ class ComponentsHelper():
             return False
         
         return state == ComponentState.READY
-    
