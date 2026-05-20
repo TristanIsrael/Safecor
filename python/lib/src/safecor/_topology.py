@@ -22,6 +22,7 @@ class Domain:
     package = ""
     domain_type = DomainType.BUSINESS
     temp_disk_size = 0
+    swap_size = 0
     has_gui = False
     
     def __init__(self, domain_name:str, domain_type:DomainType):
