@@ -1,7 +1,7 @@
 # Contributor: Tristan Israël <tristan.israel@alefbet.net>
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=fuse-archive
-pkgver=1.18
+pkgver=1.22
 pkgrel=0
 pkgdesc="Google's FUSE file system for archives and compressed files"
 url="https://github.com/google/fuse-archive"
@@ -32,5 +32,5 @@ package() {
 }
 
 sha512sums="
-2430b2a0defa1a068670e4c4bf2994c6e13fb0179713bf95259005b1297d7cefdf75d448c43f655e6e0e328731393adb9dcc5158c24fe4b3ddec184353e9bc1f  fuse-archive.tar.gz
+96faec7ffb16fa8d35f4d6012ae271b3385e8e05e0eb9a285212bf9fd716e65fde8605e5aaed2f388a55306d6b8b8e3f68355f39ea51e6e26b0ca1808d414c63  fuse-archive.tar.gz
 "
