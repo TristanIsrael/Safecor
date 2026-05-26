@@ -395,8 +395,9 @@ class SysUsbController():
 
             payload = ResponseFactory.create_response_component_state([comp1, comp2])
             self.mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", payload)
-
-            subprocess.run("reboot", check=False)
+            
+            cmd = ["/usr/bin/doas", "/sbin/reboot"]
+            subprocess.run(cmd, check=False)
 
     def __read_files_worker(self):
         while self.__can_run:
