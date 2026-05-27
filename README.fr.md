@@ -22,7 +22,7 @@ Vous **n’êtes pas autorisé à forker, copier, modifier ou réutiliser** ce c
 
 ## 📚 Documentation
 
-Les nouveaux utilisateurs doivent commencer par la [documentation sur l’architecture](wiki/Architecture.md).
+Les nouveaux utilisateurs doivent commencer par la [documentation sur l’architecture](https://github.com/TristanIsrael/Safecor/wiki/Architecture) et la [stratégie de sécurité](https://github.com/TristanIsrael/Safecor/wiki/Security).
 
 La documentation principale est disponible dans le [Wiki GitHub](https://github.com/TristanIsrael/Safecor/wiki).
 
