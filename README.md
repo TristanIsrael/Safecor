@@ -22,7 +22,7 @@ You are **not allowed to fork, copy, modify, or reuse** this code in any form, i
 
 ## 📚 Documentation
 
-Newcomers should begin with the [architecture documentation](wiki/Architecture.md).
+Newcomers should begin with the [architecture documentation](https://github.com/TristanIsrael/Safecor/wiki/Architecture) and the [security strategy](https://github.com/TristanIsrael/Safecor/wiki/Security)
 
 The main documentation is available in the [Github Wiki](https://github.com/TristanIsrael/Safecor/wiki).
 
