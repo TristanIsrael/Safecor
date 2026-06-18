@@ -88,11 +88,6 @@ on:
         required: false
         type: 'boolean'
         default: 'false'
-      force-safecor-sys-gui:
-        description: "Build sys-gui"
-        required: false
-        type: 'boolean'
-        default: 'false'
       force-safecor-sys-usb:
         description: "Build sys-usb"
         required: false
@@ -139,7 +134,6 @@ jobs:
       pkg-safecor-gui-base: ${{ steps.detect.outputs.safecor-gui-base }}
       pkg-safecor-hardening: ${{ steps.detect.outputs.safecor-hardening }}
       pkg-safecor-lib: ${{ steps.detect.outputs.safecor-lib }}      
-      pkg-safecor-sys-gui: ${{ steps.detect.outputs.safecor-sys-gui }}
       pkg-safecor-sys-usb: ${{ steps.detect.outputs.safecor-sys-usb }}
       pkg-safecor-syslog: ${{ steps.detect.outputs.safecor-syslog }}
       pkg-safecor-splash: ${{ steps.detect.outputs.safecore-splash }}
@@ -166,7 +160,6 @@ jobs:
             [safecor-gui-base]="setup/packages/safecor/safecor-gui-base/"
             [safecor-hardening]="setup/packages/safecor/safecor-hardening/"
             [safecor-lib]="setup/packages/safecor/safecor-lib/"
-            [safecor-sys-gui]="setup/packages/safecor/safecor-sys-gui/"
             [safecor-sys-usb]="setup/packages/safecor/safecor-sys-usb/"
             [safecor-syslog]="setup/packages/safecor/safecor-syslog/"
             [safecor-splash]="setup/packages/safecor/safecor-splash/"
@@ -199,7 +192,6 @@ jobs:
       check-safecor-container-debian: ${{ steps.check-safecor-container-debian.outputs.do_build }}
       check-safecor-core: ${{ steps.check-safecor-core.outputs.do_build }}
       check-safecor-hardening: ${{ steps.check-safecor-hardening.outputs.do_build }}
-      check-safecor-sys-gui: ${{ steps.check-safecor-sys-gui.outputs.do_build }}
       check-safecor-sys-usb: ${{ steps.check-safecor-sys-usb.outputs.do_build }}
       check-safecor-gui-base: ${{ steps.check-safecor-gui-base.outputs.do_build }}
       check-safecor-syslog: ${{ steps.check-safecor-syslog.outputs.do_build }}
@@ -350,21 +342,7 @@ jobs:
             echo "do_build=true" >> $GITHUB_OUTPUT
           else 
             echo "do_build=false" >> $GITHUB_OUTPUT
-          fi
-      - id: check-safecor-sys-gui
-        name: check-safecor-sys-gui
-        env:
-          PKG_CHANGED: ${{ needs.detect-changes.outputs.pkg-safecor-sys-gui }}
-          FORCE: ${{ github.event.inputs.force-safecor-sys-gui }}
-          FORCE_ALL: ${{ github.event.inputs.force-all }}
-          FORCE_APPS: ${{ github.event.inputs.force-apps }}
-          FORCE_LIBS: ${{ github.event.inputs.force-libs }}
-        run: |          
-          if [[ $PKG_CHANGED == 'true' || $FORCE == 'true' || $FORCE_ALL == 'true' || $FORCE_APPS == 'true' ]]; then 
-            echo "do_build=true" >> $GITHUB_OUTPUT
-          else 
-            echo "do_build=false" >> $GITHUB_OUTPUT
-          fi        
+          fi             
       - id: check-safecor-sys-usb
         name: check-safecor-sys-usb
         env:
@@ -904,37 +882,6 @@ jobs:
           privkey: ${{ secrets.DEPLOY_KEY }}
           filepath: /home/builder/packages/safecor/x86_64/
 
-  build-safecor-sys-gui:
-    needs: [ prepare ]
-    if: |
-      needs.prepare.outputs.check-safecor-sys-gui == 'true' ||
-      needs.prepare.outputs.check-safecor-app-tests == 'true'
-    runs-on: ubuntu-latest
- 
-    container:
-      image: alpine:3.21
- 
-    steps:      
-      - name: Checkout sources
-        uses: actions/checkout@v4
- 
-      - name: Prepare build environment
-        uses: ./.github/actions/prepare-build-env
-        with:
-          abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
- 
-      - name: Build APK
-        uses: ./.github/actions/build-apk
-        with:
-          working-dir: setup/packages/safecor/safecor-sys-gui
-          artifact-name: safecor-sys-gui
-
-      - name: Publish package
-        uses: ./.github/actions/publish
-        with:
-          privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
-
   build-safecor-sys-usb:
     needs: [ prepare ]
     if: |
@@ -1029,7 +976,7 @@ jobs:
           filepath: /home/builder/packages/safecor/x86_64/
 
   build-app-tests:
-    #needs: [ prepare, build-safecor-lib, build-safecor-core, build-safecor-sys-gui, build-safecor-sys-usb, build-safecor-gui-base ]
+    #needs: [ prepare, build-safecor-lib, build-safecor-core, build-safecor-sys-usb, build-safecor-gui-base ]
     needs: [ prepare ]
     if: needs.prepare.outputs.check-app-tests == 'true'
     runs-on: ubuntu-latest
