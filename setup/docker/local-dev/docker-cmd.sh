@@ -9,7 +9,7 @@ if [ -z "$LOCAL_CACHE" ]; then
     LOCAL_CACHE="/Users/tristanisrael/Downloads/abuild_cache"
 fi
 if [ -z "$OUTPUT_REPOSITORY" ]; then 
-    OUTPUT_REPOSITORY="Users/tristanisrael/Downloads/abuild_repo"
+    OUTPUT_REPOSITORY="/Users/tristanisrael/Downloads/abuild_repo"
 fi
 DOCKER_PATH="/usr/local/bin"
 IMAGE_NAME="safecor-dev"
