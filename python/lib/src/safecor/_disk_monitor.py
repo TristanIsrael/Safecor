@@ -41,14 +41,13 @@ class DiskMonitor():
     def device_event(self, action, device):
         if action == 'add':
             if device.device_type == "partition":
-                if device.get('ID_FS_LABEL'):
-                    mount_point = device.device_node
-                    disk_name = device.get('ID_FS_LABEL')
-                    Logger().info(f"USB Device connected. Partition detected: {mount_point} with name {disk_name}", "Disk monitor")
-                    self.__disks[mount_point] = disk_name
+                disk_name = "NONAME" if device.get('ID_FS_LABEL') is None else device.get('ID_FS_LABEL')
+                mount_point = device.device_node
+                Logger().info(f"USB Device connected. Partition detected: {mount_point} with name {disk_name}", "Disk monitor")
+                self.__disks[mount_point] = disk_name
 
-                    payload = NotificationFactory.create_notification_disk_state(disk_name, DiskState.CONNECTED)
-                    self.__mqtt_client.publish(Topics.DISK_STATE, payload)
+                payload = NotificationFactory.create_notification_disk_state(disk_name, DiskState.CONNECTED)
+                self.__mqtt_client.publish(Topics.DISK_STATE, payload)
         elif action == 'remove':
             if device.device_type == "partition":
                 mount_point = device.device_node
