@@ -91,9 +91,9 @@ class DomainsFactory:
                 except Exception as e:
                     SysLogger("create-domains").info(f"Could not set permission on file {filename} : {e}")
 
-                DomainsFactory.__fetch_alpine_packages(package)
+                #DomainsFactory.__fetch_alpine_packages(package)
 
-                SysLogger("create-domains").info(f"Domain {domain.name} created successfully")                
+                SysLogger("create-domains").info(f"Domain {domain.name} created successfully")
         else:
             SysLogger("create-domains").info("There are not business domains to create")
 
@@ -115,11 +115,10 @@ disk = [
     'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-usb-config.img'
 ]
 p9 = [
-'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none',
+'tag=packages, path=/media/cdrom/apks, backend=0, security_model=none',
 'tag=storage, path=/usr/lib/safecor/storage, backend=0, security_model=none'
 ]
 channel = [
-#'name=console, connection=pty',
 'name=sys-usb-msg, connection=socket, path=/var/run/safecor/sys-usb-msg.sock',
 'name=sys-usb-input, connection=socket, path=/var/run/safecor/sys-usb-input.sock',
 'name=sys-usb-tty, connection=socket, path=/var/run/safecor/sys-usb-tty.sock'
@@ -152,11 +151,10 @@ disk = [
     'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-gui-config.img'
 ]
 p9 = [
-    'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none',
+    'tag=packages, path=/media/cdrom/apks, backend=0, security_model=none',
     'tag=storage, path=/usr/lib/safecor/storage, backend=0, security_model=none'
 ]
 channel = [
-#'name=console, connection=pty',
 'name=sys-gui-msg, connection=socket, path=/var/run/safecor/sys-gui-msg.sock',
 'name=sys-gui-input, connection=socket, path=/var/run/safecor/sys-gui-input.sock'
 ]
@@ -233,7 +231,7 @@ device_model_args = [
         shares = []
         #shares.append("'name=console, connection=pty'")
         if share_packages:
-            shares.append("'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none'")
+            shares.append("'tag=packages, path=/media/cdrom/apks, backend=0, security_model=none'")
         if share_storage:
             shares.append("'tag=storage, path=/usr/lib/safecor/storage, backend=0, security_model=none'")
         if share_system:
@@ -264,23 +262,23 @@ device_model_args = [
             SysLogger("create-domains").error(f"An error occured during the provisioning of the domain {domain_name}")
             SysLogger("create-domains").error(e)
 
-    @staticmethod
-    def __fetch_alpine_packages(package):
-        # Fetch Alpine packages
-        if package is None:
-            SysLogger("create-domains").error("No package name provided")
-            return
-
-        subprocess.run(
-            args= ["apk", "fetch", "-R", package],
-            cwd= "/usr/lib/safecor/packages/alpine/x86_64",
-            check= True
-        )
-
-        subprocess.run(
-            args= ["/usr/lib/safecor/bin/reindex-and-sign-repository.sh"],
-            check= True
-        )
+    #@staticmethod
+    #def __fetch_alpine_packages(package):
+    #    # Fetch Alpine packages
+    #    if package is None:
+    #        SysLogger("create-domains").error("No package name provided")
+    #        return
+    #
+    #    subprocess.run(
+    #        args= ["apk", "fetch", "-R", package],
+    #        cwd= "/usr/lib/safecor/packages/alpine/x86_64",
+    #        check= True
+    #    )
+    #
+    #    subprocess.run(
+    #        args= ["/usr/lib/safecor/bin/reindex-and-sign-repository.sh"],
+    #        check= True
+    #    )
 
 ###
 ### Private functions

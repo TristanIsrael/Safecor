@@ -7,9 +7,6 @@ logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting the orchestrator serv
 
 rc-service orchestrator start
 
-#rc-service start-domains start
-#rc-service connect-to-gui start
-
 echo ''
 echo ''
 echo ''
