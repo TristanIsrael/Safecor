@@ -4,27 +4,23 @@
         "splash_bgcolor": "#1ca9f7"  
     },
     "pci": {
-        "blacklist": [ "00:0d.0" ]
+        "blacklist": [ ]
     },
     "usb": {
         "use": 1
     },
-    "gui": {
-        "use": 1,
-        "memory": 2000,
-        "app-package": "safecor-tests-gui",        
-        "screen": {
-            "rotation": 90
-        }
+    "screen": {
+        "enabled": 1,
+        "default_focus": "test-domain"
     },
     "business": {
-        "repository": "https://www.alefbet.net/wp-content/uploads/repositories/Safecor",
         "domains": [
             {
                 "name": "test-domain",
-                "app-package": "bash",
-                "memory": 200,
-                "cpu": 0.1
+                "app-package": "safecor-tests-gui",
+                "memory": 3000,
+                "cpu": 0.8,                
+                "has_gui": 1
             }
         ]
     }
