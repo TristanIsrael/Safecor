@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "safecor"
-version = "1.3.1"
+version = "1.4.0"
 authors = [ 
     { name="Tristan Israël", email="tristan.israel@alefbet.net" }, 
 ]
