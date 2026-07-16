@@ -1,15 +1,17 @@
 GRUB_HIDDEN_TIMEOUT=0
 GRUB_TIMEOUT=1
+GRUB_TIMEOUT_STYLE=hidden
 GRUB_DISABLE_SUBMENU=y
 GRUB_DISABLE_RECOVERY=true
 GRUB_CMDLINE_LINUX_DEFAULT="kernel.dmesg_restrict=1 kernel.kptr_restrict=2 kernel.pid_max=65535 kernel.perf_cpu_time_max_percent=1 kernel.perf_event_max_sample_rate=1 kernel.perf_event_paranoid=2 kernel.randomize_va_space=2 kernel.sysrq=0 kernel.unprivileged_bpf_disabled=1 kernel.panic_on_oops=1 l1tf=full,force page_poison=on pti=on slab_nomerge=yes slub_debug=FZP spec_store_bypass_disable=seccomp spectre_v2=on mds=full,nosmt mce=0 page_alloc.shuffle=1 rng_core.default_quality=500 modules=sd-mod,usb-storage,ext4,nvme quiet rootfstype=ext4 ipv6.disable=1 apparmor=1 security=apparmor"
 GRUB_CMDLINE_LINUX="fbcon=rotate:3"
 GRUB_DEFAULT=1
 #GRUB_BACKGROUND="/boot/splash_800_1280.tga"
-GRUB_TERMINAL_OUTPUT="gfxterm"
+#GRUB_TERMINAL_OUTPUT="gfxterm"
+GRUB_TERMINAL_OUTPUT=
+GRUB_TERMINAL_INPUT=console
 GRUB_GFXMODE=800x1280
 GRUB_PRELOAD_MODULES="all_video gfxterm png"
 GRUB_GFXPAYLOAD_LINUX=keep
-#GRUB_TERMINAL_OUTPUT="gfxterm_debug"
 GRUB_CMDLINE_XEN_DEFAULT="kernel.dmesg_restrict=1 kernel.kptr_restrict=2 kernel.pid_max=65535 kernel.perf_cpu_time_max_percent=1 kernel.perf_event_max_sample_rate=1 kernel.perf_event_paranoid=2 kernel.randomize_va_space=2 kernel.sysrq=0 kernel.unprivileged_bpf_disabled=1 kernel.panic_on_oops=1 l1tf=full,force page_poison=on pti=on slab_nomerge=yes slub_debug=FZP spec_store_bypass_disable=seccomp spectre_v2=on mds=full,nosmt mce=0 page_alloc.shuffle=1 rng_core.default_quality=500 loglevel=0 console=null"
 GRUB_CMDLINE_XEN="no-real-mode edd=off dom0_mem=512M,max:1024M dom0_max_vcpus=2 dom0_vcpus_pin=true"
