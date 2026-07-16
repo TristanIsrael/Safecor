@@ -249,6 +249,10 @@ class System(metaclass=SingletonMeta):
         _topology.uuid = System().get_system_uuid()        
         _topology.pci.blacklist = topo.get("system", {}).get("pci", {}).get("blacklist", [])
 
+        # Storage information
+        _topology.storage.on_disk = topo.get("system", {}).get("storage", {}).get("on_disk", False)
+        _topology.storage.size = topo.get("system", {}).get("storage", {}).get("size", -1)
+
         # Domains information
         domains = topo.get("domains", {})
         for domain_name, domain_desc in domains.items():
@@ -323,7 +327,14 @@ class System(metaclass=SingletonMeta):
                     "use_usb": 1,
                     "screen_rotation": 0,
                     "screen_enabled": False,
-                    "default_focus": "my-gui"
+                    "default_focus": "my-gui",
+                    "storage": {
+                        "on_disk": False,
+                        "size": -1
+                    },
+                    "pci": {
+                        "blacklist": []
+                    }
                 },
                 "product": {
                     "name": "Safecor"
@@ -364,6 +375,10 @@ class System(metaclass=SingletonMeta):
         screen_enabled = screen.get("enabled", False)
         default_focus = screen.get("default_focus", "")
         screen_rotation = screen.get("rotation", 0)
+
+        storage = topo_data.get("storage", {})
+        storage_type = storage.get("type", "")
+        storage_size = storage.get("size", -1)
                 
         topo_struct["system"] = {
             "use_usb": use_usb,
@@ -372,6 +387,10 @@ class System(metaclass=SingletonMeta):
             "default_focus": default_focus,
             "pci": {
                 "blacklist": pci_blacklist
+            },
+            "storage": {
+                "on_disk": True if storage_type == "disk" else False,
+                "size": storage_size
             }
         }
 

@@ -20,6 +20,9 @@
             "group-1": 0.6
         }
     },
+    "storage": {
+        "size": 1024
+    },
     "business": {
         "repository": "https://www.alefbet.net/wp-content/uploads/repositories/Safecor",
         "domains": [

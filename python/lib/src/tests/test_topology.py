@@ -76,4 +76,4 @@ class TestTopology(unittest.TestCase):
 
         self.assertTrue(topo.is_pci_bus_blacklisted("00:0d.0"))
         self.assertFalse(topo.is_pci_bus_blacklisted("00:0d.2"))
-        self.assertFalse(topo.is_pci_bus_blacklisted("00:14.0"))
+        self.assertFalse(topo.is_pci_bus_blacklisted("00:14.0"))    

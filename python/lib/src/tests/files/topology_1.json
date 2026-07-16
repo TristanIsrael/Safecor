@@ -13,6 +13,10 @@
         "rotation": 90,
         "default_focus": "test-domain"
     },
+    "storage": {
+        "type": "disk",
+        "size": -1
+    },
     "business": {
         "repository": "https://www.alefbet.net/wp-content/uploads/repositories/Safecor",
         "domains": [

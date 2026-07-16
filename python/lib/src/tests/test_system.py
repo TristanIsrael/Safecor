@@ -80,6 +80,11 @@ class TestSystem(unittest.TestCase):
         self.assertEqual(domain.get("cpu", 0), 0)
         self.assertEqual(domain.get("temp_disk_size", 0), 0)
 
+        storage = topo.get("storage", {})
+        self.assertNotEqual(storage, {})
+        self.assertEqual(storage.get("type"), "disk")
+        self.assertEqual(storage.get("size"), -1)
+
     def test_get_topology_struct_no_vcpus_groups(self):
         topo_filepath = self.files_path / "topology_1.json"
         
@@ -207,6 +212,11 @@ class TestSystem(unittest.TestCase):
 
         self.assertEqual(len(topo.domain_names()), 3)
 
+        storage = topo.storage
+        self.assertIsNotNone(storage)
+        self.assertTrue(storage.on_disk)
+        self.assertEqual(storage.size, -1)
+
         dom = topo.domain("sys-usb")
         self.assertIsNotNone(dom)
         self.assertEqual(dom.name, "sys-usb")
@@ -234,7 +244,7 @@ class TestSystem(unittest.TestCase):
         self.assertFalse(dom.has_gui)
         self.assertEqual(dom.temp_disk_size, 0)
         self.assertEqual(dom.cpu_affinity, [2,3,4,5,6,7,8,9,10,11,12,13,14,15])
-        
+            
 
     def test_parse_range(self):
         self.assertEqual(System.parse_range("1-2"), (1,2))
@@ -433,3 +443,14 @@ class TestSystem(unittest.TestCase):
         System().set_setting("a_setting", "a value")
         self.assertEqual(System().get_setting("a_setting"), "a value")
         self.assertEqual(System().get_settings(), { "a_setting": "a value"})
+
+    def test_storage_memory(self):
+        topo_filepath = self.files_path / "topology_2.json"
+        
+        System().reset_topology()
+        topo = System.get_topology(topo_filepath.as_posix())
+        self.assertNotEqual(topo, {})        
+
+        self.assertFalse(topo.storage.on_disk)
+        self.assertEqual(topo.storage.size, 1024)
+        

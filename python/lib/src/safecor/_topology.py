@@ -43,6 +43,12 @@ class Pci:
 
     blacklist = []
 
+class Storage:
+    """ This class encapsulates information about the local storage of a system """
+
+    on_disk = False
+    size = -1
+
 class Topology:
     """ This class encapsulates and handles information about the topology of a product 
     
@@ -61,6 +67,7 @@ class Topology:
     pci: Pci
     languages = []
     default_language = "en"
+    storage:Storage
 
     def __init__(self, other=None):
         """ Create a new Topology from scratch or as a deep copy if other is not None """
@@ -69,6 +76,7 @@ class Topology:
             self.domains = []
             self.screen = Screen()
             self.pci = Pci()
+            self.storage = Storage()
             self.__colors = {}
             self.__initialized = False
         else:
@@ -81,6 +89,7 @@ class Topology:
             self.pci = copy.deepcopy(other.pci)
             self.languages = copy.deepcopy(other.languages)
             self.default_language = copy.deepcopy(other.default_language)
+            self.storage = copy.deepcopy(other.storage)
 
     def initialized(self) -> bool:
         """ Returns whether the object is initialized """
