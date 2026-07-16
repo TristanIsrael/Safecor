@@ -424,6 +424,16 @@ def on_mqtt_ready():
             virtual_touch
         )
 
+    # Handle the local storage if needed
+    if topology.storage.on_disk:
+        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/create_encrypted_storage.sh", topology.storage.index, topology.storage.size]
+        res = subprocess.run(cmd, check= True)
+
+        if res.returncode == 0:
+            SysLogger("Orchestrator").info("Successfully created the encrypted local storage")
+        else:
+            SysLogger("Orchestrator").critical("The creation of the encrypted local storage failed")
+
     # Attach PCI devices
     expose_pci_devices()
 

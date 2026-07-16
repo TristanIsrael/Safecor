@@ -15,6 +15,7 @@
     },
     "storage": {
         "type": "disk",
+        "index": 2,
         "size": -1
     },
     "business": {

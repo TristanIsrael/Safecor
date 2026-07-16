@@ -83,6 +83,7 @@ class TestSystem(unittest.TestCase):
         storage = topo.get("storage", {})
         self.assertNotEqual(storage, {})
         self.assertEqual(storage.get("type"), "disk")
+        self.assertEqual(storage.get("index"), 2)
         self.assertEqual(storage.get("size"), -1)
 
     def test_get_topology_struct_no_vcpus_groups(self):
@@ -215,6 +216,7 @@ class TestSystem(unittest.TestCase):
         storage = topo.storage
         self.assertIsNotNone(storage)
         self.assertTrue(storage.on_disk)
+        self.assertEqual(storage.index, 2)
         self.assertEqual(storage.size, -1)
 
         dom = topo.domain("sys-usb")
@@ -453,4 +455,5 @@ class TestSystem(unittest.TestCase):
 
         self.assertFalse(topo.storage.on_disk)
         self.assertEqual(topo.storage.size, 1024)
+        self.assertEqual(topo.storage.index, 1)
         

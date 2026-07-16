@@ -251,6 +251,7 @@ class System(metaclass=SingletonMeta):
 
         # Storage information
         _topology.storage.on_disk = topo.get("system", {}).get("storage", {}).get("on_disk", False)
+        _topology.storage.index = topo.get("system", {}).get("storage", {}).get("index", 1)
         _topology.storage.size = topo.get("system", {}).get("storage", {}).get("size", -1)
 
         # Domains information
@@ -330,6 +331,7 @@ class System(metaclass=SingletonMeta):
                     "default_focus": "my-gui",
                     "storage": {
                         "on_disk": False,
+                        "index": 1,
                         "size": -1
                     },
                     "pci": {
@@ -378,6 +380,7 @@ class System(metaclass=SingletonMeta):
 
         storage = topo_data.get("storage", {})
         storage_type = storage.get("type", "")
+        storage_index = storage.get("index", 1)
         storage_size = storage.get("size", -1)
                 
         topo_struct["system"] = {
@@ -390,6 +393,7 @@ class System(metaclass=SingletonMeta):
             },
             "storage": {
                 "on_disk": True if storage_type == "disk" else False,
+                "index": storage_index,
                 "size": storage_size
             }
         }

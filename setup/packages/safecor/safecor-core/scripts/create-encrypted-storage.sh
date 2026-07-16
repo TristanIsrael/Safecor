@@ -12,6 +12,9 @@
 
 echo "Creating an encrypted local storage on the local physical disk"
 
+# Fail on error
+set -e
+
 # 1st step: verify that there is a physical drive
 disks=$(lsblk -d -n -o NAME,TYPE | awk '$2=="disk"{print $1}')
 
@@ -68,8 +71,16 @@ if [ "$2" != "" ]; then
     storage_size=$2
 fi
 
-echo "Create a storage file of size $storage_size MB"
-storage_size_bytes=$((storage_size * 1024 * 1024))
+# If the storage size is set to -1 we use 95% of the disk capacity
+if [ "$2" -eq -1 ]; then
+    echo "The storage file will use the whole disk"
+    disk_size=$(blockdev --getsize64 /dev/$dev)
+    storage_size_bytes=$disk_size #$((disk_size * 95 / 100))
+else
+    echo "Create a storage file of size $storage_size MB"
+    storage_size_bytes=$((storage_size * 1024 * 1024))
+fi 
+
 truncate -s $storage_size_bytes /media/$dev/storage.img
 # To avoid the cost of the PBKDF which is unnecessary because we generate a random key we use specific parameters
 cryptsetup luksFormat --type luks2 --pbkdf pbkdf2 --pbkdf-force-iterations 1000 --batch-mode /media/$dev/storage.img --key-file /dev/shm/keys/local_storage

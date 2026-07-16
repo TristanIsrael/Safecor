@@ -47,6 +47,7 @@ class Storage:
     """ This class encapsulates information about the local storage of a system """
 
     on_disk = False
+    index = 1
     size = -1
 
 class Topology:
