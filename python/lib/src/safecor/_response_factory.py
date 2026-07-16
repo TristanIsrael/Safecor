@@ -166,3 +166,12 @@ class ResponseFactory():
             "state": "accepted" if accepted else "refused",
             "reason": reason
         }
+
+    @staticmethod
+    def create_response_storage_info(disk:str, total:int, used:int, free:int) -> dict:
+        return {
+            "disk": disk,
+            "total": total,
+            "used": used,
+            "free": free
+        }

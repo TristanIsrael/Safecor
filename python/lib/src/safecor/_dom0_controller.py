@@ -4,6 +4,7 @@ import threading
 import subprocess
 import time
 import psutil
+import shutil
 from . import Constants, __version__, Settings
 from . import Logger, FileHelper
 from . import ResponseFactory
@@ -100,6 +101,7 @@ class Dom0Controller():
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
         self.mqtt_client.subscribe(f"{Topics.SETTINGS}/+/request")
         self.mqtt_client.subscribe(f"{Topics.SWITCH_GUI}/request")
+        self.mqtt_client.subscribe(f"{Topics.STORAGE_INFO}/request")
 
         # Handle the kernel's or configuration command line settings
         self.__handle_settings()
@@ -140,6 +142,8 @@ class Dom0Controller():
                 self.__handle_system_settings(topic, payload)
             elif topic == f"{Topics.SWITCH_GUI}/request":
                 self.__handle_switch_gui(payload)
+            elif topic == f"{Topics.STORAGE_INFO}/request":
+                self.__handle_storage_info(payload)
         except Exception:
             Logger.print("An exception occured while handling the message")
 
@@ -402,3 +406,26 @@ class Dom0Controller():
 
         # Then we show the one asked
         XcbController().show_gui(new_gui)
+
+    def __handle_storage_info(self, payload):
+        if not MqttHelper.check_payload(payload, ["disk"]):
+            Logger().error(f"The command {Topics.STORAGE_INFO} misses argument(s)", "sys-usb")
+            return
+
+        disk = payload["disk"]
+        if disk != Constants.STR_REPOSITORY:
+            # We only care about the local storage
+            return
+
+        file_mount_point = FileHelper.get_mount_point(disk)
+
+        if not file_mount_point:
+            Logger().error(f"The disk {disk} is not mounted")
+            return
+        
+        try:
+            total, used, free = shutil.disk_usage(file_mount_point)
+            payload = ResponseFactory.create_response_storage_info(disk, total, used, free)
+            self.mqtt_client.publish(f"{Topics.STORAGE_INFO}/response", payload)
+        except Exception as e:
+            Logger().error(f"Could not request information about the storage {disk}: {e}")

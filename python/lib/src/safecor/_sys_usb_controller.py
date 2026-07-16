@@ -7,6 +7,7 @@ import base64
 import zlib
 import unicodedata
 import subprocess
+import shutil
 from pathlib import Path
 from queue import Queue
 from . import Constants, MqttClient, Topics, MqttHelper
@@ -78,6 +79,7 @@ class SysUsbController():
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
         self.mqtt_client.subscribe(f"{Topics.SYS_USB_CLEAR_QUEUES}/request")
         self.mqtt_client.subscribe(f"{Topics.RESTART_DOMAIN}/request")
+        self.mqtt_client.subscribe(f"{Topics.STORAGE_INFO}/request")
 
         # Démarrage de la surveillance des entrées
         if not NO_INPUTS_MONITORING:
@@ -156,6 +158,8 @@ class SysUsbController():
             self.__handle_unmount(payload)
         elif topic == Topics.RESTART_DOMAIN:
             self.__handle_restart(payload)
+        elif topic == Topics.STORAGE_INFO:
+            self.__handle_storage_info(payload)
 
     def __handle_list_disks(self, topic:str) -> None:
         Logger().debug("Disks list requested")
@@ -547,6 +551,28 @@ class SysUsbController():
             except Exception as e:
                 Logger().error(f"Could not remove directory of mount point {file_mount_point}: {e}")
         
+    def __handle_storage_info(self, payload):
+        if not MqttHelper.check_payload(payload, ["disk"]):
+            Logger().error(f"The command {Topics.STORAGE_INFO} misses argument(s)", "sys-usb")
+            return        
+
+        disk = payload["disk"]
+        if disk == Constants.STR_REPOSITORY:
+            # The repository is handled in the Dom0 Controller
+            return
+
+        file_mount_point = FileHelper.get_mount_point(disk)
+
+        if not file_mount_point:
+            Logger().error(f"The disk {disk} is not mounted")
+            return
+        
+        try:
+            total, used, free = shutil.disk_usage(file_mount_point)
+            payload = ResponseFactory.create_response_storage_info(disk, total, used, free)
+            self.mqtt_client.publish(f"{Topics.STORAGE_INFO}/response", payload)
+        except Exception as e:
+            Logger().error(f"Could not request information about the storage {disk}: {e}")
 
     def sanitize_filename(self, s: str) -> str:
         """ Replaces all non-printable chars of a filename with '_' """
