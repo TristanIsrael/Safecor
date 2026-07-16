@@ -486,7 +486,6 @@ class Api(metaclass=SingletonMeta):
 
         return Constants.ARCHIVE_EXTENSIONS_HANDLED
 
-
     def unmount(self, disk:str):
         """
         Unmounts a disk that has been previously mounted
@@ -500,6 +499,16 @@ class Api(metaclass=SingletonMeta):
         payload = RequestFactory.create_request_unmount(disk)
         self.__mqtt_client.publish(f"{Topics.UNMOUNT}/request", payload)
 
+    def request_storage_info(self, disk:str) -> dict:
+        """
+        Request the total, used and free space of a particular storage.
+
+        Args:
+            disk(str): The disk name.
+        """
+    
+        payload = RequestFactory.create_request_storage_info(disk)
+        self.__mqtt_client.publish(f"{Topics.STORAGE_INFO}/request", payload)
 
     def discover_components(self) -> None:
         """

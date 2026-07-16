@@ -275,6 +275,9 @@ class FileHelper():
         :param disk: The name of the mount point
         """
 
+        if disk == Constants.STR_REPOSITORY:
+            return Constants.DOM0_REPOSITORY_PATH
+
         with open("/proc/mounts", "r", encoding="utf-8") as f:
             for line in f:
                 parts = line.split()

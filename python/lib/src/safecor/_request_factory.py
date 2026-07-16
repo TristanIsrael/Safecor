@@ -210,3 +210,12 @@ class RequestFactory():
         return {
             "domain": domain_name
         }
+
+    @staticmethod
+    def create_request_storage_info(disk:str):
+        """ Create a request to get information of a storage """
+
+        return {
+            "disk": disk
+        }
+    
