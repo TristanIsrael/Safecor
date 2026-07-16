@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+
+name="clean"
+
+depend() {
+}
+
+start() {
+    return 0
+}
+
+stop() {
+    ebegin "Clean the system"
+
+    # Remove the encrypted storage
+    find /media -name storage.img -type f -delete
+
+    eend $?
+}
