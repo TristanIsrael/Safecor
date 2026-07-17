@@ -26,7 +26,7 @@ class DiskState(Enum):
     MOUNTED = "mounted"
     UNMOUNTED = "unmounted"
 
-class ChassisType(IntEnum):
+class ChassisType(Enum):
     UNKNOWN = "unknown"
     DESKTOP = "desktop"
     LAPTOP = "laptop"
