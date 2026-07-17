@@ -1,0 +1,22 @@
+# Contributor:
+# Maintainer: Tristan Israël <tristan.israel@alefbet.net>
+pkgname=safecor-debug-tools
+pkgver=1.0
+pkgrel=0
+pkgdesc="Safecor - Debug tools"
+url="https://www.alefbet.net/"
+arch="noarch"
+license="MIT"
+depends="pciutils htop iotop strace perf lstop ncdu evtest"
+makedepends=""
+builddir="$srcdir/$pkgname-$pkgver"
+checkdepends=""
+install="$pkgname.post-install"
+subpackages=""
+replaces=""
+options="!check"  # no tests provided
+source=""
+
+package() {
+    install -D -m644 /dev/null "$pkgdir/etc/.debug_tools"
+}
