@@ -1,5 +1,10 @@
 #!/bin/sh
 
+set -e
+host=$(hostname)
+
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "Post-install"
+
 echo "" >> /etc/profile
 echo "export DISPLAY=:0" >> /etc/profile
 export DISPLAY=:0
@@ -7,18 +12,21 @@ export DISPLAY=:0
 rc-service udev start
 rc-service udev-postmount start
 rc-service udev-trigger start
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "Started udev"
 
 echo "**** Setting timezone ****"
 ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
 echo "Europe/Paris" > /etc/timezone
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "Timezone set"
 
 echo "**** Resizing shared memory"
 mount -o remount,size=1M /dev/shm
 mount -o remount,size=1M /run
 mount -o remount,size=100% /
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "Optimized memory usage"
 
 #/usr/lib/safecor/bin/hardening.sh
 
-echo "Safecor GUI base package installed"
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "Safecor GUI base package installed"
 
 exit 0

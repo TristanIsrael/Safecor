@@ -9,21 +9,25 @@ depend() {
 start() {
     export DISPLAY=:0
     export HOME=/root
+    host=$(hostname)
 
     # Remove splash
     killall fbsplash || true
+    logger -t "Safecor/$host/safecor-gui-base" -p user.info "Removed fbsplash"
 
     X :0 -nolisten tcp -ac & 
+    logger -t "Safecor/$host/safecor-gui-base" -p user.info "Started X"
 
     # Wait for X to be ready (5 seconds)
     timeout 5 sh -c "until [ -e /tmp/.X11-unix/X0 ]; do sleep 0.2; done"
     
     [ -e /tmp/.X11-unix/X0 ] || {
-        echo "Timeout waiting for X server..."
+        logger -t "Safecor/$host/safecor-gui-base" -p user.warn "Timeout waiting for X server..."
         exit 1
     }
 
-    ebegin "Configure X session"
     /usr/lib/safecor/bin/configure-x.sh    
     eend $?
+
+    logger -t "Safecor/$host/safecor-gui-base" -p user.info "X server started"
 }

@@ -1,15 +1,18 @@
 #!/bin/sh
 
+host=$(hostname)
+
+logger -t "Safecor/$host/safecor-gui-base" -p user.notice "Configure the X server"
+
 xset -display :0 -dpms
 xset -display :0 s off
 
-echo "**** Set mouse pointer ****"
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "**** Set the mouse pointer ****"
 xsetroot -display :0 -cursor_name left_ptr
 
-echo "**** Setting graphical mode"
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "**** Set the graphical mode"
 
 # Read screen size
-#domid=`xenstore-read domid`
 screen_size=`xenstore-read /local/domain/system/screen_size`
 
 # Read screen orientation
@@ -22,7 +25,7 @@ normalized_rotation=$(( (screen_rotation % 360 + 360) % 360 ))
 width=$(echo "$screen_size" | cut -d',' -f1)
 height=$(echo "$screen_size" | cut -d',' -f2)
 
-# Calcul de la nouvelle résolution en fonction de la rotation
+# Compute the new resolution depending on the rotation
 case $normalized_rotation in
     0|360)
         new_width=$width
@@ -37,11 +40,12 @@ case $normalized_rotation in
         new_height=$height
         ;;
     *)
-        echo "Rotation invalide : $screen_rotation"
+        logger -t "Safecor/$host/safecor-gui-base" -p user.warn "Invalid rotation: $screen_rotation"
         exit 1
         ;;
 esac
 
 # Apply the resolution
 resolution="$new_width"x"$new_height"
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "Apply the resolution $new_width x $new_height"
 xrandr --output Virtual-1 --display :0 --mode $resolution

@@ -3,7 +3,11 @@
 # This file contains kernel parameters and shell instructions to harden 
 # the GUI domain
 
-echo "Apply hardening"
+set -e
+
+host=$(hostname)
+
+logger -t "Safecor/$host/safecor-gui-base" -p user.notice "Apply hardening"
 
 # Unload network drivers
 modprobe -r af_packet 
@@ -20,9 +24,11 @@ modprobe -r usbcore
 modprobe -r usb_commpon
 modprobe -r usb_common
 modprobe -r sd_mod
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "Removed kernel modules"
 
 # Disable module loading after this point
 sysctl -w kernel.modules_disabled=1
+logger -t "Safecor/$host/safecor-gui-base" -p user.info "Disabled modules loading"
 
 debug=$(xenstore-read /local/domain/system/debug_on)
 
@@ -31,6 +37,7 @@ if [ "$debug" != "1" ]; then
     truncate -s 0 /etc/securetty
     pwd=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 256)
     echo "root:$pwd" | chpasswd
+    logger -t "Safecor/$host/safecor-gui-base" -p user.info "Disabled the root account"
 fi
 
-echo "Hardening finished"
+logger -t "Safecor/$host/safecor-gui-base" -p user.notice "Hardening finished"
