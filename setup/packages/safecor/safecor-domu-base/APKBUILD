@@ -15,9 +15,13 @@ install="$pkgname.post-install"
 subpackages=""
 replaces=""
 options="!check"  # no tests provided
-source=""
+source="
+color_prompt.sh
+motd"
 
 package() {
     mkdir -p "$pkgdir"/usr/lib/safecor/etc
-    echo "$pkgname" >> "$pkgdir"/usr/lib/safecor/etc/installed
+
+    install -D -m644 "$srcdir"/color_prompt.sh "$pkgdir"/etc/profile.d/color_prompt.sh
+    install -D -m755 "$srcdir"/motd "$pkgdir/etc/motd"
 }

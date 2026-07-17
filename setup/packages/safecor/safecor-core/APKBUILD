@@ -128,8 +128,7 @@ package() {
     #install -D -m644 "$srcdir"/grub.cfg-durabook-r8 "$pkgdir"/boot/grub/grub.cfg
     install -D -m644 "$srcdir"/rc.conf "$pkgdir/etc/rc.conf"
     install -D -m640 "$srcdir"/constants.sh "$pkgdir/$CONFDIR"/constants.sh
-    install -D -m644 "$srcdir"/10-stty.sh "$pkgdir"/etc/profile.d/10-stty.sh
-    install -D -m644 "$srcdir"/color_prompt.sh "$pkgdir"/etc/profile.d/color_prompt.sh
+    install -D -m644 "$srcdir"/10-stty.sh "$pkgdir"/etc/profile.d/10-stty.sh    
     install -D -m644 "$srcdir"/inittab "$pkgdir"/etc/inittab
     install -D -m644 "$srcdir"/issue "$pkgdir"/etc/issue
         
@@ -191,6 +190,7 @@ package() {
     install -D -m750 "$srcdir"/create-tty-terminal.sh "$pkgdir/$BINDIR"/create-tty-terminal.sh
     install -D -m750 "$srcdir"/start-mqtt-logger.sh "$pkgdir/$BINDIR"/start-mqtt-logger.sh
     install -D -m755 "$srcdir"/motd "$pkgdir/etc/motd"
+    install -D -m644 "$srcdir"/color_prompt.sh "$pkgdir"/etc/profile.d/color_prompt.sh
 
     # Security
     install -D -m755 "$srcdir"/hardening.initd "$pkgdir"/etc/init.d/hardening
