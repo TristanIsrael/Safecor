@@ -1,0 +1,40 @@
+#!/sbin/openrc-run
+
+# This files contains kernel parameters definitions applied with sysctl 
+# It only contains parameters which depend on the DEBUG state of the system
+# Mandatory parameters are defined in the grub.cfg file
+
+name="hardening"
+
+depend() {
+    after *
+}
+
+start() {    
+    if grep -iq "DEBUG=ON" "/proc/cmdline"; then            
+        ebegin "Apply hardening (DEBUG mode enabled)"
+                        
+
+        eend $?
+    else 
+        ebegin "Apply hardening"
+        
+        # Unload network drivers
+        modprobe -r af_packet 
+        modprobe -r virtio_net 
+        modprobe -r net_failover
+
+        # Disable module loading after this point
+        #sysctl -w kernel.modules_disabled=1
+
+        # Disable ptrace completely
+        sysctl -w kernel.yama.ptrace_scope=3
+
+        eend $?
+    fi
+}
+
+stop() {
+    ebegin "Remove hardening. No-op."
+    eend 0
+}

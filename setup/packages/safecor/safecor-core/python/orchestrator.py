@@ -437,7 +437,7 @@ def on_mqtt_ready():
     # Attach PCI devices
     expose_pci_devices()
 
-    # Start sys-usb
+    # Start all Domains
     if can_create_domains():
         # The monitor will look at the inputs file from sys-usb
         # and when sys-usb is rebooted, the events listener will stop and start

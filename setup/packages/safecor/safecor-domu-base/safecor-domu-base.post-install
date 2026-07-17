@@ -20,3 +20,6 @@ if [ -e /dev/xvdf1 ]; then
     mkswap /dev/xvdf1
     swapon /dev/xvdf1
 fi
+
+# Start the hardening
+rc-service hardening start

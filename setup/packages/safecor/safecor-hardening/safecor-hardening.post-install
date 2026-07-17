@@ -1,5 +1,0 @@
-#!/bin/sh
-
-/usr/lib/safecor/bin/hardening.sh
-
-exit 0

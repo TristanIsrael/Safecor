@@ -1,9 +1,13 @@
 # Contributor:
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
+# 
+# This package provides hardening rules that must be applied explicitely
+# by starting the "hardening" service
+#
 pkgname=safecor-hardening
-pkgver=1.2
+pkgver=1.3
 pkgrel=0
-pkgdesc="Safecor - Hardening for business Domains"
+pkgdesc="Safecor - Hardening for Safecor Domains"
 url="https://www.alefbet.net/"
 arch="noarch"
 license="MIT"
@@ -17,10 +21,12 @@ replaces=""
 options="!check"  # no tests provided
 source="
 hardening.sh
+hardening.initd
 "
 
 package() {
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
+    install -D -m755 "$srcdir"/hardening.initd "$pkgdir"/etc/init.d/hardening
 }
 
 sha512sums="
