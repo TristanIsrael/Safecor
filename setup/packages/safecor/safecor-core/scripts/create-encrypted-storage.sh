@@ -10,7 +10,7 @@
 #
 # This script must be ran as root
 
-echo "Creating an encrypted local storage on the local physical disk"
+logger -t "Safecor/core" -p user.notice "Creating an encrypted local storage on the local physical disk"
 
 # Fail on error
 set -e
@@ -19,7 +19,7 @@ set -e
 disks=$(lsblk -d -n -o NAME,TYPE | awk '$2=="disk"{print $1}')
 
 if [ -z "$disks" ]; then
-    echo "No physical disk detected. Aborting."
+    logger -t "Safecor/core" -p user.warn "No physical disk detected. Aborting."
     exit 1
 fi
 
@@ -29,7 +29,7 @@ if [ "$1" != "" ]; then
     disk_idx=$1
 fi 
 
-echo "Using the disk at index $disk_idx"
+logger -t "Safecor/core" -p user.info "Using the disk at index $disk_idx"
 
 dev=$(printf '%s\n' $disks | awk "NR==$disk_idx")
 
@@ -38,26 +38,26 @@ if [ -z "$dev" ]; then
     return 2
 fi 
 
-echo "Device: /dev/$dev"
+logger -t "Safecor/core" -p user.info "Device: /dev/$dev"
 
 # 2d step: partition and format the physical drive
 wipefs -a "/dev/$dev"
 echo ",,L,*" | sfdisk "/dev/$dev"
 if [ $? -ne 0 ]; then
-    echo "There has been an error while partitioning the disk"
+    logger -t "Safecor/core" -p user.warn "There has been an error while partitioning the disk"
     return 3
 fi
 
 mkfs.ext4 -F -L Safecor "/dev/$dev"
 if [ $? -ne 0 ]; then
-    echo "There has been an error while formatting the disk"
+    logger -t "Safecor/core" -p user.warn "There has been an error while formatting the disk"
     return 3
 fi
 
 mkdir -p /media/$dev
 mount -o noexec,nosuid,nodev LABEL=Safecor /media/$dev
 if [ $? -ne 0 ]; then
-    echo "Could not mount the disk"
+    logger -t "Safecor/core" -p user.warn "Could not mount the disk"
     return 4
 fi
 
@@ -73,11 +73,11 @@ fi
 
 # If the storage size is set to -1 we use 95% of the disk capacity
 if [ "$2" -eq -1 ]; then
-    echo "The storage file will use the whole disk"
+    logger -t "Safecor/core" -p user.info "The storage file will use the whole disk"
     disk_size=$(blockdev --getsize64 /dev/$dev)
     storage_size_bytes=$disk_size #$((disk_size * 95 / 100))
 else
-    echo "Create a storage file of size $storage_size MB"
+    logger -t "Safecor/core" -p user.info "Create a storage file of size $storage_size MB"
     storage_size_bytes=$((storage_size * 1024 * 1024))
 fi 
 
@@ -99,3 +99,5 @@ chown root:safecor /media/$dev
 chmod 750 /media/$dev
 chown svc-safecor-controller:safecor /usr/lib/safecor/storage
 chmod 2770 /usr/lib/safecor/storage
+
+logger -t "Safecor/core" -p user.notice "The local storage has been successfully created with a size of $storage_size_bytes bytes"

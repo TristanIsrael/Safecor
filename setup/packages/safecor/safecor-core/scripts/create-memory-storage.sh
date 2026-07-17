@@ -10,9 +10,11 @@
 #
 # This script must be ran as root
 
-echo "Creating a memory local storage"
+logger -t "Safecor/core" -p user.notice "Creating a memory local storage"
 
 # Fail on error
 set -e
 
 mount -t tmpfs -o noexec,nosuid,nodev tmpfs /usr/lib/safecor/storage
+
+logger -t "Safecor/core" -p user.notice "The memory local storage has been successfully created"

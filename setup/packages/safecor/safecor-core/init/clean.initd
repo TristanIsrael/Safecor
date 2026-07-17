@@ -10,8 +10,6 @@ start() {
 }
 
 stop() {
-    ebegin "Clean the system"
-
     # Remove the encrypted storage
     find /media -name storage.img -type f -delete
 

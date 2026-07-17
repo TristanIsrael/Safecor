@@ -1,8 +1,7 @@
 #!/bin/sh
 
-SCRIPT_NAME=$(basename "$0")
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Setting Xenstore permissions..."
+set -e
 
 xenstore-chmod -r /local/domain/system r
 
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"
+logger -s -t "Safecor/core" -p user.info "Successfully set the Xenstore permissions"

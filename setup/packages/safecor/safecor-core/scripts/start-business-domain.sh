@@ -1,7 +1,7 @@
 #!/bin/sh
 
-SCRIPT_NAME=$(basename "$0")
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting Domain $1..."
+set -e
+logger -s -t "Safecor/core" -p user.notice "Starting Domain $1"
 
 IS_GUI=$2
 
@@ -15,14 +15,12 @@ else
     # This is a GUI Domain
 
     # Read screen size
-    logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Reading screen size from Xenstore"
     screen_size=`xenstore-read /local/domain/system/screen_size`
-    logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "Screen size is $screen_size"
+    logger -s -t "Safecor/core" -p user.info "Screen size is $screen_size"
 
     # Read screen orientation
-    logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Reading screen rotation from Xenstore"
     screen_rotation=`xenstore-read /local/domain/system/screen_rotation`
-    logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "Screen rotation is $screen_rotation"
+    logger -s -t "Safecor/core" -p user.info "Screen rotation is $screen_rotation"
 
     # Compute the resolution with the orientation
     normalized_rotation=$(( (screen_rotation % 360 + 360) % 360 ))
@@ -46,7 +44,7 @@ else
             new_height=$height
             ;;
         *)
-            logger -s -t "Safecor/$SCRIPT_NAME" -p user.err "Invalid rotation angle: $screen_rotation"
+            logger -s -t "Safecor/core" -p user.err "Invalid rotation angle: $screen_rotation"
             exit 1
             ;;
     esac
@@ -59,12 +57,12 @@ else
     # Verify whether the Domain has focus
     FOCUS_DOMAIN=$(xenstore-read /local/domain/system/input-focus)
 
-    if [ "$FOCUS_DOMAIN" = "$1" ]; then
-        #logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Giving the focus to this Domain"
+    if [ "$FOCUS_DOMAIN" = "$1" ]; then        
         DISPLAY=:0 xdotool windowmap $(DISPLAY=:0 xdotool search --name "$1")
         DISPLAY=:0 xdotool windowsize $(DISPLAY=:0 xdotool search --name "$1") $new_width $new_height        
+        logger -t "Safecor/core" -p user.info "The focus has been given to this Domain"
     else 
-        logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "This Domain does not have the focus, hiding the window"
+        logger -s -t "Safecor/core" -p user.info "This Domain does not have the focus, hiding the window"
         DISPLAY=:0 xdotool windowunmap $(DISPLAY=:0 xdotool search --name "$1")
     fi
 
@@ -74,3 +72,5 @@ fi
 
 umask 007 # With this mask, the sockets will be created with the mode 770
 /usr/sbin/xl create -f /etc/safecor/xen/$1.conf
+
+logger -t "Safecor/core" -p user.notice "The business Domain $1 is starting"

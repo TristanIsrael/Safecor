@@ -362,7 +362,7 @@ def start_business_domains():
     default_focus = topology.default_focus()
 
     if default_focus != "":
-        SysLogger("create-domains").info(f"Set focus to the domain {default_focus}.")
+        SysLogger("Orchestrator").info(f"Set focus to the domain {default_focus}.")
         XenStore().write(XsDomain.System.value, XsKey.InputFocus.value, default_focus)
 
     domains = topology.business_domains()

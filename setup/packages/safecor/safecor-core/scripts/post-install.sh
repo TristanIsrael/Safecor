@@ -2,8 +2,7 @@
 
 /usr/lib/safecor/bin/finish-core-init.sh
 
-SCRIPT_NAME=$(basename "$0")
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting the orchestrator service"
+logger -s -t "Safecor/core" -p user.info "Safecor's core has been initialized successfully"
 
 rc-service orchestrator start
 
