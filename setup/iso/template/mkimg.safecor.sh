@@ -60,11 +60,11 @@ profile_safecor() {
     desc="ISO image for Safecor apps"
     arch="x86_64"
 		
-    kernel_cmdline="$kernel_cmdline console=null loglevel=0 autodetect_serial=no"
+    kernel_cmdline="$kernel_cmdline console=null loglevel=0 autodetect_serial=no kernel.dmesg_restrict=1 kernel.kptr_restrict=2 kernel.pid_max=65535 kernel.perf_cpu_time_max_percent=1 kernel.perf_event_max_sample_rate=1 kernel.perf_event_paranoid=2 kernel.randomize_va_space=2 kernel.sysrq=0 kernel.unprivileged_bpf_disabled=1 kernel.panic_on_oops=1 l1tf=full,force page_poison=on pti=on slab_nomerge=yes slub_debug=FZP spec_store_bypass_disable=seccomp spectre_v2=on mds=full,nosmt mce=0 page_alloc.shuffle=1 rng_core.default_quality=500 modules=sd-mod,usb-storage,ext4,nvme quiet rootfstype=ext4 ipv6.disable=1 apparmor=1 security=apparmor"
     syslinux_serial=""
     kernel_addons=""
     kernel_flavors="lts"
-    xen_params="quiet console=null loglevel=0"
+    xen_params="quiet console=null loglevel=0 no-real-mode edd=off dom0_mem=512M,max:1024M dom0_max_vcpus=2 dom0_vcpus_pin=true kernel.dmesg_restrict=1 kernel.kptr_restrict=2 kernel.pid_max=65535 kernel.perf_cpu_time_max_percent=1 kernel.perf_event_max_sample_rate=1 kernel.perf_event_paranoid=2 kernel.randomize_va_space=2 kernel.sysrq=0 kernel.unprivileged_bpf_disabled=1 kernel.panic_on_oops=1 l1tf=full,force page_poison=on pti=on slab_nomerge=yes slub_debug=FZP spec_store_bypass_disable=seccomp spectre_v2=on mds=full,nosmt mce=0 page_alloc.shuffle=1 rng_core.default_quality=500"
     apks="$apks rng-tools xen xen-hypervisor syslinux"
     arch="x86_64"
 

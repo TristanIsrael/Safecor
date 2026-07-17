@@ -33,7 +33,6 @@ $HOSTNAME
 EOF
 
 makefile root:root 0644 "$tmp"/etc/modules <<EOF
-xen_netback
 xen_blkback
 xenfs
 xen-platform-pci
