@@ -2,7 +2,7 @@
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=safecor-core
 pkgver=1.4
-pkgrel=4
+pkgrel=3
 pkgdesc="Safecor - Core of the system"
 url="https://www.alefbet.net/"
 arch="noarch"
