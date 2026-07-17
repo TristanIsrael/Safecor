@@ -1,1 +1,1 @@
-SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", ENV{ID_FS_USAGE}=="filesystem", RUN+="/usr/lib/safecor/bin/mdev-usb-storage.sh"
+SUBSYSTEM=="block", ENV{ID_FS_USAGE}=="filesystem", RUN+="/usr/lib/safecor/bin/mdev-usb-storage.sh"

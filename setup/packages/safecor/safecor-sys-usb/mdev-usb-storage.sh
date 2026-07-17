@@ -1,13 +1,53 @@
 #!/bin/sh
 
+# Handles the block devices detected by udev
+#
+# A block device with a filesystem can be:
+# - a disk (DEVTYPE=disk) without partition (ID_FS_USAGE=filesystem)
+# - a partition (DEVTYPE=partition, ID_FS_USAGE=filesystem)
+#
+# This script handles both cases
+
+unique_file()
+{
+    # We create a unique filename for the mount point
+    file="$1"
+
+    if [ ! -e "$file" ]; then
+        echo "$file"
+        return
+    fi
+
+    n=1
+
+    while [ -e "${file}.${n}" ]; do
+        n=$((n + 1))
+    done
+
+    echo "${file}.${n}"
+}
+
+if [ -z "$ID_FS_USAGE" ]; then
+    # Not a filesystem
+    exit
+fi 
+
+if [ "$ID_FS_USAGE" != "filesystem" ]; then 
+    # Not a filesystem
+    exit
+fi
+
 LABEL=$(printf "%b" "$ID_FS_LABEL_ENC")
-# Si le label est vide, utiliser "NONAME"
+# If the label is empty call it "NONAME"
 if [ -z "$LABEL" ]; then
     LABEL="NONAME"
 fi
 
-# Remplacer les espaces par des underscores
+# Replace empty spaces with underscores
 LABEL=$(echo "$LABEL" | sed 's/ /_/g')
+
+# Make the mount point unique
+LABEL=$(unique_file $LABEL)
 
 FS=$ID_FS_TYPE
 MOUNT_POINT="/media/usb/$LABEL"
