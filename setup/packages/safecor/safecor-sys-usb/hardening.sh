@@ -3,9 +3,10 @@
 # This file contains kernel parameters and shell instructions to harden 
 # the sys-usb domain
 
-echo "Apply hardening"
+logger -t "Safecor/sys-usb/hardening" -p user.notice "Apply hardening"
 
 # Unload unnecessary drivers
+logger -t "Safecor/sys-usb/hardening" -p user.info "Remove unnecessary kernel modules"
 modprobe -r af_packet 
 modprobe -r virtio_net 
 modprobe -r net_failover
@@ -26,4 +27,4 @@ if [ "$debug" != "1" ]; then
     echo "root:$pwd" | chpasswd
 fi
 
-echo "Hardening finished"
+logger -t "Safecor/sys-usb/hardening" -p user.notice "Hardening finished"

@@ -1,6 +1,6 @@
 # safecor-syslog
 
-This package provides a syslog facility for DomUs.
+This package provides a syslog facility for Domains.
 
 The logging can be done multiple ways:
 - Using the official Safecor python API (with safecor-lib package).

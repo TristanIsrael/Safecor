@@ -21,27 +21,25 @@ mkdir -p `dirname $LOG_FILENAME`
 
 if [ "$ACTION" == "add" ]
 then
-	echo "Mounting disk $LABEL with filesystem $FS in $MOUNT_POINT" >> $LOG_FILENAME
-	echo mount $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME >> $LOG_FILENAME
+	logger -t "Safecor/sys-usb/mdev-usb-storage" -p user.debug "Mounting disk $LABEL with filesystem $FS in $MOUNT_POINT"
 	mkdir -p "$MOUNT_POINT"	
-    mount -o uid=1000,gid=2000,umask=007 $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME 2>&1
+    mount -o uid=1000,gid=2000,umask=007,noexec,nosuid,nodev $DEVICE "$MOUNT_POINT"
     chown svc-sys-usb-controller:safecor "$MOUNT_POINT"
     chmod 770 "$MOUNT_POINT"    
 
     if [ $? -eq 0 ]
     then
-        echo "... Success" >> $LOG_FILENAME
+        logger -t "Safecor/sys-usb/mdev-usb-storage" -p user.notice "Successfully mounted $MOUNT_POINT"
     fi
 fi
 
 if [ "$ACTION" == "remove" ]
 then
-	echo "Umounting $MOUNT_POINT" >> $LOG_FILENAME >> $LOG_FILENAME
-	umount "$MOUNT_POINT" >> $LOG_FILENAME 2>&1
+	logger -t "Safecor/sys-usb/mdev-usb-storage" -p user.info "Umounting $MOUNT_POINT"
 
     if [ $? -eq 0 ]
     then
-        echo "... Success" >> $LOG_FILENAME
+        logger -t "Safecor/sys-usb/mdev-usb-storage" -p user.notice "Successfully unmounted $MOUNT_POINT"
     fi
 
 	rmdir "$MOUNT_POINT"
@@ -51,18 +49,17 @@ if [ "$ACTION" == "change" ]
 then
     if [ -n "$FS" ]
     then
-        echo "Change state for $MOUNT_POINT with FS $FS and label $LABEL" >> $LOG_FILENAME >> $LOG_FILENAME
-
-        echo "Mounting disk $LABEL with filesystem $FS in $MOUNT_POINT" >> $LOG_FILENAME
-        echo mount $DEVICE $MOUNT_POINT >> $LOG_FILENAME >> $LOG_FILENAME
+        logger -t "Safecor/sys-usb/mdev-usb-storage" -p user.notice "Changed state for $MOUNT_POINT with FS $FS and label $LABEL"
+        logger -t "Safecor/sys-usb/mdev-usb-storage" -p user.info "Mounting disk $LABEL with filesystem $FS in $MOUNT_POINT"
+        
         mkdir -p "$MOUNT_POINT" 
-        mount -o uid=1000,gid=1000,umask=007 $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME 2>&1       
+        mount -o uid=1000,gid=2000,umask=007,noexec,nosuid,nodev $DEVICE "$MOUNT_POINT"     
         chown svc-sys-usb-controller:safecor "$MOUNT_POINT"
         chmod 770 "$MOUNT_POINT"        
 
         if [ $? -eq 0 ]
         then
-            echo "... Success" >> $LOG_FILENAME
+            logger -t "Safecor/sys-usb/mdev-usb-storage" -p user.info "Successfully mounted $MOUNT_POINT"
         fi
     fi
 fi

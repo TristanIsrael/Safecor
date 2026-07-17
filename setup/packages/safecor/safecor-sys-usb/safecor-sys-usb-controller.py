@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
     lock = threading.Event()
 
-    c=SysUsbController(mqtt_client)
+    c = SysUsbController(mqtt_client)
     c.start()
 
     lock.wait()
