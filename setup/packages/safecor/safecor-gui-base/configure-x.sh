@@ -9,6 +9,8 @@ xset -display :0 s off
 
 logger -t "Safecor/$host/safecor-gui-base" -p user.info "**** Set the mouse pointer ****"
 xsetroot -display :0 -cursor_name left_ptr
+# Hide the mouse cursor when inactive
+unclutter-xfixes -idle 1 -root -noevents &
 
 logger -t "Safecor/$host/safecor-gui-base" -p user.info "**** Set the graphical mode"
 
