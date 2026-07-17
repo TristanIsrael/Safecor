@@ -1,6 +1,6 @@
 """ \author Tristan Israël """
 
-from enum import Enum
+from enum import Enum, IntEnum
 
 class InputType:
     UNKNOWN = 0
@@ -25,6 +25,12 @@ class DiskState(Enum):
     DISCONNECTED = "disconnected"
     MOUNTED = "mounted"
     UNMOUNTED = "unmounted"
+
+class ChassisType(IntEnum):
+    UNKNOWN = "unknown"
+    DESKTOP = "desktop"
+    LAPTOP = "laptop"
+    TABLET = "tablet"
 
 class Constants():
     """ This class defined constants for the whole system """        

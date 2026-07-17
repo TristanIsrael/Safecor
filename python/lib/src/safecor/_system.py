@@ -10,7 +10,7 @@ try:
 except ImportError:
     pass
 import shutil
-from . import SingletonMeta, __version__, Constants, Topology, DomainType, ConfigurationHelper, Domain
+from . import SingletonMeta, __version__, Constants, Topology, DomainType, ConfigurationHelper, Domain, ChassisType
 try:
     from . import LibvirtHelper
 except ImportError:
@@ -23,9 +23,11 @@ except Exception:
 topology = Topology()
 
 class System(metaclass=SingletonMeta):
-    """ The System class provides functions for querying or modifying the system's state. 
+    """ The System class provides functions for querying or modifying the system's 
+        state.
     
-        Some of the functions belong to the main system (Dom0) and some other belong to the virtual machines (DomU)
+        Some of the functions belong to the main system (Dom0) and some other belong to 
+        the virtual machines (DomU)
     """
 
     __DEFAULT_SCREEN_SIZE = "1100,750"
@@ -37,6 +39,7 @@ class System(metaclass=SingletonMeta):
     __cpu_count = None
     __cpu_assignments = None
     __settings = {}
+    __chassis_type = None
 
     def get_screen_width(self) -> int:
         """ Returns the system main screen's resolution width 
@@ -162,6 +165,20 @@ class System(metaclass=SingletonMeta):
                 return ""  # Erreur lors de l'exécution de ioreg
         
         return self.__system_uuid
+    
+    @staticmethod
+    def get_dmi_chassis_type() -> ChassisType:
+        """ Returns the machine's chassis typr        
+        """
+
+        try:
+            with open('/sys/class/dmi/id/chassis_type', 'r') as f:
+                val = f.read().strip()
+                return System.decode_dmi_chassis_type(val)
+        except FileNotFoundError:
+            return ChassisType.UNKNOWN  # Chassis type not available on this machine
+        except PermissionError:
+            return ChassisType.UNKNOWN  # Chassis type reading is not autorized
 
     def get_platform_cpu_count(self) -> int:
         """ Returns the CPU count of the machine 
@@ -623,6 +640,7 @@ class System(metaclass=SingletonMeta):
                     "machine": {
                         "arch": "x86_64", 
                         "processor": "", 
+                        "chassis": "tablet",
                         "platform": "Linux-6.12.20-0-lts-x86_64-with", 
                         "cpu": {
                             "count": 12, 
@@ -670,6 +688,7 @@ class System(metaclass=SingletonMeta):
                 "machine": {
                     "arch": platform.machine(),
                     "processor": platform.processor(),
+                    "chassis": System.get_dmi_chassis_type().value,
                     "platform": platform.platform(),
                     "cpu": {
                         "count": System().get_platform_cpu_count(),
@@ -893,3 +912,16 @@ class System(metaclass=SingletonMeta):
             return result
 
         return {}
+    
+    @staticmethod
+    def decode_dmi_chassis_type(chassis_type:int) -> ChassisType:
+        """ Decodes the raw DMI chassis type value """
+
+        if chassis_type == 30:
+            return ChassisType.TABLET
+        elif chassis_type in [ 8, 9, 10, 14, 12, 31, 32 ]:
+            return ChassisType.LAPTOP
+        elif chassis_type in [ 3, 4, 5, 6, 7, 13, 15, 24, 34, 35, 36]:
+            return ChassisType.DESKTOP
+        else:
+            return ChassisType.UNKNOWN
