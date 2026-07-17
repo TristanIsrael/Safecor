@@ -433,6 +433,14 @@ def on_mqtt_ready():
             SysLogger("Orchestrator").info("Successfully created the encrypted local storage")
         else:
             SysLogger("Orchestrator").critical("The creation of the encrypted local storage failed")
+    else:
+        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/create_memory_storage.sh"]
+        res = subprocess.run(cmd, check= True)
+
+        if res.returncode == 0:
+            SysLogger("Orchestrator").info("Successfully created the memory storage")
+        else:
+            SysLogger("Orchestrator").critical("The creation of the memory storage failed")
 
     # Attach PCI devices
     expose_pci_devices()
