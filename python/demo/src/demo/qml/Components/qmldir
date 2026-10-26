@@ -1,7 +1,0 @@
-module Components
-singleton Colors 1.0 Colors.qml
-PButton 1.0 PButton.qml
-PTabButton 1.0 PTabButton.qml
-PText 1.0 PText.qml
-StorageIcon 1.0 StorageIcon.qml
-RectangleValeur 1.0 RectangleValeur.qml

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "safecor-emulator"
+version = "0.1.0"
+description = "Hardware-free test and emulation infrastructure for Safecor and Safecor-based products"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = [
+    "safecor",
+    "paho-mqtt>=2.0.0",
+    "psutil",
+]
+
+[project.optional-dependencies]
+gui = ["PySide6"]
+test = ["pytest"]
+
+[project.scripts]
+safecor-emulator = "safecor_emulator.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/safecor_emulator"]

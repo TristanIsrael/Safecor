@@ -31,7 +31,7 @@ class Dom0Controller():
         - Delete a file in the repository (:attr:`Topics.DELETE_FILE`).
         - Calculate a file footprint (:attr:`Topics.FILE_FOOTPRINT`).
         - Shut the system down (:attr:`Topics.SHUTDOWN`).
-        - Restart a Domain (:attr:`Topics.RESTART_DOMAIN`). ** The Dom0 cannot be restarted **.
+        - Restart a Domain (:attr:`Topics.RESTART_DOMAIN`). **The Dom0 cannot be restarted**.
         - Get the system information (:attr:`Topics.SYSTEM_INFO`).
         - Get the energy state (:attr:`Topics.ENERGY_STATE`).
         - Discover the components of the system (:attr:`Topics.DISCOVER_COMPONENTS`).

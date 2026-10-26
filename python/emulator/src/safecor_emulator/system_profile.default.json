@@ -1,0 +1,22 @@
+{
+  "uuid": "11111111-2222-3333-4444-555555555555",
+  "cpu_count": 4,
+  "screen_width": 1280,
+  "screen_height": 720,
+  "screen_rotation": 0,
+  "uptime": 3600.0,
+  "cpu_freq_current": 2400.0,
+  "cpu_freq_min": 1200.0,
+  "cpu_freq_max": 3600.0,
+  "cpu_percent": 12.5,
+  "mem_total": 8589934592,
+  "mem_available": 4294967296,
+  "mem_percent": 50.0,
+  "mem_used": 4294967296,
+  "mem_free": 4294967296,
+  "kernel_cmdline": "BOOT_IMAGE=/vmlinuz root=/dev/xvda1 ro quiet",
+  "dmi": {
+    "product_name": "Safecor Emulator",
+    "sys_vendor": "Safecor"
+  }
+}

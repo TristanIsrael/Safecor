@@ -1,5 +1,0 @@
-PySide6
-pyserial
-watchdog
-humanize
-joblib

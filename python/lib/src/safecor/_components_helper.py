@@ -100,8 +100,8 @@ class ComponentsHelper():
     def get_ids_by_type(self, component_type:str) -> list[str]:
         """ Returns all components IDs that match a specific type
         
-            For exemple, to query all the core components:
-            ::
+            For example, to query all the core components::
+
                 def query(self):
                     Api().add_message_callback(self.on_message)
                     Api().discover_components()

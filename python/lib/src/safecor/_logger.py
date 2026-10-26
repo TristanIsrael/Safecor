@@ -258,9 +258,10 @@ class Logger(metaclass=SingletonMeta):
         
             The default format is ``%y-%m-%d %H:%M:%S.%f - Message text``
 
-            Example:
-            :: 
+            Example::
+
                 2025-01-25 13:12:31.123 - The system has started
+
         """
         return f"{datetime.now():%Y-%m-%d %H:%M:%S.%f} - {message}"
     

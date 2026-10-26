@@ -47,7 +47,7 @@ class FileHelper():
 
         The list can be queried for external storages and files mounted.
 
-        The filename can be filtered using the name_filter. For example: "a.out", "f.*", "*.ext"
+        The filename can be filtered using the name_filter. For example: ``a.out``, ``f.*``, ``*.ext``
 
         For each file or folder, a dictionary is created:
             { "type": "folder", "path": "/", "name": "dossier 1" },

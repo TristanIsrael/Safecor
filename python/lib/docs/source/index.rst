@@ -1,5 +1,5 @@
 Safecor documentation
-==================
+=====================
 
 **Safecor** is a software architecture to make security products.
 
@@ -7,4 +7,5 @@ Safecor documentation
 .. toctree::
    :maxdepth: 2
 
+   emulator
    api/index

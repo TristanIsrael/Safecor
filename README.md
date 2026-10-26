@@ -69,7 +69,7 @@ The [public key file](https://alefbet.net/github/safecor/safecor.rsa.pub) must b
 
 ## 🏁 Getting started
 
-When you use Safecor for the first time we suggest you start with the [demonstration app](python/demo/README.md) or the [diagnostic app](python/diag/README.md).
+When you use Safecor for the first time we suggest you start with the [demonstration app](python/demo2/README.md) or the [diagnostic app](python/diag/README.md).
 
 Follow the instruction in the [provisioning](python/lib/docs/source/markdown/provisioning.md) documentation.
 

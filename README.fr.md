@@ -69,7 +69,7 @@ Le fichier de [la clé publique](https://alefbet.net/github/safecor/safecor.rsa.
 
 ## 🏁 Première utilisation
 
-Lors de la première utilisation de Safecor, nous vous suggérons de commencer par l’[application de démonstration](python/demo/README.md) ou l’[application de diagnostic](python/diag/README.md).
+Lors de la première utilisation de Safecor, nous vous suggérons de commencer par l’[application de démonstration](python/demo2/README.md) ou l’[application de diagnostic](python/diag/README.md).
 
 Suivez les instructions de la documentation [provisioning](python/lib/docs/source/markdown/provisioning.md).
 

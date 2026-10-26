@@ -17,7 +17,8 @@ Safecor is a software architecture for building security products (kiosk/embedde
 | Folder | Description |
 |---|---|
 | `python/lib` | Core Python package `safecor` (src layout, hatchling/poetry) |
-| `python/demo`, `python/demo2` | Demo product apps (PySide6 + QML) |
+| `python/demo2` | Demo product app (PySide6 + QML) |
+| `python/emulator` | `safecor-emulator`: hardware-free test/emulation infra for Safecor and products |
 | `python/diag` | Bootable diagnostic app (checks VT-x/VT-d compatibility), shipped as USB ISO |
 | `setup/packages` | Alpine .apk package sources |
 | `setup/iso` | ISO/bootable image generation scripts |
@@ -34,7 +35,7 @@ Safecor is a software architecture for building security products (kiosk/embedde
 - `XenStore`, `LibvirtHelper` — Xen xenstore and libvirt integration (screen size/rotation read from xenstore).
 - `XcbController` — X11/XCB GUI control (optional import).
 - `DiskMonitor`, `FileHelper` — disk/filesystem monitoring.
-- `SysUsbController`, `MockSysUsbController` — USB passthrough management.
+- `SysUsbController` — USB passthrough management. (The `MockSysUsbController` used for testing now lives in the `safecor_emulator` package.)
 - `Logger` / `SysLogger` — logging, events published over MQTT topics (`system/events/*`).
 - `RequestFactory`, `ResponseFactory`, `NotificationFactory` — protocol message builders.
 - `TaskRunner`, `InputsDaemon`, `Mouse`, `KeymapFR` — background tasks and input handling.
@@ -45,7 +46,7 @@ Safecor is a software architecture for building security products (kiosk/embedde
 
 - Python 3.9+ (3.11 for development), Alpine Linux, Xen, libvirt.
 - MQTT (paho-mqtt >= 2.0), pyserial, pyudev, msgpack, joblib, humanize, psutil, inotify.
-- GUI: PySide6 (Qt6) + QML for demo/diag apps.
+- GUI: PySide6 (Qt6) + QML for demo2/diag apps.
 - Packaging: hatchling + poetry, signed Alpine apk repository, ISO images.
 - Docs: Sphinx (autodoc + RTD theme), published on GitHub Pages; CI via GitHub Actions (`build-all.yml`, `documentation.yml`).
 - License: proprietary and restrictive (no fork/copy/reuse without written permission).

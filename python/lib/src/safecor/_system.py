@@ -582,9 +582,7 @@ class System(metaclass=SingletonMeta):
 
             This function must be ran in the Dom0.
         
-            A typical struct is:
-
-            ::
+            A typical struct is::
 
                 {
                 "core": {
@@ -630,7 +628,8 @@ class System(metaclass=SingletonMeta):
                         "files_count": 0
                     }
                 }
-            }
+                }
+
         """
 
         sysinfo = {
@@ -740,10 +739,11 @@ class System(metaclass=SingletonMeta):
     def cpu_affinity_to_string(cpu_affinity:list) -> str:
         """ Converts the cpu affinity of the Domain definition to a string 
         
-            Example:
-            >>>
-                cpu_affinity_to_string([1,2,3,4])
+            Example::
+
+                >>> cpu_affinity_to_string([1,2,3,4])
                 '1-4'
+
         """
 
         if len(cpu_affinity) == 0:

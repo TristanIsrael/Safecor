@@ -61,7 +61,6 @@ from ._api import Api
 from ._debugging import Debugging
 from ._api_helper import ApiHelper
 from ._sys_usb_controller import SysUsbController
-from ._mock_sys_usb_controller import MockSysUsbController
 
 __all__ = [
     "__version__",
@@ -87,7 +86,7 @@ __all__ = [
     "Dom0Controller", "DiskMonitor", "Api",
     "ComponentsHelper",
     "Debugging", "ApiHelper",
-    "SysUsbController", "MockSysUsbController",    
+    "SysUsbController",
 ]
 
 logging.getLogger(__name__).addHandler(NullHandler())
