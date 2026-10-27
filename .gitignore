@@ -1,5 +1,6 @@
 # Specific
 python/**/dist/*
+.git_workflow_token
 
 # C++ objects and libs
 *.slo
