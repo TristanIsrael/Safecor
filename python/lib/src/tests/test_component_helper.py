@@ -93,5 +93,31 @@ class TestComponentHelper(unittest.TestCase):
         self.helper.clear()
         self.assertEqual(len(self.helper.get_components()), 0)
 
+    def test_get_ids_by_type_match(self):
+        self.helper.clear()
+        self.helper.update(self.components)
+        ids = self.helper.get_ids_by_type("core")
+        self.assertCountEqual(ids, [Constants.SAFECOR_DISK_CONTROLLER, Constants.SAFECOR_INPUT_CONTROLLER, Constants.IO_BENCHMARK])
+        self.assertEqual(self.helper.get_ids_by_type("business"), [])
+
+    def test_is_ready(self):
+        self.helper.clear()
+        self.helper.update(self.components)
+        # All start as UNKNOWN -> not ready
+        self.assertFalse(self.helper.is_ready(Constants.SAFECOR_DISK_CONTROLLER))
+
+        self.helper.update([
+            {"id": Constants.SAFECOR_DISK_CONTROLLER, "state": ComponentState.READY},
+            {"id": Constants.SAFECOR_INPUT_CONTROLLER, "state": ComponentState.ERROR},
+        ])
+        self.assertTrue(self.helper.is_ready(Constants.SAFECOR_DISK_CONTROLLER))
+        self.assertFalse(self.helper.is_ready(Constants.SAFECOR_INPUT_CONTROLLER))
+        self.assertFalse(self.helper.is_ready("does-not-exist"))
+
+    def test_update_converts_state_to_enum(self):
+        self.helper.clear()
+        self.helper.update([{"id": "x", "type": "core", "state": "ready"}])
+        self.assertEqual(self.helper.get_state("x"), ComponentState.READY)
+
 if __name__ == "__main__":
     unittest.main()

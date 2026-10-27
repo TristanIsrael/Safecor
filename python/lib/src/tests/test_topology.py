@@ -77,3 +77,66 @@ class TestTopology(unittest.TestCase):
         self.assertTrue(topo.is_pci_bus_blacklisted("00:0d.0"))
         self.assertFalse(topo.is_pci_bus_blacklisted("00:0d.2"))
         self.assertFalse(topo.is_pci_bus_blacklisted("00:14.0"))
+
+    def test_deep_copy(self):
+        topo = Topology()
+        topo.add_domain(Domain("d1", DomainType.BUSINESS))
+        topo.screen.enabled = True
+        # Assign (not append) so the Pci instance owns its own list
+        topo.pci.blacklist = ["00:11.0"]
+        topo.use_usb = True
+        topo.languages = ["en", "fr"]
+        topo.default_language = "fr"
+
+        copy = Topology(topo)
+
+        # Mutating the copy must not affect the original
+        copy.add_domain(Domain("d2", DomainType.CORE))
+        copy.screen.enabled = False
+        copy.pci.blacklist.append("00:12.0")
+        copy.use_usb = False
+        copy.languages.append("es")
+
+        self.assertEqual(len(topo.domains), 1)
+        self.assertTrue(topo.screen.enabled)
+        self.assertEqual(topo.pci.blacklist, ["00:11.0"])
+        self.assertEqual(copy.pci.blacklist, ["00:11.0", "00:12.0"])
+        self.assertTrue(topo.use_usb)
+        self.assertFalse(copy.use_usb)
+        self.assertEqual(topo.languages, ["en", "fr"])
+        self.assertEqual(copy.default_language, "fr")
+
+    def test_business_domains(self):
+        topo = Topology()
+        topo.add_domain(Domain("biz", DomainType.BUSINESS))
+        topo.add_domain(Domain("core", DomainType.CORE))
+        self.assertEqual([d.name for d in topo.business_domains()], ["biz"])
+
+    def test_graphical_domains(self):
+        topo = Topology()
+        d1 = Domain("gui1", DomainType.BUSINESS)
+        d1.has_gui = True
+        d2 = Domain("nogui", DomainType.BUSINESS)
+        d2.has_gui = False
+        topo.add_domain(d1)
+        topo.add_domain(d2)
+        self.assertEqual([d.name for d in topo.graphical_domains()], ["gui1"])
+
+    def test_default_focus(self):
+        topo = Topology()
+        # No GUI domains and no explicit focus
+        self.assertEqual(topo.default_focus(), "")
+
+        d1 = Domain("gui1", DomainType.BUSINESS)
+        d1.has_gui = True
+        topo.add_domain(d1)
+        # No explicit focus -> first graphical domain
+        self.assertEqual(topo.default_focus(), "gui1")
+
+        # Explicit focus overrides
+        topo.screen.default_focus = "explicit"
+        self.assertEqual(topo.default_focus(), "explicit")
+
+
+if __name__ == "__main__":
+    unittest.main()
