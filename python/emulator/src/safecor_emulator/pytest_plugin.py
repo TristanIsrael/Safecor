@@ -15,11 +15,24 @@ Fixtures provided:
   with a sample ``hello.txt``.
 - ``emulator_source_disk`` (session-scoped): the path of that ``disk0``.
 
+Scenario API (available on the ``emulator`` fixture):
+
+- ``attach_disk(disk_id, root_path)`` / ``detach_disk(disk_id)`` — USB hot-plug.
+- ``set_energy_state(level, plugged)`` — set battery level and AC power.
+- ``power_off()`` / ``power_on()`` — simulate power loss / restore.
+- ``restart_domain(name)`` — record a domain restart.
+- ``restarted_domains`` — list of restarted domains (for assertions).
+- ``set_default_language(code)`` — change the emulated default language.
+
 Example::
 
     def test_my_product_lists_disks(emulator):
         client = MqttFactory.create_mqtt_network_dev("myapp")
         ...  # run your product's MQTT logic against the emulated core
+
+    def test_power_off(emulator):
+        emulator.power_off()
+        ...  # verify product reacts to energy state
 """
 
 import pytest

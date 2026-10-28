@@ -122,6 +122,52 @@ class Emulator:
             raise RuntimeError("Emulator.start() must be called first")
         self._sys_usb.detach_disk(disk_id)
 
+    # --- power / energy scenarios --------------------------------------------
+    def set_energy_state(self, level: float, plugged: bool = True):
+        """Set the emulated energy state.
+
+        :param level: battery level from 0.0 to 100.0.
+        :param plugged: whether the system is on AC power.
+        """
+        if self._dom0 is None:
+            raise RuntimeError("Emulator.start() must be called first")
+        self._dom0.energy_level = level
+        self._dom0.plugged = plugged
+
+    def power_off(self):
+        """Simulate a power loss (unplug + battery at 0)."""
+        self.set_energy_state(0.0, plugged=False)
+
+    def power_on(self):
+        """Simulate power restore (AC plugged, full battery)."""
+        self.set_energy_state(100.0, plugged=True)
+
+    # --- domain restart scenario ---------------------------------------------
+    def restart_domain(self, domain_name: str):
+        """Simulate a domain restart and record it.
+
+        The domain name is recorded in :attr:`restarted_domains`.
+
+        :param domain_name: name of the domain to restart.
+        """
+        if self._dom0 is None:
+            raise RuntimeError("Emulator.start() must be called first")
+        self._dom0.record_restart(domain_name)
+
+    @property
+    def restarted_domains(self):
+        """List of domain names restarted so far (for assertions)."""
+        if self._dom0 is None:
+            return []
+        return self._dom0.restarted_domains
+
+    # --- language -------------------------------------------------------------
+    def set_default_language(self, language: str):
+        """Set the emulated default language code (e.g. ``"fr"``)."""
+        if self._dom0 is None:
+            raise RuntimeError("Emulator.start() must be called first")
+        self._dom0.default_language = language
+
     # --- fake input --------------------------------------------------------
     def inject_key(self, key, pressed: bool = True):
         """Inject a keyboard press/release (see :class:`FakeInputDevice`)."""
