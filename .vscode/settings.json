@@ -23,5 +23,8 @@
         }
     ],
     "editor.defaultFormatter": "ms-python.black-formatter",
-    "python.REPL.enableREPLSmartSend": false
+    "python.REPL.enableREPLSmartSend": false,
+    "markdown.styles": [
+        ".vscode/markdown-preview.css"
+    ]
 }
