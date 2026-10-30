@@ -20,17 +20,17 @@ DEBUG = False
 TYPE_CHECKING = True
 
 class ConnectionType(StrEnum):
-    ''' @brief Cette énumération permet d'identifier le type de connexion utilisée.
+    ''' @brief This enumeration identifies the type of connection used.
     '''
     UNIX_SOCKET = "unix_socket"
     SERIAL_PORT = "serial_port"
     TCP_DEBUG = "tcp"
 
 class SerialSocket():
-    ''' @brief Cette classe implémente une socket série.
+    ''' @brief This class implements a serial socket.
 
-    La socket série est utilisée pour communiquer sur un port série dans un DomU
-    ou sur une socket de domaine UNIX sur le Dom0.
+    The serial socket is used to communicate over a serial port in a DomU
+    or over a UNIX domain socket in the Dom0.
     '''
 
     def __init__(self, path:str, baudrate:int):
@@ -81,7 +81,7 @@ class SerialSocket():
 
 
 class SerialMQTTClient(mqtt.Client):
-    ''' @brief Cette classe permet au client MQTT de communiquer sur un port série.
+    ''' @brief This class allows the MQTT client to communicate over a serial port.
     '''
 
     on_connection_lost: Optional[Callable[[], None]] = None
@@ -172,7 +172,7 @@ class SerialMQTTClient(mqtt.Client):
             return None
 
 class MqttClient():
-    ''' @brief Cette classe permet d'échanger des messages MQTT au sein du système.
+    ''' @brief This class is used to exchange MQTT messages within the system.
     '''
 
     connection_type:ConnectionType = ConnectionType.UNIX_SOCKET
