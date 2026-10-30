@@ -1,8 +1,8 @@
-""" MQTT clients of the Safecor system.
+""" MQTT client module.
 
-This module provides the MQTT transports (UNIX domain socket for the Dom0,
-serial port for the DomUs, TCP on localhost for debugging) and the
-:class:`MqttClient` used to exchange messages between the Domains.
+This module provides the MQTT transports (UNIX domain socket, serial port,
+TCP on localhost for debugging) and the :class:`MqttClient` used to
+exchange messages over MQTT.
 
 \author Tristan Israël
 """
@@ -29,8 +29,8 @@ TYPE_CHECKING = True
 class ConnectionType(StrEnum):
     ''' @brief This enumeration identifies the type of connection used.
 
-    UNIX_SOCKET: the broker is reached through a UNIX domain socket (the Dom0).
-    SERIAL_PORT: the broker is reached through a serial port (the DomUs).
+    UNIX_SOCKET: the broker is reached through a UNIX domain socket.
+    SERIAL_PORT: the broker is reached through a serial port.
     TCP_DEBUG: the broker is reached over TCP on localhost (development only).
     '''
     UNIX_SOCKET = "unix_socket"
@@ -40,8 +40,7 @@ class ConnectionType(StrEnum):
 class SerialSocket():
     ''' @brief This class implements a serial socket.
 
-    The serial socket is used to communicate over a serial port in a DomU
-    or over a UNIX domain socket in the Dom0.
+    The serial socket is used to communicate over a serial port.
     '''
 
     def __init__(self, path:str, baudrate:int):
@@ -296,8 +295,8 @@ class MqttClient():
     def start(self):
         """Creates the underlying paho client and connects it to the broker.
 
-        The transport is selected by the connection type: a UNIX domain socket
-        (the Dom0), a serial port (the DomUs) or TCP on localhost (debugging).
+        The transport is selected by the connection type: a UNIX domain
+        socket, a serial port, or TCP on localhost (debugging).
         No-op if the client is already connected or starting.
         """
         if self.is_starting or self.connected:
