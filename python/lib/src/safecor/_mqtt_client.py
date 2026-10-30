@@ -341,7 +341,14 @@ class MqttClient():
         SysLogger("MQTT-client").info("Connected to the MQTT broker")
         self.connected = True
         self.is_starting = False
-        
+
+        # Every (re)connection starts a clean session, so the broker has
+        # forgotten the previous subscriptions. Re-apply the tracked
+        # topics (deduplicated) before notifying the callers: on a first
+        # connection the list is empty and this is a no-op.
+        for topic in dict.fromkeys(self.__subscriptions):
+            self.mqtt_client.subscribe(topic)
+
         if self.on_connected is not None:
             self.on_connected()
 

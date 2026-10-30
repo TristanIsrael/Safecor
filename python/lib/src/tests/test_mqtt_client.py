@@ -98,6 +98,33 @@ class TestMqttClient(unittest.TestCase):
         self.assertIn("on_connected", received)
         self.assertIn("cb", received)
 
+    def test_on_connected_first_connection_is_a_no_op(self):
+        # No subscription was tracked yet: nothing to re-apply and the
+        # (not yet created) paho client must not be touched.
+        self.client._MqttClient__on_connected(None, None, None, None, None)
+        self.assertIsNone(self.client.mqtt_client)
+
+    def test_on_connected_resubscribes_tracked_topics(self):
+        # Simulate a reconnection: the client was subscribed before the
+        # connection was lost, a new paho client was created, and the
+        # connect event fires again.
+        self.client.mqtt_client = mock.MagicMock()  # the initial paho client
+        self.client.subscribe("topic/a")
+        self.client.subscribe("topic/b")
+        self.client.subscribe("topic/a")  # duplicated on purpose
+
+        self.client.mqtt_client = mock.MagicMock()  # the new paho client
+
+        self.client._MqttClient__on_connected(None, None, None, None, None)
+
+        calls = self.client.mqtt_client.subscribe.call_args_list
+        resubscribed = [c.args[0] for c in calls]
+        self.assertEqual(resubscribed, ["topic/a", "topic/b"])
+        # The tracking list must not be polluted by the re-application
+        self.assertEqual(
+            self.client._MqttClient__subscriptions, ["topic/a", "topic/b", "topic/a"]
+        )
+
     def test_on_subscribe(self):
         received = []
         self.client.on_subscribed = lambda mid: received.append(mid)
