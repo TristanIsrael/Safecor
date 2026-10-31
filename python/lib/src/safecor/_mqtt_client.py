@@ -244,19 +244,22 @@ class SerialMQTTClient(mqtt.Client):
             return None
 
 class MqttClient():
-    ''' @brief This class is used to exchange MQTT messages within the system.
+    '''This class is used to exchange MQTT messages within the system.
 
-    Attributes:
-        connection_type(ConnectionType): The type of the connection to the broker.
-        connection_string(str): The connection string (the UNIX socket path, the serial
-            port path, or the TCP host depending on the connection type).
-        identifier(str): The client identifier (used as the MQTT client ID).
-        on_connected: Callback invoked when the client (re)connects to the broker.
-        on_message: Callback invoked for every message received on a subscribed topic.
-        on_subscribed: Callback invoked when the broker acknowledges a subscription.
-        on_log: Callback invoked with the paho log messages (debugging only).
-        connected(bool): True while the client is connected to the broker.
-        is_starting(bool): True while the client is trying to connect.
+    Class attributes:
+
+    - ``connection_type`` (ConnectionType): the type of the connection to the broker.
+    - ``connection_string`` (str): the connection string (the UNIX socket path, the
+      serial port path, or the TCP host depending on the connection type).
+    - ``identifier`` (str): the client identifier (used as the MQTT client ID).
+    - ``on_connected``: callback invoked when the client (re)connects to the broker.
+    - ``on_message``: callback invoked for every message received on a subscribed
+      topic.
+    - ``on_subscribed``: callback invoked when the broker acknowledges a
+      subscription.
+    - ``on_log``: callback invoked with the paho log messages (debugging only).
+    - ``connected`` (bool): True while the client is connected to the broker.
+    - ``is_starting`` (bool): True while the client is trying to connect.
     '''
 
     connection_type:ConnectionType = ConnectionType.UNIX_SOCKET

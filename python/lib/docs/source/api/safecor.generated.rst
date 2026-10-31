@@ -1,65 +1,290 @@
-Safecor API - Classes et Fonctions Complètes
-============================================
+.. _safecor-api-classes:
 
-API Auto-Générée depuis le module ``safecor``. La documentation est générée automatiquement à partir des docstrings Python et des hints de type.
+Safecor API - Complete Class List
+=================================
 
-**Utilisation**: Pour utiliser l'API Safecor, instanciez la :class:`Api` classe et ouvrez la socket en appelant :func:`start()`. Les autres fonctions permettent de gérer les communications MQTT avec le domaine Dom0.
+Complete reference of the ``safecor`` package, grouped by the
+module each class is defined in. This page is auto-generated
+from the module introspection; do not edit it by hand. Run
+``python scripts/gen_api_rst.py`` to regenerate it.
 
-.. autoclass:: Api
+Api API
+-------
+
+Classes defined in the ``safecor._api`` module:
+
+.. autoclass:: safecor.Api
    :members:
-   :undoc-members:
    :show-inheritance:
 
+Api Helper API
+--------------
 
----
+Classes defined in the ``safecor._api_helper`` module:
 
-**DomainController & Domain Class**: Interface gérant les commandes MQTT depuis DomU et contrôlant la gestion des domaines.
-
-.. autoclass:: Dom0Controller
+.. autoclass:: safecor.ApiHelper
    :members:
-   :undoc-members:
-   
-.. autoclass:: System
+   :show-inheritance:
+
+Components Helper API
+---------------------
+
+Classes defined in the ``safecor._components_helper`` module:
+
+.. autoclass:: safecor.ComponentsHelper
    :members:
-   :undoc-members:
+   :show-inheritance:
 
+Configuration Helper API
+------------------------
 
----
+Classes defined in the ``safecor._configuration_helper`` module:
 
-**Mqtt & Serial MQTT Clients**: Gestionnaires de connexion MQTT pour communications sans fil/serail.
-
-.. autoclass:: MqttClient
+.. autoclass:: safecor.Configuration
    :members:
-   
-.. autoclass:: SerialMQTTClient
+   :show-inheritance:
+
+.. autoclass:: safecor.ConfigurationHelper
    :members:
+   :show-inheritance:
 
+Constants API
+-------------
 
----
+Classes defined in the ``safecor._constants`` module:
 
-**XenStore & Xen Integration**: Support natif Xen pour écran, rotation et paramètres.
-
-.. autoclass:: XenStore
+.. autoclass:: safecor.BenchmarkId
    :members:
+   :show-inheritance:
 
-
----
-
-**Hardware Controllers**: Gestion des périphériques (USB, X11, Serial).
-
-.. autoclass:: SysUsbController
+.. autoclass:: safecor.ComponentState
    :members:
+   :show-inheritance:
 
-.. autoclass:: FileHelper
+.. autoclass:: safecor.Constants
    :members:
+   :show-inheritance:
 
-.. autoclass:: DiskMonitor
+.. autoclass:: safecor.DiskState
    :members:
+   :show-inheritance:
 
-
----
-
-**API Helpers & Outils**: Aides et utilitaires génériques.
-
-.. autoclass:: ApiHelper
+.. autoclass:: safecor.InputType
    :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.Settings
+   :members:
+   :show-inheritance:
+
+Debugging API
+-------------
+
+Classes defined in the ``safecor._debugging`` module:
+
+.. autoclass:: safecor.Debugging
+   :members:
+   :show-inheritance:
+
+Disk Monitor API
+----------------
+
+Classes defined in the ``safecor._disk_monitor`` module:
+
+.. autoclass:: safecor.DiskMonitor
+   :members:
+   :show-inheritance:
+
+Dom0 Controller API
+-------------------
+
+Classes defined in the ``safecor._dom0_controller`` module:
+
+.. autoclass:: safecor.Dom0Controller
+   :members:
+   :show-inheritance:
+
+File Helper API
+---------------
+
+Classes defined in the ``safecor._file_helper`` module:
+
+.. autoclass:: safecor.FileHelper
+   :members:
+   :show-inheritance:
+
+Inputs Daemon API
+-----------------
+
+Classes defined in the ``safecor._inputs_daemon`` module:
+
+.. autoclass:: safecor.InputsDaemon
+   :members:
+   :show-inheritance:
+
+Logger API
+----------
+
+Classes defined in the ``safecor._logger`` module:
+
+.. autoclass:: safecor.Logger
+   :members:
+   :show-inheritance:
+
+Mouse API
+---------
+
+Classes defined in the ``safecor._mouse`` module:
+
+.. autoclass:: safecor.Mouse
+   :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.MouseButton
+   :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.MouseMove
+   :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.MouseWheel
+   :members:
+   :show-inheritance:
+
+Mqtt Client API
+---------------
+
+Classes defined in the ``safecor._mqtt_client`` module:
+
+.. autoclass:: safecor.ConnectionType
+   :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.MqttClient
+   :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.SerialMQTTClient
+   :members:
+   :show-inheritance:
+
+Mqtt Factory API
+----------------
+
+Classes defined in the ``safecor._mqtt_factory`` module:
+
+.. autoclass:: safecor.MqttFactory
+   :members:
+   :show-inheritance:
+
+Mqtt Helper API
+---------------
+
+Classes defined in the ``safecor._mqtt_helper`` module:
+
+.. autoclass:: safecor.MqttHelper
+   :members:
+   :show-inheritance:
+
+Notification Factory API
+------------------------
+
+Classes defined in the ``safecor._notification_factory`` module:
+
+.. autoclass:: safecor.NotificationFactory
+   :members:
+   :show-inheritance:
+
+Request Factory API
+-------------------
+
+Classes defined in the ``safecor._request_factory`` module:
+
+.. autoclass:: safecor.RequestFactory
+   :members:
+   :show-inheritance:
+
+Response Factory API
+--------------------
+
+Classes defined in the ``safecor._response_factory`` module:
+
+.. autoclass:: safecor.ResponseFactory
+   :members:
+   :show-inheritance:
+
+Singleton API
+-------------
+
+Classes defined in the ``safecor._singleton`` module:
+
+.. autoclass:: safecor.SingletonMeta
+   :members:
+   :show-inheritance:
+
+Sys Usb Controller API
+----------------------
+
+Classes defined in the ``safecor._sys_usb_controller`` module:
+
+.. autoclass:: safecor.SysUsbController
+   :members:
+   :show-inheritance:
+
+Syslogger API
+-------------
+
+Classes defined in the ``safecor._syslogger`` module:
+
+.. autoclass:: safecor.SysLogger
+   :members:
+   :show-inheritance:
+
+System API
+----------
+
+Classes defined in the ``safecor._system`` module:
+
+.. autoclass:: safecor.System
+   :members:
+   :show-inheritance:
+
+Tasks Runner API
+----------------
+
+Classes defined in the ``safecor._tasks_runner`` module:
+
+.. autoclass:: safecor.TaskRunner
+   :members:
+   :show-inheritance:
+
+Topics API
+----------
+
+Classes defined in the ``safecor._topics`` module:
+
+.. autoclass:: safecor.Topics
+   :members:
+   :show-inheritance:
+
+Topology API
+------------
+
+Classes defined in the ``safecor._topology`` module:
+
+.. autoclass:: safecor.Domain
+   :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.DomainType
+   :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.Screen
+   :members:
+   :show-inheritance:
+
+.. autoclass:: safecor.Topology
+   :members:
+   :show-inheritance:

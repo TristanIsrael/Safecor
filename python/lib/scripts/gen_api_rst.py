@@ -1,104 +1,104 @@
 #!/usr/bin/env python3
 """
-Generates a complete API reference RST file listing all safecor classes by category.
-This ensures the sidebar shows ALL classes in Furo, not just modules/imports.
+Generate the complete API reference RST for the safecor package.
+
+The class list is built by introspecting the ``safecor`` module (no
+hardcoded list) and grouped by the module each class is defined in.
+Every directive carries an explicit module prefix (``safecor.X``) so
+autodoc can import the class.
 
 Usage:
-    python gen_api_rst.py > docs/source/api/safecor.generated.rst
+    python scripts/gen_api_rst.py
+
+Output:
+    docs/source/api/safecor.generated.rst
 """
 
+import inspect
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-try:
-    from src import safecor
-except Exception as e:
-    print(f"Warning: Could not import safecor: {e}")
-    print("Generating with minimal structure only...")
-    sys.exit(0)
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+)
 
-# Collect all classes/functions from safecor module
-modules_data = [
-    ("Core", "Classes et fonctions core du module safecor"),
-    ("Domain", "DomainController interfaces et gestionnaires DOM0/DomU"),
-    ("Hardware", "Gestion périphériques (USB, X11, Serial)"),
-    ("API", "Helpers et outils génériques (logging, MQTT, tasks)"),
-]
+import safecor  # noqa: E402
 
-class_names = [
-    'Api',
-    'ApiHelper',
-    'Dom0Controller',
-    'System',
-    'Topology',
-    'Domain',
-    'MqttClient',
-    'SerialMQTTClient',
-    'MqttFactory',
-    'XenStore',
-    'FileHelper',
-    'DiskMonitor',
-    'SysUsbController',
-    'Logger',
-    'TaskRunner',
-]
-
-# Extract from safecor source directly via inspection
-from src.safecor import *
+# Names that are re-exported third-party objects or module-level
+# instances, not part of the public class API.
+EXCLUDED = {"topology", "logging"}
 
 
-functions = [name for name in dir(safecor) 
-            if not name.startswith('_') and callable(getattr(safecor, name))
-           ]
+def collect_classes():
+    """Return the public classes of the safecor package, grouped by module."""
+    groups = {}
+    for name in dir(safecor):
+        if name.startswith("_") or name in EXCLUDED:
+            continue
+        obj = getattr(safecor, name)
+        if not inspect.isclass(obj):
+            continue
+        module = obj.__module__
+        if not module.startswith("safecor"):
+            continue
+        groups.setdefault(module, []).append(name)
+    return {module: sorted(names) for module, names in sorted(groups.items())}
 
-# Filter to known public classes only
-public_classes = [name for name in class_names 
-                  if hasattr(safecor, name)]
+
+def rst_title(text, char):
+    return "\n".join([text, char * len(text)])
 
 
-print("Classes publiques trouvées:", len(public_classes))
-for name in sorted(public_classes):
-    obj = getattr(safecor, name)
-    print(f"  - {name}: {type(obj).__name__}")
+def generate(groups):
+    lines = [
+        ".. _safecor-api-classes:",
+        "",
+        rst_title("Safecor API - Complete Class List", "="),
+        "",
+        "Complete reference of the ``safecor`` package, grouped by the",
+        "module each class is defined in. This page is auto-generated",
+        "from the module introspection; do not edit it by hand. Run",
+        "``python scripts/gen_api_rst.py`` to regenerate it.",
+        "",
+    ]
 
-# Generate RST content
-rst_content = """\
-Safecor API Reference (Full List)
-==================================
+    for module, names in groups.items():
+        words = [w.capitalize() for w in module.rsplit(".", 1)[-1].split("_") if w]
+        section = "{} API".format(" ".join(words))
+        lines.append(rst_title(section, "-"))
+        lines.append("")
+        lines.append("Classes defined in the ``{}`` module:".format(module))
+        lines.append("")
+        for name in names:
+            lines.append(".. autoclass:: safecor.{}".format(name))
+            lines.append("   :members:")
+            lines.append("   :show-inheritance:")
+            lines.append("")
 
-Complete reference of the safecor package. This page includes all classes, 
-functions, and constants auto-generated from docstrings and type hints.
+    return "\n".join(lines).rstrip() + "\n"
 
-The above list contains classes found in the ``safecor`` Python module via introspection.
-For detailed documentation on each function/class, see their individual docstrings.
 
-.. autoclass:: safecor.Api
-   :members:
-   :undoc-members:
-   :show-inheritance:
+def main():
+    groups = collect_classes()
+    total = sum(len(names) for names in groups.values())
+    print("Classes found: {}".format(total))
+    for module, names in groups.items():
+        print("  {}: {}".format(module, ", ".join(names)))
 
-.. autofunction:: safecor.list_classes
-"""
+    output_file = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "docs",
+            "source",
+            "api",
+            "safecor.generated.rst",
+        )
+    )
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(generate(groups))
+    print("Generated {}".format(output_file))
 
-# Add class details section if we found classes
-if public_classes:
-    rst_content += """\
-.. note::
-   
-   Classe publique du module ``safecor``:
 
-   {% for name in sorted(public_classes) %}
-   - :attr:`<ref>`safecor.{name}>_` {{ name }}
-   {% endfor %}
-"""
-
-# Write to file
-output_file = os.path.abspath('docs/source/api/safecor.generated.rst')
-with open(output_file, 'w', encoding='utf-8') as f:
-    f.write(rst_content)
-
-print(f"\nGenerated API RST at: {output_file}")
-print(f"Total classes found: {len(public_classes)}")
-
-sys.exit(0)
+if __name__ == "__main__":
+    main()

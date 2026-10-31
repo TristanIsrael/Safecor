@@ -1,11 +1,10 @@
 Safecor Package
 ===============
 
-API Reference for the safecor library. Generated from docstrings and type hints.
+API reference for the ``safecor`` library, generated from docstrings and
+type hints.
 
 .. toctree::
    :maxdepth: 2
-   
-   safecor.api.core
-   safecor.api.dominio
-   safecor.api.hardware
+
+   safecor.generated
