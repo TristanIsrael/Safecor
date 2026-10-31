@@ -19,7 +19,6 @@ release = '1.2.0'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    # Core extensions
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     # Google/Numpy style docstrings
@@ -42,15 +41,11 @@ napoleon_include_init_with_doc = True
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-# Furo theme (native dark mode + built-in search)
-html_theme = 'furo'
-
-html_static_path = ['_static']
-html_context = {'docs_path': 'python/lib/docs'}
-
-html_css_files = [
-    "custom.css",
-]
+html_theme = 'pydata_sphinx_theme'
+html_theme_options = {
+    "navigation_depth": 4,
+    "collapse_navigation": False,
+}
 
 # Source suffixes: .rst and .md natively via myst_parser
 source_suffix = {
