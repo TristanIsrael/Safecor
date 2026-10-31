@@ -1,0 +1,60 @@
+{# Custom sidebar template for Furo + autosummary integration #}
+
+<!-- Sidebar navigation with search integrated -->
+<nav class="bd-docs-sidebar bd-toc-wrapper">
+  <div class="bd-sidebar__container" role="navigation">
+    
+    <!-- Main nav (from Sphinx config) -->
+    {% if show_toctree %}
+    {# Furo default sidebar section 1 #}
+    {## Search bar integrated in sidebar -->
+    <form id="search-form" action="{{ pathto('searchindex.html', 1) }}?q=" method="get">
+      <input type="text" 
+             name="q" 
+             id="search-field"
+             placeholder="Rechercher dans la documentation..." 
+             autocomplete="off"
+             aria-label="Barre de recherche automatique"/>
+    </form>
+    
+    <!-- API Reference classes sidebar (second section) -->
+    {# This replaces the default "Modules" with our API list #}
+    <details class="bd-settoc-toggle">
+      <summary class="bd-settoc-title">
+        <i class="bi bi-three-dots-vertical"></i>  
+        <span class="sd-parent-text sd-heading">&lt;API S&uuml;&divide;re</span>
+      </summary>
+      
+      <!-- Navigation links for autosummary classes -->
+      {% block sidebar_api_classes %}{% endblock %}
+    </details>
+  </div>
+</nav>
+
+{# Custom CSS injected via js (Furo doesn't support inject_css directly) #}
+<script>
+  // Inject custom styles and search behavior
+  var customStyles = `
+    /* Search input styling - Furo dark mode */
+    #search-field {
+      width: 100%;
+      padding: 8px;
+      color: #ffffff;
+      background: transparent;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      font-family: inherit;
+      font-size: 14px;
+    }
+    #search-field::placeholder {
+      color: rgba(255,255,255,0.4);
+    }
+    
+    /* Sidebar links styling */
+    .bd-settoc-title i {
+      margin-right: 8px;
+      opacity: 0.7;
+    }
+  `;
+  
+  // Add styles to head if needed (simple injection for now)
+</script>

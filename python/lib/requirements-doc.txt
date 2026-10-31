@@ -1,5 +1,14 @@
-sphinx
-pydata-sphinx-theme
-poetry
-furo
-myst-parser
+# Documentation requirements - Sphinx + extensions
+# Pour générer la documentation HTML avec thème sombre et recherche intégrée
+
+# Core
+sphinx >= 7.1.2,<9.0.0
+myst-parser >= 3.0.0,<4.0.0
+
+# Themes (Furo - moderne, sombre natif)
+furo >= 2024.1.0,<2026.0.0
+
+# Extensions
+pydata-sphinx-theme >= 0.14.0
+sphinx-lint>=0.5.0
+

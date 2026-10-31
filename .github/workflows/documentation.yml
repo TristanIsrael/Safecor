@@ -53,13 +53,13 @@ jobs:
           pip install -r requirements.txt
           poetry install
 
-      - name: Build doc
+      - name: Build doc (Sphinx)
         shell: sh
         run: |
           . ./venv/bin/activate
-          cd python/lib
-          poetry run sphinx-autogen -o docs/source/api/generated docs/source/api/safecor.rst
-          poetry run sphinx-build -b html docs/source docs/build/html
+          cd python/lib/docs/source
+          # Génère la documentation HTML avec thème sombre + recherche intégrée
+          sphinx-build -b html . ../build/html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
