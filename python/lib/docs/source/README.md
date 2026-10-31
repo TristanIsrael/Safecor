@@ -1,7 +1,5 @@
 # Sphinx Documentation - Safecor Library
 
----
-
 ## 📖 Overview
 
 **Safecor** documentation uses **Sphinx** to generate automated technical documentation from source code and docstrings. It provides:

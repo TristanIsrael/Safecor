@@ -7,5 +7,6 @@ Safecor documentation
 .. toctree::
    :maxdepth: 2
 
+   README
    emulator
    api/index
