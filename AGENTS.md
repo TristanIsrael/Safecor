@@ -82,6 +82,8 @@ Safecor is a software architecture for building security products (kiosk/embedde
 
 ## Documentation standards
 
+- The public documentation lies in the Safecor Wiki repository
+- The project's documentation lies in the /docs directory
 - Write documentation, comments and commits in english language even if the prompt is in another language.
 - Update the documentation in /docs and the Doxygen comments of the source code up to date when applying changes.
 - The Doxygen documentation must be written only in the implementation files unless the function is encoded in the header file.
