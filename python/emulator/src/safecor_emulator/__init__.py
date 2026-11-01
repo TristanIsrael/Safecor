@@ -17,11 +17,21 @@ machine that has no Xen, no HVM and no real hardware. It provides:
   and input injection (:meth:`Emulator.inject_key` / :meth:`Emulator.mouse_click`).
 """
 
-from .profile import SystemProfile, default_profile, load_profile
 from .activate import install_fakes, uninstall_fakes
 from .broker import MosquittoBroker, broker_is_reachable
-from .fake_input import FakeInputDevice
 from .emulator import Emulator
+from .fake_input import FakeInputDevice
+from .profile import SystemProfile, default_profile, load_profile
+from .topology_env import (
+    NO_CONFIGURATION,
+    BusinessDomain,
+    Environment,
+    Screen,
+    build_environment,
+    build_environment_from_data,
+    configuration_dmi,
+    load_topology_data,
+)
 
 __version__ = "0.1.0"
 
@@ -35,4 +45,12 @@ __all__ = [
     "broker_is_reachable",
     "FakeInputDevice",
     "Emulator",
+    "NO_CONFIGURATION",
+    "Environment",
+    "BusinessDomain",
+    "Screen",
+    "load_topology_data",
+    "build_environment",
+    "build_environment_from_data",
+    "configuration_dmi",
 ]

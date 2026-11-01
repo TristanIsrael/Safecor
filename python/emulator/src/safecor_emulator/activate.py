@@ -21,11 +21,15 @@ import io
 import os
 import time
 import types
-from typing import Dict
+from typing import Dict, List, Optional
 
+import safecor._configuration_helper as _CH
 import safecor._system as S
 
 _patches = []
+
+#: Virtual path the product topology is served at (what the product reads).
+TOPOLOGY_PATH = "/etc/safecor/topology.json"
 
 
 def _patch(obj, attr, new):
@@ -47,7 +51,7 @@ def _unpatch():
     _patches.clear()
 
 
-def _build_fake_files(profile: dict) -> Dict[str, str]:
+def _build_fake_files(profile: dict, dmi: Optional[dict] = None) -> Dict[str, str]:
     screen_w = profile.get("screen_width", 1280)
     screen_h = profile.get("screen_height", 720)
     files = {
@@ -56,16 +60,28 @@ def _build_fake_files(profile: dict) -> Dict[str, str]:
         "/proc/cmdline": f"{profile.get('kernel_cmdline', '')}\n",
     }
     # Expose the extra DMI keys if provided
-    dmi = profile.get("dmi", {}) or {}
+    dmi = dmi or profile.get("dmi", {}) or {}
     for key, value in dmi.items():
         files[f"/sys/class/dmi/id/{key}"] = f"{value}\n"
     return files
 
 
-def install_fakes(profile: dict):
+def install_fakes(profile: dict,
+                  topology_content: Optional[str] = None,
+                  domains: Optional[List[str]] = None,
+                  dmi: Optional[dict] = None):
     """Install the OS/hardware fakes driven by ``profile`` (a dict).
 
     If fakes are already installed they are replaced.
+
+    :param profile: the flat hardware characteristics (see ``SystemProfile.as_dict``).
+    :param topology_content: optional product topology JSON to serve at
+        ``/etc/safecor/topology.json`` so the product under test reads it.
+    :param domains: optional list of business Domain names to add to the
+        (fake) ``LibvirtHelper.get_domains()`` (in addition to Dom0 + sys-usb).
+    :param dmi: optional dict of DMI key -> value to serve at
+        ``/sys/class/dmi/id/<key>`` (drives
+        ``ConfigurationHelper.apply_configuration``).
     """
     if _patches:
         _unpatch()
@@ -73,6 +89,8 @@ def install_fakes(profile: dict):
     screen_w = profile.get("screen_width", 1280)
     screen_h = profile.get("screen_height", 720)
     rotation = profile.get("screen_rotation", 0)
+    dmi = dmi or profile.get("dmi", {}) or {}
+    business_domains = list(domains) if domains else []
 
     # --- fake psutil -------------------------------------------------------
     class FakeCpuFreq:
@@ -121,10 +139,14 @@ def install_fakes(profile: dict):
 
         @staticmethod
         def get_domains():
-            return {
+            result = {
                 "Dom0": _FakeDomain("Dom0", [0]),
                 "sys-usb": _FakeDomain("sys-usb", [0]),
             }
+            for name in business_domains:
+                if name not in result:
+                    result[name] = _FakeDomain(name, [0])
+            return result
 
     # --- fake xenstore-read (screen size / rotation) via subprocess.run ----
     orig_run = S.subprocess.run
@@ -145,7 +167,11 @@ def install_fakes(profile: dict):
 
     # --- fake sysfs / proc reads via `open` --------------------------------
     real_open = builtins.open
-    fake_files = _build_fake_files(profile)
+    real_exists = os.path.exists
+    fake_files = _build_fake_files(profile, dmi=dmi)
+    if topology_content is not None:
+        fake_files[TOPOLOGY_PATH] = topology_content
+    fake_paths = set(fake_files)
 
     def fake_open(file, mode="r", *args, **kwargs):
         key = None
@@ -157,10 +183,24 @@ def install_fakes(profile: dict):
             return io.StringIO(fake_files[key])
         return real_open(file, mode, *args, **kwargs)
 
+    # Make os.path.exists report the faked DMI / topology files, so that
+    # ConfigurationHelper.apply_configuration does not skip them on hosts
+    # where the real files do not exist. Conservative: only the faked paths.
+    def fake_exists(path):
+        try:
+            if os.fspath(path) in fake_paths:
+                return True
+        except (TypeError, ValueError):
+            pass
+        return real_exists(path)
+
     _patch(S, "psutil", FakePsutil)
     _patch(S, "LibvirtHelper", FakeLibvirtHelper)
     _patch(S.subprocess, "run", fake_run)
     _patch(S, "open", fake_open)
+    # The DMI reads in ConfigurationHelper use its own (built-in) `open`.
+    _patch(_CH, "open", fake_open)
+    _patch(os.path, "exists", fake_exists)
 
 
 def uninstall_fakes():

@@ -23,18 +23,25 @@ The same class powers the standalone ``safecor-emulator`` command (see
 product can be launched in another terminal.
 """
 
+import json
 import os
 import shutil
 import tempfile
 import threading
 import uuid
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, List, Optional
 
-from .profile import SystemProfile, default_profile
 from .activate import install_fakes, uninstall_fakes
 from .broker import MosquittoBroker, broker_is_reachable
 from .fake_input import FakeInputDevice
 from .peers import MockDom0Controller, MockSysUsbController
+from .profile import SystemProfile, default_profile
+from .topology_env import (
+    Environment,
+    build_environment_from_data,
+    configuration_dmi,
+)
 
 
 class Emulator:
@@ -53,6 +60,12 @@ class Emulator:
     :param reuse_broker: if True (default) and a broker is already listening on
         the port, reuse it instead of starting one.
     :param start_timeout: seconds to wait for the mock core domains to connect.
+    :param topology_path: optional path to a product ``topology.json``. When set,
+        it is served to the product under test and drives the emulated
+        environment (product name, languages, screen, business Domains).
+    :param configuration: optional name of one of the topology's ``configurations``
+        to apply (drives the DMI fakes). ``None`` (default) applies the standard
+        configuration (no hardware configuration matches).
     """
 
     def __init__(self,
@@ -63,7 +76,9 @@ class Emulator:
                  broker_port: int = 1883,
                  host: str = "localhost",
                  reuse_broker: bool = True,
-                 start_timeout: float = 10.0):
+                 start_timeout: float = 10.0,
+                 topology_path: Optional[str] = None,
+                 configuration: Optional[str] = None):
         self.profile = profile if profile is not None else default_profile()
         self.source_disks = dict(source_disks or {})
         self.storage_path = storage_path
@@ -72,6 +87,12 @@ class Emulator:
         self.host = host
         self.reuse_broker = reuse_broker
         self.start_timeout = start_timeout
+        self.topology_path = topology_path
+        self.configuration = configuration
+        self._environment: Optional[Environment] = None
+        if topology_path is not None:
+            self._environment = build_environment_from_data(
+                json.loads(Path(topology_path).read_text(encoding="utf-8")))
 
         self._own_broker = False
         self._broker: Optional[MosquittoBroker] = None
@@ -101,6 +122,18 @@ class Emulator:
     def input_events_path(self) -> str:
         """Path of the file the fake input device writes its events to."""
         return self.input.path
+
+    @property
+    def environment(self) -> Optional[Environment]:
+        """The :class:`Environment` derived from the topology (or ``None``)."""
+        return self._environment
+
+    @property
+    def configuration_names(self) -> List[str]:
+        """The ``configurations`` names declared in the topology (for the console)."""
+        if self._environment is None:
+            return []
+        return list(self._environment.configuration_names)
 
     # --- USB hot-plug ------------------------------------------------------
     def attach_disk(self, disk_id: str, root_path: str):
@@ -217,7 +250,15 @@ class Emulator:
             self._own_broker = True
 
         # 2. OS/hardware fakes (installed from the outside, reversible)
-        install_fakes(self.profile.as_dict())
+        if self._environment is not None:
+            install_fakes(
+                self.profile.as_dict(),
+                topology_content=Path(self.topology_path).read_text(encoding="utf-8"),
+                domains=self._environment.business_domain_names(),
+                dmi=configuration_dmi(self._environment, self.configuration),
+            )
+        else:
+            install_fakes(self.profile.as_dict())
 
         # 3. local directories that emulate the disks
         self._ensure_dirs()
