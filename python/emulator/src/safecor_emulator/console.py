@@ -142,6 +142,22 @@ class ConsoleController(QObject):
         self.__record_action("stop_emulator", {})
 
     @Slot(str)
+    def load_topology(self, path: str):
+        """Load a (new) topology file and rebuild the environment.
+
+        The emulator must not be running (stop it first). An empty path clears
+        the topology (standard environment).
+        """
+        if self.__emulator is not None and self.__emulator.is_running:
+            raise RuntimeError("Stop the emulator before loading a new topology")
+        self.__emulator = Emulator(topology_path=path or None)
+        self.__attach_bus(self.__emulator.event_bus)
+        self.__sync_from_emulator()
+        self.stateChanged.emit()
+        self.disksChanged.emit()
+        self.__record_action("load_topology", {"path": path})
+
+    @Slot(str)
     def select_configuration(self, name: str):
         """Select a hardware configuration (empty string = standard)."""
         self.__require_emulator().select_configuration(name or None)
@@ -324,6 +340,38 @@ class ConsoleController(QObject):
     def __get_restarted_domains(self):
         return list(self.__restarted_domains)
 
+    def __get_product_name(self):
+        return self.__environment.product_name if self.__environment else ""
+
+    def __get_use_usb(self):
+        return self.__environment.use_usb if self.__environment else False
+
+    def __get_screen_enabled(self):
+        return self.__environment.screen.enabled if self.__environment else False
+
+    def __get_screen_rotation(self):
+        return self.__environment.screen.rotation if self.__environment else 0
+
+    def __get_screen_default_focus(self):
+        return self.__environment.screen.default_focus if self.__environment else ""
+
+    def __get_business_domains(self):
+        return self.__environment.business_domain_names() if self.__environment else []
+
+    def __get_configuration_names(self):
+        return (
+            list(self.__environment.configuration_names) if self.__environment else []
+        )
+
+    def __get_topology_path(self):
+        return self.__emulator.topology_path if self.__emulator else ""
+
+    def __get_screen_width(self):
+        return self.__emulator.profile.screen_width if self.__emulator else 0
+
+    def __get_screen_height(self):
+        return self.__emulator.profile.screen_height if self.__emulator else 0
+
     # --- QML-visible properties ----------------------------------------------
     running = Property(bool, __is_running, notify=stateChanged)
     brokerPort = Property(int, __get_broker_port, notify=stateChanged)
@@ -336,3 +384,13 @@ class ConsoleController(QObject):
     defaultLanguage = Property(str, __get_default_language, notify=stateChanged)
     languages = Property(list, __get_languages, notify=stateChanged)
     restartedDomains = Property(list, __get_restarted_domains, notify=stateChanged)
+    productName = Property(str, __get_product_name, notify=stateChanged)
+    useUsb = Property(bool, __get_use_usb, notify=stateChanged)
+    screenEnabled = Property(bool, __get_screen_enabled, notify=stateChanged)
+    screenRotation = Property(int, __get_screen_rotation, notify=stateChanged)
+    screenDefaultFocus = Property(str, __get_screen_default_focus, notify=stateChanged)
+    businessDomains = Property(list, __get_business_domains, notify=stateChanged)
+    configurationNames = Property(list, __get_configuration_names, notify=stateChanged)
+    topologyPath = Property(str, __get_topology_path, notify=stateChanged)
+    screenWidth = Property(int, __get_screen_width, notify=stateChanged)
+    screenHeight = Property(int, __get_screen_height, notify=stateChanged)

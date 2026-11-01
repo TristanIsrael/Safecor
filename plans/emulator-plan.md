@@ -1,8 +1,8 @@
 # Safecor Emulator — Operator Console Plan
 
-> **Status**: **Phase 0 + Phase 1 implemented and validated** — 46/46 emulator tests pass;
-> coverage `console.py` 97 %, `events.py` 97 %, `emulator.py` 85 %; zero new lint/type errors.
-> **Phase 2 (QML window) is next.**
+> **Status**: **Phase 0 + 1 + 2 implemented and validated** — 51/51 emulator tests pass;
+> coverage `console.py` 98 %, `events.py` 97 %, `gui.py` 97 %, `emulator.py` 85 %;
+> zero new lint/type errors. **Phase 3 (CLI `--gui` + i18n) is next.**
 >
 > **Last updated**: 2026-11-01
 >
@@ -10,8 +10,8 @@
 >
 > **Labels**: `emulator` + `feature` + `testing`
 >
-> **Progress**: Phase 0 — done, committed (`44d91a3`) · Phase 1 — done, pending commit ·
-> Phase 2/3/4/5 — not started
+> **Progress**: Phase 0 — done, committed (`44d91a3`) · Phase 1 — done, committed
+> (`35a19b5`) · Phase 2 — done, pending commit · Phase 3/4/5 — not started
 >
 > **References**: [`docs/architecture.md`](../docs/architecture.md) (esp. §5 emulatable surface),
 > [`docs/features.md`](../docs/features.md) (function catalogue),
@@ -128,7 +128,7 @@ exposes the scenario controls as slots.
   bus receives action + mqtt + log entries; the two record toggles write to the user files;
   coverage ≥ 85 % on `console.py` / `events.py`.
 
-## 4. Phase 2 — QML window (views)
+## 4. Phase 2 — QML window (views) — **DONE** (pending commit)
 
 **Goal**: the two-column window bound to the controller.
 
@@ -149,6 +149,16 @@ exposes the scenario controls as slots.
 - **2.3** `qmldir` + module registration so `import` works.
 - **Validation**: QML loads offscreen with a fake/stub controller; bindings resolve; a
   controller-driven state change updates the expected properties (see Phase 5 for the runner).
+- **Implemented**: `gui.py` (QGuiApplication + QQmlApplicationEngine; `ConsoleController`
+  registered as the `safecor.emulator` / `ConsoleController` QML singleton) + `qml/`
+  (`main.qml` ApplicationWindow, `OperatorWindow.qml` two-column `RowLayout`, `Components/`
+  SetupPanel / ControlPanel / StatePanel / JournalsPanel + `qmldir`). `console.py` now exposes
+  the environment fields (product / USB / screen / business domains / configurations) plus
+  `topologyPath` and `screenWidth`/`screenHeight`, and a `load_topology` slot. Note: `QtQuick.Dialogs`
+  is not installed in the target PySide6, so SetupPanel uses a path field + *Load* button (no
+  `FileDialog`); the *profile override* field is deferred to Phase 3. `test_gui.py` validates
+  offscreen (window loads, bindings resolve, a driven `load_topology` updates a bound item,
+  `run_gui` boots in a subprocess enforcing gui.py ≥ 85 %).
 
 ## 5. Phase 3 — CLI integration + i18n
 
