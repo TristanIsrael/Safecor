@@ -17,9 +17,10 @@ machine that has no Xen, no HVM and no real hardware. It provides:
   and input injection (:meth:`Emulator.inject_key` / :meth:`Emulator.mouse_click`).
 """
 
-from .activate import install_fakes, uninstall_fakes
+from .activate import apply_dmi, install_fakes, uninstall_fakes
 from .broker import MosquittoBroker, broker_is_reachable
 from .emulator import Emulator
+from .events import STREAMS, Event, EventBus, FileRecorder
 from .fake_input import FakeInputDevice
 from .profile import SystemProfile, default_profile, load_profile
 from .topology_env import (
@@ -33,6 +34,10 @@ from .topology_env import (
     load_topology_data,
 )
 
+# NOTE: ``safecor_emulator.console.ConsoleController`` requires PySide6 (the
+# optional ``gui`` extra) and is therefore not imported here, so the package
+# stays importable without the GUI dependency.
+
 __version__ = "0.1.0"
 
 __all__ = [
@@ -41,10 +46,15 @@ __all__ = [
     "load_profile",
     "install_fakes",
     "uninstall_fakes",
+    "apply_dmi",
     "MosquittoBroker",
     "broker_is_reachable",
     "FakeInputDevice",
     "Emulator",
+    "EventBus",
+    "Event",
+    "FileRecorder",
+    "STREAMS",
     "NO_CONFIGURATION",
     "Environment",
     "BusinessDomain",

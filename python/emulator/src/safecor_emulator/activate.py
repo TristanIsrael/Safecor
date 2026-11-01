@@ -31,6 +31,10 @@ _patches = []
 #: Virtual path the product topology is served at (what the product reads).
 TOPOLOGY_PATH = "/etc/safecor/topology.json"
 
+#: The fake files currently served by the installed fakes. Kept mutable so that
+#: :func:`apply_dmi` can switch the served DMI at runtime (configuration switch).
+_active_fake_files: Dict[str, str] = {}
+
 
 def _patch(obj, attr, new):
     orig = getattr(obj, attr, None)
@@ -166,12 +170,12 @@ def install_fakes(profile: dict,
         return orig_run(cmd, *args, **kwargs)
 
     # --- fake sysfs / proc reads via `open` --------------------------------
+    global _active_fake_files
     real_open = builtins.open
     real_exists = os.path.exists
-    fake_files = _build_fake_files(profile, dmi=dmi)
+    _active_fake_files = _build_fake_files(profile, dmi=dmi)
     if topology_content is not None:
-        fake_files[TOPOLOGY_PATH] = topology_content
-    fake_paths = set(fake_files)
+        _active_fake_files[TOPOLOGY_PATH] = topology_content
 
     def fake_open(file, mode="r", *args, **kwargs):
         key = None
@@ -179,8 +183,8 @@ def install_fakes(profile: dict,
             key = os.fspath(file)
         except TypeError:
             key = None
-        if key in fake_files:
-            return io.StringIO(fake_files[key])
+        if key in _active_fake_files:
+            return io.StringIO(_active_fake_files[key])
         return real_open(file, mode, *args, **kwargs)
 
     # Make os.path.exists report the faked DMI / topology files, so that
@@ -188,7 +192,7 @@ def install_fakes(profile: dict,
     # where the real files do not exist. Conservative: only the faked paths.
     def fake_exists(path):
         try:
-            if os.fspath(path) in fake_paths:
+            if os.fspath(path) in _active_fake_files:
                 return True
         except (TypeError, ValueError):
             pass
@@ -201,6 +205,21 @@ def install_fakes(profile: dict,
     # The DMI reads in ConfigurationHelper use its own (built-in) `open`.
     _patch(_CH, "open", fake_open)
     _patch(os.path, "exists", fake_exists)
+
+
+def apply_dmi(dmi: Dict[str, str]) -> None:
+    """Update the served DMI files in place (runtime configuration switch).
+
+    Rewrites ``/sys/class/dmi/id/<key>`` in the set of faked files so that the
+    next :func:`safecor.ConfigurationHelper.apply_configuration` (triggered by
+    ``System.get_topology`` after a ``reset_topology``) matches the new values.
+    Only meaningful while the fakes are installed.
+
+    :param dmi: mapping of DMI key -> value (see
+        :func:`safecor_emulator.topology_env.configuration_dmi`).
+    """
+    for key, value in dmi.items():
+        _active_fake_files[f"/sys/class/dmi/id/{key}"] = f"{value}\n"
 
 
 def uninstall_fakes():

@@ -28,12 +28,14 @@ import os
 import shutil
 import tempfile
 import threading
+import time
 import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from .activate import install_fakes, uninstall_fakes
+from .activate import apply_dmi, install_fakes, uninstall_fakes
 from .broker import MosquittoBroker, broker_is_reachable
+from .events import EventBus
 from .fake_input import FakeInputDevice
 from .peers import MockDom0Controller, MockSysUsbController
 from .profile import SystemProfile, default_profile
@@ -100,6 +102,7 @@ class Emulator:
         self._sys_usb: Optional[MockSysUsbController] = None
         self._dom0_lock: Optional[threading.Event] = None
         self._sys_usb_lock: Optional[threading.Event] = None
+        self._event_bus = EventBus()
         self._started = False
 
         # Unique per instance: keeps peer MQTT client-ids unique so several
@@ -112,6 +115,11 @@ class Emulator:
     def is_running(self) -> bool:
         """True once :meth:`start` has completed successfully."""
         return self._started
+
+    @property
+    def owns_broker(self) -> bool:
+        """True if this emulator started and owns the broker (vs. reused one)."""
+        return self._own_broker
 
     @property
     def instance_id(self) -> str:
@@ -134,6 +142,11 @@ class Emulator:
         if self._environment is None:
             return []
         return list(self._environment.configuration_names)
+
+    @property
+    def event_bus(self) -> EventBus:
+        """The :class:`~safecor_emulator.events.EventBus` shared with the mock peers."""
+        return self._event_bus
 
     # --- USB hot-plug ------------------------------------------------------
     def attach_disk(self, disk_id: str, root_path: str):
@@ -200,6 +213,109 @@ class Emulator:
         if self._dom0 is None:
             raise RuntimeError("Emulator.start() must be called first")
         self._dom0.default_language = language
+
+    # --- workflow / GUI scenarios (W2, W4, W5) --------------------------------
+    def shutdown(self):
+        """Request a system shutdown (W2). The mock Dom0 records it and accepts."""
+        if self._dom0 is None:
+            raise RuntimeError("Emulator.start() must be called first")
+        return self._dom0.request_shutdown()
+
+    def gui_ready(self):
+        """Notify that the GUI is ready (W4). The mock Dom0 records it and accepts."""
+        if self._dom0 is None:
+            raise RuntimeError("Emulator.start() must be called first")
+        return self._dom0.notify_gui_ready()
+
+    def switch_gui(self, domain: str):
+        """Request a switch of the focused GUI domain (W5)."""
+        if self._dom0 is None:
+            raise RuntimeError("Emulator.start() must be called first")
+        return self._dom0.request_switch_gui(domain)
+
+    # --- configuration switch (runtime) ---------------------------------------
+    def select_configuration(self, name: Optional[str] = None):
+        """Select a hardware configuration at runtime (``None`` = standard).
+
+        Re-serves the DMI fakes so that the next ``System.get_topology`` (after
+        a ``reset_topology``) applies the chosen configuration's settings.
+
+        :param name: the configuration ``name`` declared in the topology, or
+            ``None`` / empty for the standard configuration.
+        """
+        if self._environment is None:
+            raise RuntimeError("No topology loaded; cannot select a configuration")
+        apply_dmi(configuration_dmi(self._environment, name))
+        self.configuration = name
+
+    # --- connectivity ---------------------------------------------------------
+    def _request_response(
+        self,
+        request_topic: str,
+        response_topic: str,
+        payload: dict,
+        timeout: float = 5.0,
+    ):
+        """Send a one-shot request over the broker and wait for its response.
+
+        A short-lived MQTT client is created, the request published and the
+        matching response awaited. Returns the response payload, or ``None`` on
+        timeout. Used by the connectivity helpers (e.g. :meth:`ping`).
+        """
+        from safecor import ConnectionType, MqttClient
+
+        result: dict = {}
+        connected = threading.Event()
+        done = threading.Event()
+        client = MqttClient(
+            f"emulator-{self._instance_id}-{uuid.uuid4().hex[:6]}",
+            ConnectionType.TCP_DEBUG, self.host)
+
+        def on_connected():
+            client.subscribe(response_topic)
+            connected.set()
+
+        def on_message(topic, msg_payload):
+            if topic == response_topic:
+                result["response"] = msg_payload
+                done.set()
+
+        client.on_connected = on_connected
+        client.on_message = on_message
+        client.start()
+        try:
+            if not connected.wait(timeout):
+                return None
+            time.sleep(0.2)  # let the subscription settle
+            client.publish(request_topic, payload)
+            if not done.wait(timeout):
+                return None
+            return result.get("response")
+        finally:
+            try:
+                client.stop()
+            except Exception:
+                pass
+
+    def ping(self, target: str = "Dom0", data: str = ""):
+        """Ping a domain over the broker (connectivity check).
+
+        Sends a ``PING`` request and waits for the echo response from the mock
+        Dom0. Returns the response payload, or ``None`` on timeout.
+        """
+        if self._dom0 is None:
+            raise RuntimeError("Emulator.start() must be called first")
+        from safecor import Topics
+
+        payload = {
+            "id": f"emul-{uuid.uuid4().hex[:8]}",
+            "target": target,
+            "data": data,
+            "sent_at": time.time(),
+        }
+        return self._request_response(
+            f"{Topics.PING}/request", f"{Topics.PING}/response", payload
+        )
 
     # --- fake input --------------------------------------------------------
     def inject_key(self, key, pressed: bool = True):
@@ -268,10 +384,14 @@ class Emulator:
         self._sys_usb_lock = threading.Event()
         suffix = f"-{self._instance_id}"
 
-        self._dom0 = MockDom0Controller(self._dom0_lock, client_id_suffix=suffix)
+        self._dom0 = MockDom0Controller(
+            self._dom0_lock, client_id_suffix=suffix, event_bus=self._event_bus
+        )
         self._dom0.start(self.storage_path or "/tmp")
 
-        self._sys_usb = MockSysUsbController(self._sys_usb_lock, client_id_suffix=suffix)
+        self._sys_usb = MockSysUsbController(
+            self._sys_usb_lock, client_id_suffix=suffix, event_bus=self._event_bus
+        )
         self._sys_usb.start(self.source_disks,
                             self.storage_path or "/tmp",
                             self.destination_disk_path or "/tmp")

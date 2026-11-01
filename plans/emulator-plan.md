@@ -1,13 +1,17 @@
 # Safecor Emulator — Operator Console Plan
 
-> **Status**: Pending final plan validation — the **function set + interaction model is
-> validated** ([`emulator-context.md`](emulator-context.md) §5). Ready to implement on approval.
+> **Status**: **Phase 0 + Phase 1 implemented and validated** — 46/46 emulator tests pass;
+> coverage `console.py` 97 %, `events.py` 97 %, `emulator.py` 85 %; zero new lint/type errors.
+> **Phase 2 (QML window) is next.**
 >
 > **Last updated**: 2026-11-01
 >
-> **Branch**: to be created (dedicated, off `main`) — **one issue** for the whole console
+> **Branch**: `feature-241` (off `main`) — **one issue** (#241) for the whole console
 >
-> **Labels**: `testing` + `feature` (plus `emulator` component label if the convention is kept)
+> **Labels**: `emulator` + `feature` + `testing`
+>
+> **Progress**: Phase 0 — done, committed (`44d91a3`) · Phase 1 — done, pending commit ·
+> Phase 2/3/4/5 — not started
 >
 > **References**: [`docs/architecture.md`](../docs/architecture.md) (esp. §5 emulatable surface),
 > [`docs/features.md`](../docs/features.md) (function catalogue),
@@ -62,7 +66,7 @@ python/emulator/src/safecor_emulator/
 `Emulator` (scenario API + state) → peers/fakes (platform). The QML never touches the
 `Emulator` directly; `console.py` is the single bridge (Saphir/demo2 convention).
 
-## 2. Phase 0 — Topology-driven environment (foundation, no GUI)
+## 2. Phase 0 — Topology-driven environment (foundation, no GUI) — DONE (committed `44d91a3`)
 
 **Goal**: the emulated environment is derived from a product `topology.json`, served to the
 product under test, and the business domains are reflected. This is the prerequisite for the
@@ -91,7 +95,7 @@ whole console and is independently valuable + testable.
   screen/usb/pci accordingly, and « none » yields the standard values. Existing e2e suites still
   pass (backward compatible).
 
-## 3. Phase 1 — Event bus + controller (Python, no QML)
+## 3. Phase 1 — Event bus + controller (Python, no QML) — DONE (pending commit)
 
 **Goal**: a testable `console.py` `QObject` that owns the live state and the journals, and
 exposes the scenario controls as slots.
