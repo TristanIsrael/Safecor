@@ -38,32 +38,47 @@ def _build_parser():
     parser = argparse.ArgumentParser(
         prog="safecor-emulator",
         description="Run the emulated Safecor core (broker + mock Dom0 + "
-                    "mock sys-usb) without Xen or real hardware.")
-    parser.add_argument("--profile",
-                        help="path to a system profile JSON file "
-                             "(see system_profile.default.json)")
-    parser.add_argument("--disk", action="append", default=[], metavar="NAME=PATH",
-                        help="source disk to expose (repeatable); NAME is the "
-                             "disk id, PATH its root directory")
-    parser.add_argument("--storage",
-                        help="directory that emulates the repository")
-    parser.add_argument("--destination",
-                        help="directory that emulates the target disk")
-    parser.add_argument("--port", type=int, default=1883,
-                        help="broker TCP port (default 1883)")
-    parser.add_argument("--host", default="localhost",
-                        help="broker host (default localhost)")
-    parser.add_argument("--no-reuse", action="store_true",
-                        help="start a dedicated broker instead of reusing one "
-                             "already listening on the port")
-    parser.add_argument("--gui", action="store_true",
-                        help="start the graphical operator console (QML window) "
-                             "instead of the headless core; requires --topology "
-                             "and the optional ``gui`` extra (PySide6)")
-    parser.add_argument("--topology",
-                        help="path to a product topology.json (required with --gui); "
-                             "shapes the emulated environment (product, screen, "
-                             "languages, business domains, hardware configurations)")
+        "mock sys-usb) without Xen or real hardware.",
+    )
+    parser.add_argument(
+        "--profile",
+        help="path to a system profile JSON file (see system_profile.default.json)",
+    )
+    parser.add_argument(
+        "--disk",
+        action="append",
+        default=[],
+        metavar="NAME=PATH",
+        help="source disk to expose (repeatable); NAME is the "
+        "disk id, PATH its root directory",
+    )
+    parser.add_argument("--storage", help="directory that emulates the repository")
+    parser.add_argument("--destination", help="directory that emulates the target disk")
+    parser.add_argument(
+        "--port", type=int, default=1883, help="broker TCP port (default 1883)"
+    )
+    parser.add_argument(
+        "--host", default="localhost", help="broker host (default localhost)"
+    )
+    parser.add_argument(
+        "--no-reuse",
+        action="store_true",
+        help="start a dedicated broker instead of reusing one "
+        "already listening on the port",
+    )
+    parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="start the graphical operator console (QML window) "
+        "instead of the headless core; requires --topology "
+        "and the optional ``gui`` extra (PySide6)",
+    )
+    parser.add_argument(
+        "--topology",
+        help="path to a product topology.json (required with --gui); "
+        "shapes the emulated environment (product, screen, "
+        "languages, business domains, hardware configurations)",
+    )
     return parser
 
 
@@ -71,12 +86,10 @@ def _parse_disks(items):
     disks = {}
     for item in items:
         if "=" not in item:
-            raise argparse.ArgumentTypeError(
-                f"--disk expects NAME=PATH, got {item!r}")
+            raise argparse.ArgumentTypeError(f"--disk expects NAME=PATH, got {item!r}")
         name, path = item.split("=", 1)
         if not name or not path:
-            raise argparse.ArgumentTypeError(
-                f"--disk expects NAME=PATH, got {item!r}")
+            raise argparse.ArgumentTypeError(f"--disk expects NAME=PATH, got {item!r}")
         disks[name] = path
     return disks
 
@@ -89,7 +102,13 @@ def main(argv=None) -> int:
         if not args.topology:
             parser.error("--gui requires --topology PATH to a topology.json")
         # Imported lazily so the headless path does not require PySide6.
-        from safecor_emulator.gui import run_gui
+        try:
+            from safecor_emulator.gui import run_gui
+        except ImportError as exc:
+            parser.error(
+                f"--gui needs PySide6 (the optional 'gui' extra); install it with "
+                f"`pip install 'safecor-emulator[gui]'` ({exc})"
+            )
         return run_gui(
             topology_path=args.topology,
             broker_port=args.port,
@@ -125,8 +144,10 @@ def main(argv=None) -> int:
     broker_state = "started" if em._own_broker else "reused"
     print("Safecor emulator is running.")
     print(f"  broker      : {args.host}:{args.port} ({broker_state})")
-    print(f"  profile     : uuid={profile.uuid} cpu_count={profile.cpu_count} "
-          f"screen={profile.screen_width}x{profile.screen_height}")
+    print(
+        f"  profile     : uuid={profile.uuid} cpu_count={profile.cpu_count} "
+        f"screen={profile.screen_width}x{profile.screen_height}"
+    )
     print(f"  repository  : {storage}")
     print(f"  target disk : {destination}")
     for name, path in source_disks.items():
