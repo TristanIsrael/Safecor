@@ -1,17 +1,18 @@
 # Safecor Emulator — Operator Console Plan
 
-> **Status**: **Phase 0 + 1 + 2 implemented and validated** — 51/51 emulator tests pass;
-> coverage `console.py` 98 %, `events.py` 97 %, `gui.py` 97 %, `emulator.py` 85 %;
-> zero new lint/type errors. **Phase 3 (CLI `--gui` + i18n) is next.**
+> **Status**: **Phase 0 + 1 + 2 + 3 implemented and validated** — 66/66 emulator tests pass;
+> coverage `i18n.py` 100 %, `console.py` 98 %, `gui.py` 97 %, `cli.py` 90 %, `emulator.py` 85 %;
+> zero new lint (`ruff` E/F/I/B) / type (`mypy`) errors. **Phase 5 (packaging + docs) is next.**
 >
-> **Last updated**: 2026-11-01
+> **Last updated**: 2026-11-02
 >
 > **Branch**: `feature-241` (off `main`) — **one issue** (#241) for the whole console
 >
 > **Labels**: `emulator` + `feature` + `testing`
 >
 > **Progress**: Phase 0 — done, committed (`44d91a3`) · Phase 1 — done, committed
-> (`35a19b5`) · Phase 2 — done, pending commit · Phase 3/4/5 — not started
+> (`35a19b5`) · Phase 2 — done, committed (`4e96c84`) · Phase 3 — done, pending commit ·
+> Phase 4 (test/coverage gate) — met · Phase 5 (packaging + docs) — not started
 >
 > **References**: [`docs/architecture.md`](../docs/architecture.md) (esp. §5 emulatable surface),
 > [`docs/features.md`](../docs/features.md) (function catalogue),
@@ -160,7 +161,7 @@ exposes the scenario controls as slots.
   offscreen (window loads, bindings resolve, a driven `load_topology` updates a bound item,
   `run_gui` boots in a subprocess enforcing gui.py ≥ 85 %).
 
-## 5. Phase 3 — CLI integration + i18n
+## 5. Phase 3 — CLI integration + i18n ✅ DONE
 
 - **3.1** `cli.py` — add `--gui`: parse args, build the `Emulator` (topology + profile),
   create the `QGuiApplication` + controller + engine, run the event loop. Without `--gui`,
@@ -170,7 +171,26 @@ exposes the scenario controls as slots.
 - **Validation**: `safecor-emulator --gui` boots the window; `--help` unchanged; headless run
   still works; EN/FR strings both render.
 
-## 6. Phase 4 — Testing + coverage gate
+**Implemented**:
+- `cli.py`: `--gui` + `--topology` flags. `--gui` lazily imports `gui.run_gui` (so the
+  headless path never pulls in PySide6), errors if `--topology` is missing, and forwards the
+  broker options. Headless path untouched.
+- `i18n.py` (new): locates the `i18n/*.qm` catalogs + `SUPPORTED_UI_LANGUAGES`/`DEFAULT_UI_LANGUAGE`
+  + `load_translator`. `i18n/en.ts` + `i18n/fr.ts` (71 strings, `pyside6-lupdate`-extracted)
+  compiled to `en.qm`/`fr.qm` with `pyside6-lrelease` (both committed so no build step is needed).
+- All QML labels wrapped in `qsTr()`; the console exposes `uiLanguage` /
+  `supportedUiLanguages` + a `set_ui_language` slot (distinct from the emulated product
+  language). An EN/FR toggle sits in the `OperatorWindow` header.
+- **Key finding**: this PySide6 build does **not** re-evaluate QML `qsTr` bindings on a
+  translator change (`QCoreApplication.translatorChanged` isn't exposed and install/load does
+  not retranslate). The reliable fix — the same one the Saphir GUI uses — is to call
+  **`engine.retranslate()`** after swapping the translator. The controller therefore holds the
+  engine (`set_engine`, wired in `create_engine`) and retranslates in `set_ui_language`.
+- **Validation**: `--help` lists the new flags; `--gui` without `--topology` exits 2; the full
+  suite is green; an offscreen test drives EN → FR → EN and asserts the window title + group
+  titles retranslate.
+
+## 6. Phase 4 — Testing + coverage gate ✅ met
 
 - **4.1** Controller unit tests (Phase 1) — real `Emulator` or stub.
 - **4.2** QML offscreen tests — a subprocess **runner** (Saphir-style: `QT_QPA_PLATFORM=offscreen`,

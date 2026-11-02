@@ -73,10 +73,10 @@ The shared staging area (`__repository__`, `/usr/lib/safecor/storage` on Dom0).
 | # | Function | API method | Topic | Shape | Key payload fields | Provided by | Emulator |
 |---|----------|-----------|-------|-------|--------------------|-------------|----------|
 | W1 | System information | `request_system_info()` | `system/info` | req/resp | resp: `core{version,debug_on}`, `system{os,machine{arch,cpu,memory,load},boot_time,uuid,storage}` | Dom0 | ✅ (delegates to the faked `System`) |
-| W2 | Shutdown | `shutdown()` | `workflow/shutdown` | cmd/resp | resp: `state` (accepted/refused), `reason`; then `poweroff` | Dom0 | ❌ |
+| W2 | Shutdown | `shutdown()` | `workflow/shutdown` | cmd/resp | resp: `state` (accepted/refused), `reason`; then `poweroff` | Dom0 | ⚠️ (records + responds accepted; no real poweroff) |
 | W3 | Restart a domain | `restart_domain(domain_name)` | `workflow/restart_domain` | cmd/resp | req: `domain_name`[, `forced`]; resp: `domain_name`, `state`, `reason`; then `reboot-domain.sh` | Dom0 | ⚠️ (records + responds accepted; no real restart) |
-| W4 | GUI ready (hide splash) | `notify_gui_ready()` | `workflow/gui_ready` | notif | — ; Dom0 kills the splash (`feh`) | Dom0 | ❌ |
-| W5 | Switch GUI focus | `switch_gui(domain_name)` | `gui/switch` | cmd | req: `domain`; Dom0 `XcbController` hides current + shows target | Dom0 | ❌ (no X11 in the emulator) |
+| W4 | GUI ready (hide splash) | `notify_gui_ready()` | `workflow/gui_ready` | notif | — ; Dom0 kills the splash (`feh`) | Dom0 | ⚠️ (responds accepted; no real splash kill) |
+| W5 | Switch GUI focus | `switch_gui(domain_name)` | `gui/switch` | cmd | req: `domain`; Dom0 `XcbController` hides current + shows target | Dom0 | ⚠️ (responds accepted; no real X11 switch) |
 | W6 | Monitor domains (start/stop) | — | `monitoring` | req/resp | req: `operation`, `target`, `delay`; resp: `domain`, `operation`, `accepted` | Dom0 | 📄 **documented, not implemented** |
 
 ## 4. Energy (provided by Dom0)
@@ -121,7 +121,7 @@ the kernel command line.
 
 | # | Function | API method | Topic | Shape | Key payload fields | Provided by | Emulator |
 |---|----------|-----------|-------|-------|--------------------|-------------|----------|
-| D1 | Ping a domain | `ping(target_domain, data)` | `debugging/ping/<target>` | req/resp | req: `id`, `source`, `data`, `sent_at`; resp echoes them | Dom0 / sys-usb / DomU | ⚠️ (sys-usb + product respond; Dom0 mock partial) |
+| D1 | Ping a domain | `ping(target_domain, data)` | `debugging/ping/<target>` | req/resp | req: `id`, `source`, `data`, `sent_at`; resp echoes them | Dom0 / sys-usb / DomU | ✅ (Dom0 + sys-usb + product respond; `Emulator.ping` round-trip) |
 | D2 | Keepalive ping | — | `misc/ping` | req/resp | — | Dom0 | ⚠️ |
 | D3 | I/O / inputs benchmark | (request) | `misc/benchmark` | req/resp | req: `module` (`inputs`/`files`) | sys-usb | ❌ (handler present, no-op) |
 
@@ -138,7 +138,7 @@ are the **inputs** the operator console will let a human define.
 
 | # | Function | Real source | Notes | Emulator |
 |---|----------|-------------|-------|----------|
-| T1 | Product topology | `/etc/safecor/topology.json` → `System.get_topology()` | product name, languages, default language, screen, USB, PCI, business domains, hardware configurations | ❌ (not served; flat `SystemProfile` used instead) |
+| T1 | Product topology | `/etc/safecor/topology.json` → `System.get_topology()` | product name, languages, default language, screen, USB, PCI, business domains, hardware configurations | ✅ (served at that path + parsed → `Environment`) |
 | T2 | System UUID | sysfs `product_uuid` | identity | ✅ (fake `open`) |
 | T3 | Screen size / rotation | xenstore `screen_size`/`screen_rotation` + fb0 | display geometry | ✅ (fake `subprocess.run`/`open`) |
 | T4 | CPU count / affinity | libvirt | compute | ✅ (fake `LibvirtHelper`, hard-coded domains) |
@@ -153,14 +153,14 @@ are the **inputs** the operator console will let a human define.
 |------|----------|-----------|-----------|--------------------|
 | Storage & disks (sys-usb) | S1-S11 | — | S12 (clear-queues) | S13 (storage_info) |
 | Repository (Dom0) | R1-R3 | — | — | — |
-| System & workflow (Dom0) | W1 | W3 (restart) | W2 (shutdown), W4 (gui_ready), W5 (switch_gui) | W6 (monitoring) |
+| System & workflow (Dom0) | W1 | W2, W3, W4, W5 | — | W6 (monitoring) |
 | Energy (Dom0) | E1 | — | — | — |
 | Settings & languages (Dom0) | — | L2 (default) | L1, L3, L4, L5 | — |
 | Component discovery | C1 | — | — | — |
 | Logging | G1 | G2, G3 | — | — |
-| Debugging & benchmark | — | D1, D2 | D3 (benchmark) | — |
+| Debugging & benchmark | D1 | D2 | D3 (benchmark) | — |
 | Input | I1 | — | — | — |
-| Topology & environment | T2-T6 | — | T1 (topology serving) | — |
+| Topology & environment | T1-T6 | — | — | — |
 
 > **Language settings caveat**: the whole L-group is at risk because of the code bug
 > [`doc-sync-issues.md`](doc-sync-issues.md) B1 / issue #217 — the language **list** request is
@@ -168,9 +168,10 @@ are the **inputs** the operator console will let a human define.
 > validated end-to-end until that is fixed.
 
 **Core gaps to close for the operator console** (driven by the topology decision, see
-`plans/emulator-plan.md` Phase 0): **T1** (serve + parse `topology.json`), the **business
-domains** in T4, and **L1-L5** (languages wired to the topology, **gated by B1/#217**). The
-remaining ❌ items (W2, W4, W5, S12, D3) are **optional** and are only emulated if the operator
-selects them in the function-set decision (see `plans/emulator-context.md` §5 and
-`plans/emulator-plan.md` §8). The 📄 items (S13, W6) are platform gaps and are out of scope
-unless explicitly selected.
+`plans/emulator-plan.md` Phase 0): **T1** (serve + parse `topology.json`) is now done (Phase 0).
+Still open: the **business domains** in T4 (reflected in the fake `LibvirtHelper`), and **L1-L5**
+(languages wired to the topology, **gated by B1/#217**). The W2/W4/W5 workflow fakes were added
+(Phase 1) — they respond `accepted` but have **no real side effect** (no poweroff / splash kill /
+X11 switch), hence ⚠️ rather than ✅. The remaining ❌ items (S12 clear-queues, D3 benchmark) are
+**optional**. The 📄 items (S13, W6) are platform gaps and are out of scope unless explicitly
+selected.

@@ -197,7 +197,7 @@ The operator console lets a human **drive the inputs** (scenario) and **observe 
 ### 5.1 Environment / identity (provided by OS + topology)
 | Function | Real source | Emulator today | Console control / observation |
 |----------|-------------|----------------|-------------------------------|
-| Product topology | `/etc/safecor/topology.json` → `System.get_topology()` | ❌ **not served** (fake `open` skips it); flat `SystemProfile` used instead | **Input**: load `topology.json`; serve it at that path; parse → screen/USB/languages/product/business domains. **Observe**: topology summary in the state panel |
+| Product topology | `/etc/safecor/topology.json` → `System.get_topology()` | ✅ **served** at that path + parsed → `Environment` (Phase 0) | **Input**: load `topology.json` (Setup panel); pick a hardware configuration. **Observe**: topology summary (product, languages, screen, USB, business domains) in the state panel |
 | System UUID | sysfs `/sys/class/dmi/id/product_uuid` | ✅ fake `open` (`SystemProfile.uuid`) | **Observe** |
 | Screen size / rotation | xenstore `screen_size` / `screen_rotation` (`xenstore-read`) + fb0 `virtual_size` | ✅ fake `subprocess.run` + fake `open` | **Observe** (size/rotation from topology + profile) |
 | CPU count / affinity | libvirt `get_cpu_count` / `get_domains` | ✅ fake `LibvirtHelper` (hard-coded Dom0 + sys-usb) | **Observe**; domains should reflect the topology's business domains |
@@ -224,11 +224,11 @@ The operator console lets a human **drive the inputs** (scenario) and **observe 
 | Energy state (battery/plugged) | `Dom0` reads `psutil.sensors_battery` → `ENERGY_STATE` response | ✅ `MockDom0` (configurable `energy_level` / `plugged`) | **Control**: slider + AC switch + power off/on; **Observe** |
 | Default / current language | `Dom0` settings (from topology `product.languages` / `default_language`) | ⚠️ `MockDom0` has an isolated `default_language`; **not wired to the topology** | **Control**: language combo; **Observe**: `SET_SETTING` / `SETTING_CHANGED` |
 | Restart a domain | `Dom0` → `reboot-domain.sh` → `RESTART_DOMAIN` response | ✅ `MockDom0.record_restart` (records + responds accepted) | **Control**: domain name + button; **Observe**: restarted list |
-| Shutdown | `Dom0` → `poweroff` → `SHUTDOWN` response | ❌ **not implemented** in `MockDom0` | candidate to add |
-| GUI ready (hide splash) | `Dom0` kills the splash (`feh`) on `GUI_READY` | ❌ **not implemented** in `MockDom0` | candidate (product-driven, observe) |
-| Switch GUI (focus) | `Dom0` `XcbController` show/hide | ❌ **not implemented** in `MockDom0` (no X11 in emulator) | candidate / N/A headless |
+| Shutdown | `Dom0` → `poweroff` → `SHUTDOWN` response | ⚠️ `MockDom0.request_shutdown` (records + responds accepted; no real poweroff) | **Control**: Shutdown button (W2); **Observe**: state + action timeline |
+| GUI ready (hide splash) | `Dom0` kills the splash (`feh`) on `GUI_READY` | ⚠️ `MockDom0.notify_gui_ready` (responds accepted; no real splash kill) | **Control**: GUI-ready button (W4); **Observe**: action timeline |
+| Switch GUI (focus) | `Dom0` `XcbController` show/hide | ⚠️ `MockDom0.request_switch_gui` (responds accepted; no real X11) | **Control**: Switch-GUI button (W5); **Observe**: action timeline |
 | Component discovery | Dom0 + sys-usb → `DISCOVER_COMPONENTS` response | ✅ both mocks | **Observe** |
-| Ping / keepalive | Dom0 / DomU → `PING` response | ⚠️ partial | candidate |
+| Ping / keepalive | Dom0 / DomU → `PING` response | ✅ (Dom0 + sys-usb respond; `Emulator.ping` round-trip) | **Control**: ping target + data; **Observe**: result |
 | Clear sys-usb queues | `sys-usb` `clear-queues` | ❌ **not implemented** in `MockSysUsb` | candidate |
 
 ### 5.4 Logging (provided by the `Logger`)
@@ -246,21 +246,24 @@ The operator console lets a human **drive the inputs** (scenario) and **observe 
 These are the platform functions a real product can call that the emulator currently **does not
 answer** — a product exercising them would hang or get no response:
 
-1. `shutdown` (Dom0) — not handled by `MockDom0`.
-2. `gui_ready` (Dom0) — not handled by `MockDom0` (no splash to hide).
-3. `switch_gui` (Dom0) — not handled (no X11 in the emulator).
-4. `clear_sys_usb_queues` (sys-usb) — not handled by `MockSysUsb`.
-5. Topology serving — `/etc/safecor/topology.json` is not served by the fake `open`.
-6. Business domains — not reflected in the fake `LibvirtHelper.get_domains()`.
-7. Language settings — `MockDom0.default_language` is isolated from the topology.
+1. `clear_sys_usb_queues` (sys-usb) — not handled by `MockSysUsb`.
+2. Business domains — not reflected in the fake `LibvirtHelper.get_domains()`.
+3. Language settings — `MockDom0.default_language` is isolated from the topology
+   (gated by the B1 / #217 code bug, see [`doc-sync-issues.md`](doc-sync-issues.md)).
+
+Closed by the operator-console work (Phases 0-1): **topology serving** (`/etc/safecor/topology.json`
+is now served + parsed → `Environment`) and the **`shutdown` / `gui_ready` / `switch_gui`
+(W2/W4/W5)** fakes. The W2/W4/W5 fakes respond `accepted` but have **no real side effect** (no
+poweroff, no splash kill, no X11 switch) — so they are listed as ⚠️ partial in
+[`features.md`](features.md) rather than here.
 
 **Documented but not implemented on the platform at all** (not just the emulator — see
 [`doc-sync-issues.md`](doc-sync-issues.md) §2): `storage_info` (disk capacity query) and
 `monitoring` (domain monitoring) are in the Wiki `Protocol.md` but have no topic or handler in
 the code. **Out of scope** for the console unless the operator selects them.
 
-The operator-console work will close 5–7 (core) and may optionally add 1–4 as needed by the
-functions the operator selects to emulate.
+The remaining gaps (clear-queues, business domains in libvirt, language settings) will be closed
+as the operator selects those functions to emulate (see `plans/emulator-plan.md` §8).
 
 ## 6. How the emulator fits
 
@@ -281,10 +284,16 @@ The `Emulator` orchestrator brings the three together (context manager) and expo
 **scenario API**. The `safecor-emulator` CLI starts it standalone. The `pytest_plugin` exposes
 it as a session fixture so a product's own test suite can drive the emulated core.
 
-**The operator console** (this work) is a fourth layer on top: a QML window that runs the
-`Emulator` in-process, takes a `topology.json` to shape the environment, and gives a human the
-controls (scenario API) and the observation (state + journals) described in
-[`plans/emulator-context.md`](../plans/emulator-context.md) §3.
+**The operator console** is a fourth layer on top: a QML window (`gui.py` + `qml/`) that runs
+the `Emulator` in-process, takes a `topology.json` to shape the environment, and gives a human
+the controls (scenario API) and the observation (state + journals) described in
+[`plans/emulator-context.md`](../plans/emulator-context.md) §3. It is launched with
+`safecor-emulator --gui --topology <topology.json>` (`cli.py` → `gui.run_gui`), and the headless
+CLI is unchanged without `--gui`. The console UI is bilingual (**EN/FR**, switchable at runtime
+from a header toggle); translations live in `i18n/{en,fr}.ts` (compiled to `.qm`) and the QML is
+retranslated on change via `QQmlApplicationEngine.retranslate()`. The window and its bindings
+are validated offscreen by `tests/test_gui.py` / `tests/test_i18n.py`. See
+`plans/emulator-plan.md`.
 
 ## 7. Related documents
 
