@@ -13,10 +13,7 @@ Item {
     // / offscreen Qt builds (which lack the advanced FileDialog properties).
     FileDialog {
         id: topologyFileDialog
-        onAccepted: {
-            console.debug(String(selectedFile).replace("file://", ""))
-            topologyPathField.text = String(selectedFile).replace("file://", "")
-        }
+        onAccepted: topologyPathField.text = String(selectedFile).replace("file://", "")
     }
 
     GroupBox {
