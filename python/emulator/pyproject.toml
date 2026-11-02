@@ -29,3 +29,6 @@ safecor-emulator = "safecor_emulator.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/safecor_emulator"]
+
+[tool.setuptools.package-data]
+gui = ["src/safecor_emulator/qtquickcontrols2.conf"]

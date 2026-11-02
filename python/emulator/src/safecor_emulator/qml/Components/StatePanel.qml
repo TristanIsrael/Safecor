@@ -3,12 +3,12 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import safecor.emulator 1.0
 
-Item {
+ColumnLayout {
     id: root
-    implicitHeight: 220
+    //implicitHeight: 220
 
     GroupBox {
-        anchors.fill: parent
+        Layout.fillWidth: true
         title: qsTr("State")
 
         GridLayout {

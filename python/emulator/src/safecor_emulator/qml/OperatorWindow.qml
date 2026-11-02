@@ -40,6 +40,7 @@ Item {
                 Layout.preferredWidth: 380
                 Layout.minimumWidth: 320
                 Layout.maximumWidth: 460
+                Layout.margins: 16
                 spacing: 8
 
                 SetupPanel {
@@ -56,7 +57,8 @@ Item {
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 8
+                Layout.margins: 16
+                spacing: 8                
 
                 StatePanel {
                     Layout.fillWidth: true

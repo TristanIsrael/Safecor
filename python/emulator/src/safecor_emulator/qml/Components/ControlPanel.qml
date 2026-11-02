@@ -8,12 +8,15 @@ ScrollView {
     clip: true
 
     ColumnLayout {
-        width: root.width
-        spacing: 8
+        width: root.width * 0.9
+
+        spacing: 16
 
         // --- Disks -------------------------------------------------------
         GroupBox {
             title: qsTr("Disks")
+            Layout.fillWidth: true
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -55,6 +58,8 @@ ScrollView {
         // --- Energy ------------------------------------------------------
         GroupBox {
             title: qsTr("Energy")
+            Layout.fillWidth: true
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -91,6 +96,8 @@ ScrollView {
         // --- Language ----------------------------------------------------
         GroupBox {
             title: qsTr("Product language")
+            Layout.fillWidth: true
+
             RowLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -110,6 +117,8 @@ ScrollView {
         // --- Workflow ----------------------------------------------------
         GroupBox {
             title: qsTr("Workflow")
+            Layout.fillWidth: true
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -159,6 +168,8 @@ ScrollView {
         // --- Logging -----------------------------------------------------
         GroupBox {
             title: qsTr("Logging")
+            Layout.fillWidth: true
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -222,6 +233,8 @@ ScrollView {
         // --- Debug -------------------------------------------------------
         GroupBox {
             title: qsTr("Debug")
+            Layout.fillWidth: true
+
             RowLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8

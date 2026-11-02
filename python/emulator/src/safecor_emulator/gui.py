@@ -36,11 +36,11 @@ QML_SINGLETON_NAME = "ConsoleController"
 #: Directory holding the QML sources (``main.qml`` + ``Components/``).
 QML_DIR = Path(__file__).parent / "qml"
 
-# Request the standard Material style for the console (Qt Quick Controls 2).
+# Request the standard Universal style for the console (Qt Quick Controls 2).
 # Set before the QGuiApplication is created so it is in effect when the QML
 # engine initialises; it falls back to the default style when unavailable.
-os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Material")
-
+os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "iOS")
+#os.environ.setdefault("QT_QUICK_CONTROLS_CONF", str(Path(__file__).parent / "qtquickcontrols2.conf"))
 
 def build_controller(
     app: QGuiApplication, topology_path: Optional[str] = None, **emulator_params: Any

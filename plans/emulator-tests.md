@@ -51,6 +51,31 @@ Le contenu des panneaux de logs doit pouvoir être sélectionné pour un copier-
 
 - Le champ `ping` doit être une liste déroulante affichant uniquement les disques qui sont actuellement attachés.
 
+### 1.12 Chargement du fichier topologie
+
+- Pour charger le fichier de topologie il faut proposer un dialogue de sélection du fichier, le champ de texte ne suffit pas à lui seul.
+
+### 1.13 Affichage des erreurs
+
+- Les erreurs sont affichées dans la console du shell qui a lancé l'émulateur mais pas dans l'interface de l'émulateur. Par exemple quand on essaye d'attacher un disque sans avoir démarré l'émulateur, cela échoue silencieusement dans la GUI.
+- Si on essaye d'attacher un disque dont le chemin n'existe pas il ne se passe rien et aucune erreur n'est affichée.
+
+### 1.14 Etat des domaines de Safecor
+
+- Après le démarrage de l'émulateur la liste des domaines démarrés est vide. Elle devrait contenir au minimum le domaine `Dom0`, et `sys-usb` mockés.
+
+### 1.15 Ajout d'un panneau
+
+- La GUI devrait afficher en permanence une liste à jour des composants du système et leur état. Dans un tableau à 2 entrées, afficher le nom du composant et son état (voir `ComponentState`).
+
+### 1.16 Sélection des lignes du journal
+
+- Il n'est possible de sélectionner qu'une seule ligne à la fois dans les journaux, or il faudrait avoir la possibilité de sélectionner plusieurs lignes.
+
+### 1.17 Prise en compte de la personnalisation du thème
+
+- J'ai modifié le thème (Material -> iOS) et j'ai créé un fichier qtquickcontrols2.conf mais je n'arrive pas à le faire prendre en compte dans le package python.
+
 ## 2. Problèmes au démarrage
 
 ### 2.1 Topologie obligatoire
