@@ -26,6 +26,9 @@ Item {
                 }
                 onActivated: ConsoleController.set_ui_language(currentText)
             }
+            Item {
+                Layout.preferredWidth: 20
+            }
         }
 
         // Body: two columns
@@ -36,10 +39,10 @@ Item {
 
             // Left column: setup + controls
             ColumnLayout {
-                Layout.fillHeight: true
-                Layout.preferredWidth: 380
-                Layout.minimumWidth: 320
-                Layout.maximumWidth: 460
+                Layout.fillHeight: true                
+                width: root.width * 0.5
+                //Layout.minimumWidth: 320
+                //Layout.maximumWidth: 460
                 Layout.margins: 16
                 spacing: 8
 
@@ -54,25 +57,40 @@ Item {
             }
 
             // Right column: state + journals
-            ColumnLayout {
+            ScrollView {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.margins: 16
-                spacing: 8                
+                contentWidth: width *0.95
+                contentHeight: lyt.height
 
-                StatePanel {
-                    Layout.fillWidth: true
-                    //Layout.preferredHeight: 220
-                }
+                ColumnLayout {  
+                    id: lyt         
+                    width: parent.width
+                    //Layout.margins: 16
+                    spacing: 8                
 
-                ComponentsPanel {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 160
-                }
+                    StatePanel {
+                        width: parent.width
+                        //Layout.fillWidth: true
+                        //Layout.preferredHeight: 220
+                    }
 
-                JournalsPanel {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                    ComponentsPanel {
+                        width: parent.width
+                        //Layout.fillWidth: true
+                        Layout.preferredHeight: 160
+                    }
+
+                    JournalsPanel {
+                        width: parent.width
+                        Layout.preferredHeight: 400
+                        //Layout.fillWidth: true
+                        //Layout.fillHeight: true
+                    }
+
+                    Item {
+                        Layout.preferredHeight: 16
+                    }
                 }
             }
         }

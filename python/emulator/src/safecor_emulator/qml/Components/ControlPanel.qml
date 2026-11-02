@@ -65,7 +65,7 @@ ScrollView {
                 anchors.topMargin: 8
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
-                spacing: 4
+                spacing: 12
 
                 RowLayout {
                     Label { text: qsTr("Level:") }
@@ -86,7 +86,9 @@ ScrollView {
                         text: qsTr("AC plugged")
                         checked: ConsoleController.plugged
                         onToggled: ConsoleController.set_energy(ConsoleController.energyLevel, checked)
-                    }
+                    }                    
+                }
+                RowLayout {
                     Button { text: qsTr("Power off"); onClicked: ConsoleController.power_off() }
                     Button { text: qsTr("Power on"); onClicked: ConsoleController.power_on() }
                 }
