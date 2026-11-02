@@ -193,6 +193,10 @@
         <translation>Charger</translation>
     </message>
     <message>
+        <source>Browse...</source>
+        <translation>Parcourir...</translation>
+    </message>
+    <message>
         <source>Configuration:</source>
         <translation>Configuration :</translation>
     </message>
@@ -301,6 +305,21 @@
     <message>
         <source>Safecor Emulator — Operator Console</source>
         <translation>Émulateur Safecor — Console d'exploitation</translation>
+    </message>
+</context>
+<context>
+    <name>ComponentsPanel</name>
+    <message>
+        <source>Components</source>
+        <translation>Composants</translation>
+    </message>
+    <message>
+        <source>Component</source>
+        <translation>Composant</translation>
+    </message>
+    <message>
+        <source>State</source>
+        <translation>État</translation>
     </message>
 </context>
 </TS>

@@ -65,3 +65,12 @@ def test_ping_roundtrip_over_broker(em):
     assert resp.get("source") == "Dom0"
     assert resp.get("data") == "hello"
     assert resp.get("id", "").startswith("emul-")
+
+
+def test_discover_components_over_broker(em):
+    """1.15: the sys-usb mock announces its components over the broker."""
+    components = em.discover_components()
+    assert components, "expected at least one component"
+    names = {c["name"] for c in components}
+    assert "Mock disk controller" in names
+    assert all(c["state"] for c in components)

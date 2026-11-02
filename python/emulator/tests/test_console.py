@@ -95,6 +95,32 @@ def test_initial_state_reflects_emulator(qapp, em, controller):
     assert controller.plugged is True
 
 
+def test_started_domains_includes_core_peers(qapp, em, controller):
+    """1.14: the started-domains list is non-empty (mocked core peers)."""
+    domains = list(controller.startedDomains)
+    assert "Dom0" in domains
+    assert "sys-usb" in domains
+
+
+def test_started_domains_includes_business_domains(qapp, topo_controller):
+    """1.14: started domains = core peers + the topology's business domains."""
+    controller, _em = topo_controller
+    domains = list(controller.startedDomains)
+    assert "Dom0" in domains and "sys-usb" in domains
+    assert "saphir-gui" in domains
+    # no duplicates
+    assert len(domains) == len(set(domains))
+
+
+def test_refresh_components(qapp, em, controller):
+    """1.15: refresh_components exposes the peers' components to the GUI."""
+    controller.refresh_components()
+    components = controller.components
+    assert components
+    names = {c["name"] for c in components}
+    assert "Mock disk controller" in names
+
+
 # --- disk control ------------------------------------------------------------
 def test_attach_and_detach_disk(qapp, em, controller, tmp_path):
     events = []
@@ -132,6 +158,48 @@ def test_attach_disk_rejects_duplicate_path(qapp, em, controller, tmp_path):
     # same path, different id -> rejected, disks unchanged
     controller.attach_disk("d2", str(a))
     assert list(controller.disks) == before
+
+
+def test_attach_disk_without_emulator_warns(qapp, tmp_path):
+    """1.13: attaching a disk without a running emulator warns in the GUI."""
+    disk = tmp_path / "d0"
+    disk.mkdir()
+    controller = ConsoleController(
+        source_disks={"d0": str(disk)},
+        storage_path=str(tmp_path / "repo"),
+        destination_disk_path=str(tmp_path / "target"),
+    )
+    warnings = []
+    controller.warning.connect(lambda m: warnings.append(m))
+    controller.attach_disk("d1", str(tmp_path))
+    assert warnings and "not started" in warnings[0].lower()
+
+
+def test_attach_disk_bad_path_warns(qapp, em, controller):
+    """1.13: attaching a disk with a non-existent path warns in the GUI."""
+    warnings = []
+    controller.warning.connect(lambda m: warnings.append(m))
+    controller.attach_disk("d1", "/nonexistent/path/xyz")
+    assert warnings and "invalid path" in warnings[0].lower()
+    assert "d1" not in controller.disks
+
+
+def test_require_emulator_warns(qapp, tmp_path):
+    """1.13: a control action with no emulator surfaces a warning, not silence."""
+    disk = tmp_path / "d0"
+    disk.mkdir()
+    controller = ConsoleController(
+        source_disks={"d0": str(disk)},
+        storage_path=str(tmp_path / "repo"),
+        destination_disk_path=str(tmp_path / "target"),
+    )
+    warnings = []
+    controller.warning.connect(lambda m: warnings.append(m))
+    try:
+        controller.restart_domain("Dom0")
+    except RuntimeError:
+        pass
+    assert warnings and "not started" in warnings[0].lower()
 
 
 # --- energy control ----------------------------------------------------------
@@ -275,7 +343,7 @@ def test_misc_slots_and_getters(qapp, em, controller):
 def test_require_emulator_raises_without_emulator(qapp):
     controller = ConsoleController()
     with pytest.raises(RuntimeError):
-        controller.attach_disk("d", "/tmp")
+        controller.detach_disk("d")
 
 
 # --- controller-managed emulator lifecycle -----------------------------------

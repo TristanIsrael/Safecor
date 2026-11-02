@@ -326,6 +326,35 @@ class Emulator:
             f"{Topics.PING}/request", f"{Topics.PING}/response", payload
         )
 
+    def discover_components(self) -> List[Dict[str, str]]:
+        """Query the peers for their components and return a flat list.
+
+        Publishes a ``DISCOVER_COMPONENTS`` request and collects the response
+        (the mock sys-usb announces its controllers). Each entry is
+        ``{"name": <label>, "state": <state>}``. Returns an empty list when the
+        emulator is not running or the request times out.
+        """
+        if self._sys_usb is None:
+            return []
+        from safecor import Topics
+
+        response = self._request_response(
+            f"{Topics.DISCOVER_COMPONENTS}/request",
+            f"{Topics.DISCOVER_COMPONENTS}/response",
+            {},
+            timeout=3.0,
+        )
+        components: List[Dict[str, str]] = []
+        if isinstance(response, dict):
+            for comp in response.get("components", []):
+                components.append(
+                    {
+                        "name": comp.get("label") or comp.get("id") or "?",
+                        "state": comp.get("state", "unknown"),
+                    }
+                )
+        return components
+
     # --- fake input --------------------------------------------------------
     def inject_key(self, key, pressed: bool = True):
         """Inject a keyboard press/release (see :class:`FakeInputDevice`)."""

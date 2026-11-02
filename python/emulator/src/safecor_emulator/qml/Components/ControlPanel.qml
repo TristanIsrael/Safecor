@@ -131,7 +131,7 @@ ScrollView {
                     ComboBox {
                         id: restartDomainCombo
                         Layout.fillWidth: true
-                        model: ConsoleController.businessDomains
+                        model: ConsoleController.startedDomains
                     }
                     Button {
                         text: qsTr("Restart")
@@ -155,7 +155,7 @@ ScrollView {
                     ComboBox {
                         id: switchGuiCombo
                         Layout.fillWidth: true
-                        model: ConsoleController.businessDomains
+                        model: ConsoleController.startedDomains
                     }
                     Button {
                         text: qsTr("Switch (W5)")
@@ -245,7 +245,7 @@ ScrollView {
                 ComboBox {
                     id: pingTargetCombo
                     Layout.preferredWidth: 120
-                    model: ConsoleController.businessDomains
+                    model: ConsoleController.startedDomains
                 }
                 TextField {
                     id: pingDataField

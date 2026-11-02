@@ -24,26 +24,21 @@ Item {
                 anchors.rightMargin: 8
                 spacing: 6
 
-                ListView {
-                    id: actionsList
+                TextArea {
+                    id: actionsArea
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    readOnly: true
+                    selectByMouse: true
                     clip: true
-                    model: []
-                    delegate: TextEdit {
-                        readOnly: true
-                        selectByMouse: true
-                        text: modelData
-                        wrapMode: TextEdit.NoWrap
-                        width: actionsList.width
-                        font.pointSize: 12
-                    }
+                    wrapMode: TextArea.WrapAtWordBoundaryOrAnywhere
+                    font.pointSize: 12
                 }
                 Button {
                     text: qsTr("Clear")
                     Layout.alignment: Qt.AlignBottom
                     onClicked: {
-                        actionsList.model = []
+                        actionsArea.clear()
                         ConsoleController.clear_actions()
                     }
                 }
@@ -63,31 +58,21 @@ Item {
             Layout.fillHeight: true
             currentIndex: tabs.currentIndex
 
-            ListView {
-                id: mqttList
+            TextArea {
+                id: mqttArea
+                readOnly: true
+                selectByMouse: true
                 clip: true
-                model: []
-                    delegate: TextEdit {
-                        readOnly: true
-                        selectByMouse: true
-                        text: modelData
-                        wrapMode: TextEdit.NoWrap
-                        width: mqttList.width
-                        font.pointSize: 12
-                    }
+                wrapMode: TextArea.WrapAtWordBoundaryOrAnywhere
+                font.pointSize: 12
             }
-            ListView {
-                id: logList
+            TextArea {
+                id: logArea
+                readOnly: true
+                selectByMouse: true
                 clip: true
-                model: []
-                    delegate: TextEdit {
-                        readOnly: true
-                        selectByMouse: true
-                        text: modelData
-                        wrapMode: TextEdit.NoWrap
-                        width: logList.width
-                        font.pointSize: 12
-                    }
+                wrapMode: TextArea.WrapAtWordBoundaryOrAnywhere
+                font.pointSize: 12
             }
         }
     }
@@ -96,13 +81,13 @@ Item {
         target: ConsoleController
 
         function onActionLogged(line) {
-            actionsList.model.push(line)
+            actionsArea.append(line)
         }
         function onMqttEventLogged(line) {
-            mqttList.model.push(line)
+            mqttArea.append(line)
         }
         function onLogLine(line) {
-            logList.model.push(line)
+            logArea.append(line)
         }
     }
 }

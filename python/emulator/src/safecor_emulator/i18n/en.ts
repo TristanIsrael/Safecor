@@ -381,4 +381,22 @@
         <translation type="unfinished"></translation>
     </message>
 </context>
+<context>
+    <name>ComponentsPanel</name>
+    <message>
+        <location filename="../qml/Components/ComponentsPanel.qml" line="8"/>
+        <source>Components</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/Components/ComponentsPanel.qml" line="23"/>
+        <source>Component</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/Components/ComponentsPanel.qml" line="24"/>
+        <source>State</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
 </TS>

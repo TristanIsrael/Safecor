@@ -2,4 +2,5 @@ module Components
 SetupPanel 1.0 SetupPanel.qml
 ControlPanel 1.0 ControlPanel.qml
 StatePanel 1.0 StatePanel.qml
+ComponentsPanel 1.0 ComponentsPanel.qml
 JournalsPanel 1.0 JournalsPanel.qml

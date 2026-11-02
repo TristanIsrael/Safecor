@@ -65,6 +65,11 @@ Item {
                     Layout.preferredHeight: 220
                 }
 
+                ComponentsPanel {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 160
+                }
+
                 JournalsPanel {
                     Layout.fillWidth: true
                     Layout.fillHeight: true

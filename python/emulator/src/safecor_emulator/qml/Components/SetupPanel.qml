@@ -1,11 +1,20 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import safecor.emulator 1.0
 
 Item {
     id: root
     implicitHeight: 168
+
+    // Native file picker for the topology (fills the path field). Declared
+    // with only an ``onAccepted`` handler so it still instantiates on minimal
+    // / offscreen Qt builds (which lack the advanced FileDialog properties).
+    FileDialog {
+        id: topologyFileDialog
+        onAccepted: topologyPathField.text = file
+    }
 
     GroupBox {
         anchors.fill: parent
@@ -26,6 +35,10 @@ Item {
                     selectByMouse: true
                     placeholderText: qsTr("path to topology.json")
                     Component.onCompleted: text = ConsoleController.topologyPath
+                }
+                Button {
+                    text: qsTr("Browse...")
+                    onClicked: topologyFileDialog.open()
                 }
                 Button {
                     text: qsTr("Load")

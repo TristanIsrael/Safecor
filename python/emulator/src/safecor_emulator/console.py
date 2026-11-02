@@ -12,6 +12,7 @@ controller is the single bridge (Saphir / demo2 convention).
 This module requires PySide6 (the optional ``gui`` extra).
 """
 
+import os
 import time
 from typing import Dict, List, Optional
 
@@ -41,6 +42,7 @@ class ConsoleController(QObject):
 
     stateChanged = Signal()
     disksChanged = Signal()
+    componentsChanged = Signal()
     energyChanged = Signal()
     actionLogged = Signal(str)
     mqttEventLogged = Signal(str)
@@ -62,6 +64,7 @@ class ConsoleController(QObject):
         self.__broker_port = 0
         self.__broker_owned = False
         self.__peers_connected: List[str] = []
+        self.__components: List[Dict[str, str]] = []
         self.__environment = None
         self.__disks: List[str] = []
         self.__disk_paths: Dict[str, str] = {}
@@ -145,6 +148,7 @@ class ConsoleController(QObject):
         )
         self.__disks = list(em.source_disks.keys())
         self.__restarted_domains = list(em.restarted_domains)
+        self.__components = []
 
     # --- control slots -------------------------------------------------------
     @Slot()
@@ -219,16 +223,25 @@ class ConsoleController(QObject):
         disks; a duplicate attach is rejected (recorded, but not applied).
         """
         if not disk_id:
+            self.warning.emit("Empty disk id.")
+            return
+        if not self.__is_running():
+            self.warning.emit("Emulator not started: start it before attaching a disk.")
+            return
+        if path and not os.path.isdir(path):
+            self.warning.emit(f"Invalid path for disk '{disk_id}': {path}")
             return
         if disk_id in self.__disks:
             self.__record_action(
                 "attach_disk_rejected", {"disk": disk_id, "reason": "duplicate id"}
             )
+            self.warning.emit(f"Disk id '{disk_id}' is already attached.")
             return
         if path and path in self.__disk_paths.values():
             self.__record_action(
                 "attach_disk_rejected", {"disk": disk_id, "reason": "duplicate path"}
             )
+            self.warning.emit(f"Path '{path}' is already used by another disk.")
             return
         self.__require_emulator().attach_disk(disk_id, path)
         self.__disks.append(disk_id)
@@ -337,6 +350,15 @@ class ConsoleController(QObject):
         self.__record_action("ping", {"target": target, "response": response})
         return response
 
+    @Slot()
+    def refresh_components(self):
+        """Re-query the peers for their components and their state (1.15)."""
+        em = self.__emulator
+        self.__components = (
+            em.discover_components() if (em is not None and self.__is_running()) else []
+        )
+        self.componentsChanged.emit()
+
     @Slot(str)
     def set_loglevel(self, level: str):
         """Change the platform log level (recorded; no real effect on the mocks)."""
@@ -383,6 +405,10 @@ class ConsoleController(QObject):
     # --- helpers -------------------------------------------------------------
     def __require_emulator(self) -> Emulator:
         if self.__emulator is None:
+            # Surface the error in the GUI (warning banner), not only the shell.
+            self.warning.emit(
+                "Emulator not started. Start it before using this action."
+            )
             raise RuntimeError("No emulator; call start_emulator() first")
         return self.__emulator
 
@@ -467,6 +493,19 @@ class ConsoleController(QObject):
     def __get_business_domains(self):
         return self.__environment.business_domain_names() if self.__environment else []
 
+    def __get_started_domains(self):
+        """Domains that are started: the always-mocked core peers (``Dom0``,
+        ``sys-usb``) plus the topology's business domains, in that order."""
+        domains = list(self.__peers_connected)
+        if self.__environment:
+            for name in self.__environment.business_domain_names():
+                if name not in domains:
+                    domains.append(name)
+        return domains
+
+    def __get_components(self):
+        return list(self.__components)
+
     def __get_configuration_names(self):
         return (
             list(self.__environment.configuration_names) if self.__environment else []
@@ -494,6 +533,7 @@ class ConsoleController(QObject):
     peersConnected = Property(list, __get_peers_connected, notify=stateChanged)
     environment = Property(object, __get_environment, notify=stateChanged)
     disks = Property(list, __get_disks, notify=disksChanged)
+    components = Property(list, __get_components, notify=componentsChanged)
     energyLevel = Property(float, __get_energy_level, notify=energyChanged)
     plugged = Property(bool, __get_plugged, notify=energyChanged)
     defaultLanguage = Property(str, __get_default_language, notify=stateChanged)
@@ -505,6 +545,7 @@ class ConsoleController(QObject):
     screenRotation = Property(int, __get_screen_rotation, notify=stateChanged)
     screenDefaultFocus = Property(str, __get_screen_default_focus, notify=stateChanged)
     businessDomains = Property(list, __get_business_domains, notify=stateChanged)
+    startedDomains = Property(list, __get_started_domains, notify=stateChanged)
     configurationNames = Property(list, __get_configuration_names, notify=stateChanged)
     topologyPath = Property(str, __get_topology_path, notify=stateChanged)
     screenWidth = Property(int, __get_screen_width, notify=stateChanged)
