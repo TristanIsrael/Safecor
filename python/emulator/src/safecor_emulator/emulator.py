@@ -41,6 +41,7 @@ from .peers import MockDom0Controller, MockSysUsbController
 from .profile import SystemProfile, default_profile
 from .topology_env import (
     Environment,
+    apply_configuration_settings,
     build_environment_from_data,
     configuration_dmi,
 )
@@ -251,6 +252,7 @@ class Emulator:
         if self._environment is None:
             raise RuntimeError("No topology loaded; cannot select a configuration")
         apply_dmi(configuration_dmi(self._environment, name))
+        apply_configuration_settings(self._environment, name)
         self.configuration = name
 
     # --- connectivity ---------------------------------------------------------

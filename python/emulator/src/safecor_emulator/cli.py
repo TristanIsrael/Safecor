@@ -13,9 +13,11 @@ Then, in another terminal, run your product (e.g. the demo2 app). Press Ctrl+C
 here to stop the emulator.
 
 With ``--gui``, a QML operator console is shown instead of the headless core; it
-drives a topology-shaped emulator. It requires ``--topology`` and the optional
-``gui`` extra (PySide6)::
+drives a topology-shaped emulator. ``--topology`` is optional: without it the
+console starts on the standard environment and a topology can be loaded later
+from the Setup panel. It needs the optional ``gui`` extra (PySide6)::
 
+    safecor-emulator --gui
     safecor-emulator --gui --topology /path/to/topology.json
 """
 
@@ -70,14 +72,16 @@ def _build_parser():
         "--gui",
         action="store_true",
         help="start the graphical operator console (QML window) "
-        "instead of the headless core; requires --topology "
-        "and the optional ``gui`` extra (PySide6)",
+        "instead of the headless core; optionally accepts --topology "
+        "(a topology can also be loaded later from the Setup panel) "
+        "and needs the optional ``gui`` extra (PySide6)",
     )
     parser.add_argument(
         "--topology",
-        help="path to a product topology.json (required with --gui); "
-        "shapes the emulated environment (product, screen, "
-        "languages, business domains, hardware configurations)",
+        help="path to a product topology.json (optional with --gui; can "
+        "also be loaded later from the Setup panel); shapes the emulated "
+        "environment (product, screen, languages, business domains, "
+        "hardware configurations)",
     )
     return parser
 
@@ -99,8 +103,8 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     if args.gui:
-        if not args.topology:
-            parser.error("--gui requires --topology PATH to a topology.json")
+        # --topology is optional: without it the console starts on the standard
+        # environment and the operator can load one from the Setup panel.
         # Imported lazily so the headless path does not require PySide6.
         try:
             from safecor_emulator.gui import run_gui

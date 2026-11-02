@@ -70,4 +70,48 @@ Item {
             }
         }
     }
+
+    // --- Hot-change warning banner (overlay at the top of the window) ------
+    Rectangle {
+        id: warningBanner
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: visible ? 44 : 0
+        visible: false
+        color: "#8e1b1b"
+        z: 10
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+
+            Text {
+                id: warningText
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                color: "#ffffff"
+                elide: Text.ElideRight
+            }
+            Button {
+                text: qsTr("OK")
+                onClicked: warningBanner.visible = false
+            }
+        }
+        Timer {
+            id: warningTimer
+            interval: 20000
+            running: false
+            onTriggered: warningBanner.visible = false
+        }
+        Connections {
+            target: ConsoleController
+            function onWarning(message) {
+                warningText.text = message
+                warningBanner.visible = true
+                warningTimer.restart()
+            }
+        }
+    }
 }

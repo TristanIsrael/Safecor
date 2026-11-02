@@ -30,9 +30,11 @@ Item {
                     Layout.fillHeight: true
                     clip: true
                     model: []
-                    delegate: Text {
+                    delegate: TextEdit {
+                        readOnly: true
+                        selectByMouse: true
                         text: modelData
-                        elide: Text.ElideRight
+                        wrapMode: TextEdit.NoWrap
                         width: actionsList.width
                         font.pointSize: 12
                     }
@@ -65,23 +67,27 @@ Item {
                 id: mqttList
                 clip: true
                 model: []
-                delegate: Text {
-                    text: modelData
-                    elide: Text.ElideRight
-                    width: mqttList.width
-                    font.pointSize: 12
-                }
+                    delegate: TextEdit {
+                        readOnly: true
+                        selectByMouse: true
+                        text: modelData
+                        wrapMode: TextEdit.NoWrap
+                        width: mqttList.width
+                        font.pointSize: 12
+                    }
             }
             ListView {
                 id: logList
                 clip: true
                 model: []
-                delegate: Text {
-                    text: modelData
-                    elide: Text.ElideRight
-                    width: logList.width
-                    font.pointSize: 12
-                }
+                    delegate: TextEdit {
+                        readOnly: true
+                        selectByMouse: true
+                        text: modelData
+                        wrapMode: TextEdit.NoWrap
+                        width: logList.width
+                        font.pointSize: 12
+                    }
             }
         }
     }
@@ -89,11 +95,11 @@ Item {
     Connections {
         target: ConsoleController
 
-        function onActionLogged(event) {
-            actionsList.model.push(event.source + ": " + event.text)
+        function onActionLogged(line) {
+            actionsList.model.push(line)
         }
-        function onMqttEventLogged(event) {
-            mqttList.model.push(event.source + ": " + event.text)
+        function onMqttEventLogged(line) {
+            mqttList.model.push(line)
         }
         function onLogLine(line) {
             logList.model.push(line)

@@ -19,7 +19,7 @@ it does not require the fakes to be installed.
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 #: DMI value used to guarantee that **no** configuration identifier matches,
 #: so the standard topology values are applied (the "Aucune (standard)" choice).
@@ -149,3 +149,41 @@ def configuration_dmi(env_or_data, configuration: Union[str, None]) -> Dict[str,
                 dmi.update({key: str(value) for key, value in identifier.items()})
                 break
     return dmi
+
+
+def apply_configuration_settings(
+    env: Environment, configuration: Optional[str]
+) -> None:
+    """Apply a configuration's ``settings`` overrides onto ``env`` (in place).
+
+    Mirrors ``safecor.ConfigurationHelper.__merge_configuration`` for the fields
+    the console displays: it resets the screen and USB to the topology's base
+    values, then applies the selected configuration's ``settings``
+    (``screen.enabled`` / ``screen.rotation`` / ``screen.default_focus`` /
+    ``usb.use``) on top. A ``None`` / empty ``configuration`` selects the
+    standard environment (base values only); resetting first also makes
+    re-selection idempotent.
+    """
+    base_screen = env.data.get("screen", {})
+    env.screen.enabled = bool(base_screen.get("enabled", False))
+    env.screen.rotation = int(base_screen.get("rotation", 0))
+    env.screen.default_focus = base_screen.get("default_focus", "")
+    env.use_usb = bool(env.data.get("usb", {}).get("use", False))
+
+    settings: Dict[str, Any] = {}
+    if configuration:
+        for conf in env.data.get("configurations", []):
+            if conf.get("name", "") == configuration:
+                settings = conf.get("settings", {}) or {}
+                break
+
+    screen = settings.get("screen", {}) or {}
+    if "enabled" in screen:
+        env.screen.enabled = bool(screen["enabled"])
+    if "rotation" in screen:
+        env.screen.rotation = int(screen["rotation"])
+    if "default_focus" in screen:
+        env.screen.default_focus = screen["default_focus"]
+    usb = settings.get("usb", {}) or {}
+    if "use" in usb:
+        env.use_usb = bool(usb["use"])

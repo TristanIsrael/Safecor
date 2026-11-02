@@ -36,7 +36,7 @@ from PySide6.QtQuick import QQuickItem
 
 from safecor_emulator.console import ConsoleController
 from safecor_emulator.emulator import Emulator
-from safecor_emulator.gui import build_controller, create_engine
+from safecor_emulator.gui import _apply_theme, build_controller, create_engine
 
 
 def _write_topology(directory, product: str, name: str) -> str:
@@ -98,6 +98,11 @@ def test_window_loads_and_structure(console, qapp):
     assert "Operator Console" in window.property("title")
     # A bound item from a sub-component must be reachable.
     assert window.findChild(QQuickItem, "stateProduct") is not None
+
+
+def test_apply_theme_is_guarded(qapp):
+    """_apply_theme must not raise when the color-scheme APIs are absent."""
+    _apply_theme(qapp)
 
 
 def test_bindings_resolve(console, qapp):

@@ -1,7 +1,7 @@
 """Tests for the ``--gui`` CLI flag (Phase 3).
 
 The headless path is unchanged and covered indirectly; here we cover the new
-``--gui`` branch: it requires ``--topology`` and hands over to
+``--gui`` branch: it accepts an optional ``--topology`` and hands over to
 :func:`safecor_emulator.gui.run_gui` with the broker options.
 """
 
@@ -14,10 +14,12 @@ import pytest
 from safecor_emulator import cli
 
 
-def test_gui_requires_topology():
-    with pytest.raises(SystemExit) as exc:
-        cli.main(["--gui"])
-    assert exc.value.code == 2
+def test_gui_without_topology_starts():
+    # --topology is optional: the console starts on the standard environment
+    with mock.patch("safecor_emulator.gui.run_gui", return_value=0) as run_gui:
+        rc = cli.main(["--gui"])
+    assert rc == 0
+    assert run_gui.call_args.kwargs["topology_path"] is None
 
 
 def test_gui_without_pyside6_gives_friendly_error(tmp_path, capsys):

@@ -349,12 +349,12 @@
     </message>
     <message>
         <location filename="../qml/Components/StatePanel.qml" line="63"/>
-        <source> (owned)</source>
+        <source> (embedded)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../qml/Components/StatePanel.qml" line="63"/>
-        <source> (reused)</source>
+        <source> (external)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

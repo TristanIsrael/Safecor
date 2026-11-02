@@ -276,12 +276,12 @@
         <translation>port </translation>
     </message>
     <message>
-        <source> (owned)</source>
-        <translation> (possédé)</translation>
+        <source> (embedded)</source>
+        <translation> (embarqué)</translation>
     </message>
     <message>
-        <source> (reused)</source>
-        <translation> (réutilisé)</translation>
+        <source> (external)</source>
+        <translation> (externe)</translation>
     </message>
     <message>
         <source> (stopped)</source>

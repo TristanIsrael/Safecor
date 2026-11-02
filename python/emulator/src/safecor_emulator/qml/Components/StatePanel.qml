@@ -60,7 +60,7 @@ Item {
             Text {
                 text: qsTr("port ") + ConsoleController.brokerPort
                      + (ConsoleController.running
-                        ? (ConsoleController.brokerOwned ? qsTr(" (owned)") : qsTr(" (reused)"))
+                        ? (ConsoleController.brokerOwned ? qsTr(" (embedded)") : qsTr(" (external)"))
                         : qsTr(" (stopped)"))
             }
 

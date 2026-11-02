@@ -110,6 +110,30 @@ def test_attach_and_detach_disk(qapp, em, controller, tmp_path):
     assert "d1" not in controller.disks
 
 
+def test_attach_disk_rejects_duplicate_id(qapp, em, controller, tmp_path):
+    a = tmp_path / "a"
+    a.mkdir()
+    controller.attach_disk("d1", str(a))
+    before = list(controller.disks)
+    b = tmp_path / "b"
+    b.mkdir()
+    # same id, different path -> rejected, disks unchanged
+    controller.attach_disk("d1", str(b))
+    assert list(controller.disks) == before
+    actions = [e.text for e in em.event_bus.entries("actions")]
+    assert "attach_disk_rejected" in actions
+
+
+def test_attach_disk_rejects_duplicate_path(qapp, em, controller, tmp_path):
+    a = tmp_path / "a"
+    a.mkdir()
+    controller.attach_disk("d1", str(a))
+    before = list(controller.disks)
+    # same path, different id -> rejected, disks unchanged
+    controller.attach_disk("d2", str(a))
+    assert list(controller.disks) == before
+
+
 # --- energy control ----------------------------------------------------------
 def test_set_energy(qapp, em, controller):
     events = []
@@ -176,7 +200,8 @@ def test_action_logged_signal(qapp, em, controller):
     events = []
     controller.actionLogged.connect(lambda e: events.append(e))
     controller.power_off()
-    assert any(e.text == "power_off" for e in events)
+    # the signal carries a display-ready string, not the raw Event object
+    assert any(isinstance(e, str) and "power_off" in e for e in events)
 
 
 # --- bus-driven signals (wiring) ---------------------------------------------
@@ -184,14 +209,16 @@ def test_mqtt_event_logged_signal(qapp, em, controller):
     events = []
     controller.mqttEventLogged.connect(lambda e: events.append(e))
     em.event_bus.publish("mqtt_events", "Dom0", "test event", {"k": "v"})
-    assert any(e.text == "test event" for e in events)
+    # the signal carries a display-ready string, not the raw Event object
+    assert any(isinstance(e, str) and "test event" in e for e in events)
 
 
 def test_log_line_signal(qapp, em, controller):
     lines = []
     controller.logLine.connect(lambda t: lines.append(t))
     em.event_bus.publish("platform_log", "Dom0", "a log line")
-    assert lines == ["a log line"]
+    # formatted as "<time> <source>: <text>"
+    assert len(lines) == 1 and "Dom0: a log line" in lines[0]
 
 
 # --- record toggles (file writing) -------------------------------------------
@@ -267,3 +294,68 @@ def test_start_and_stop_own_emulator(qapp, tmp_path):
     controller.stop_emulator()
     assert controller.running is False
     assert controller.peersConnected == []
+
+
+def test_load_topology_hot_restart_warns(qapp, tmp_path):
+    """Loading a topology while running stops, restarts, and warns (hot change)."""
+    disk = tmp_path / "d0"
+    disk.mkdir()
+    controller = ConsoleController(
+        source_disks={"d0": str(disk)},
+        storage_path=str(tmp_path / "repo"),
+        destination_disk_path=str(tmp_path / "target"),
+    )
+    topo2 = tmp_path / "t2.json"
+    topo2.write_text(
+        json.dumps({"product": {"name": "Gamma", "languages": ["en"]}}),
+        encoding="utf-8",
+    )
+
+    warnings = []
+    controller.warning.connect(lambda message: warnings.append(message))
+
+    controller.start_emulator()
+    assert controller.running is True
+
+    controller.load_topology(str(topo2))
+
+    # restarted (still running) + warned + new product applied
+    assert controller.running is True
+    assert controller.productName == "Gamma"
+    assert warnings and "hot change" in warnings[0]
+
+
+def test_select_configuration_applies_screen_settings(qapp, tmp_path):
+    """1.4: a configuration's ``settings`` override the displayed state."""
+    disk = tmp_path / "d0"
+    disk.mkdir()
+    topo = {
+        "product": {"name": "Rot", "languages": ["en"]},
+        "screen": {"enabled": True, "rotation": 0, "default_focus": "gui"},
+        "usb": {"use": True},
+        "configurations": [
+            {
+                "name": "landscape",
+                "identifier": {"sys_vendor": "V"},
+                "settings": {"screen": {"rotation": 90}},
+            },
+        ],
+    }
+    path = tmp_path / "topo.json"
+    path.write_text(json.dumps(topo), encoding="utf-8")
+    em = Emulator(
+        topology_path=str(path),
+        source_disks={"d0": str(disk)},
+        storage_path=str(tmp_path / "repo"),
+        destination_disk_path=str(tmp_path / "target"),
+    )
+    em.start()
+    try:
+        controller = ConsoleController(emulator=em)
+        assert controller.screenRotation == 0
+        controller.select_configuration("landscape")
+        assert controller.screenRotation == 90
+        controller.select_configuration("")
+        assert controller.screenRotation == 0
+    finally:
+        em.stop()

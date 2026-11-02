@@ -39,14 +39,14 @@ ScrollView {
                         Layout.fillWidth: true
                         placeholderText: qsTr("disk id")
                     }
-                    Button {
-                        text: qsTr("Attach")
-                        onClicked: ConsoleController.attach_disk(diskIdField.text, diskPathField.text)
-                    }
                     TextField {
                         id: diskPathField
                         Layout.fillWidth: true
                         placeholderText: qsTr("root path")
+                    }
+                    Button {
+                        text: qsTr("Attach")
+                        onClicked: ConsoleController.attach_disk(diskIdField.text, diskPathField.text)
                     }
                 }
             }
@@ -119,14 +119,14 @@ ScrollView {
 
                 RowLayout {
                     Text { text: qsTr("Restart domain:") }
-                    TextField {
-                        id: restartNameField
+                    ComboBox {
+                        id: restartDomainCombo
                         Layout.fillWidth: true
-                        placeholderText: qsTr("domain name")
+                        model: ConsoleController.businessDomains
                     }
                     Button {
                         text: qsTr("Restart")
-                        onClicked: ConsoleController.restart_domain(restartNameField.text)
+                        onClicked: ConsoleController.restart_domain(restartDomainCombo.currentText)
                     }
                 }
                 RowLayout {
@@ -143,14 +143,14 @@ ScrollView {
                 }
                 RowLayout {
                     Text { text: qsTr("Switch GUI to:") }
-                    TextField {
-                        id: switchGuiField
+                    ComboBox {
+                        id: switchGuiCombo
                         Layout.fillWidth: true
-                        placeholderText: qsTr("domain")
+                        model: ConsoleController.businessDomains
                     }
                     Button {
                         text: qsTr("Switch (W5)")
-                        onClicked: ConsoleController.switch_gui(switchGuiField.text)
+                        onClicked: ConsoleController.switch_gui(switchGuiCombo.currentText)
                     }
                 }
             }
@@ -177,11 +177,19 @@ ScrollView {
                 }
                 RowLayout {
                     Text { text: qsTr("Save log:") }
-                    TextField { id: saveLogDiskField; placeholderText: qsTr("disk") }
-                    TextField { id: saveLogFileField; placeholderText: qsTr("file") }
+                    ComboBox {
+                        id: saveLogDiskCombo
+                        Layout.preferredWidth: 120
+                        model: ConsoleController.disks
+                    }
+                    TextField {
+                        id: saveLogFileField
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("file")
+                    }
                     Button {
                         text: qsTr("Save")
-                        onClicked: ConsoleController.save_log(saveLogDiskField.text, saveLogFileField.text)
+                        onClicked: ConsoleController.save_log(saveLogDiskCombo.currentText, saveLogFileField.text)
                     }
                 }
                 RowLayout {
@@ -221,9 +229,10 @@ ScrollView {
                 anchors.rightMargin: 8
 
                 Text { text: qsTr("Ping:") }
-                TextField {
-                    id: pingTargetField
-                    placeholderText: qsTr("target")
+                ComboBox {
+                    id: pingTargetCombo
+                    Layout.preferredWidth: 120
+                    model: ConsoleController.businessDomains
                 }
                 TextField {
                     id: pingDataField
@@ -232,7 +241,7 @@ ScrollView {
                 }
                 Button {
                     text: qsTr("Ping")
-                    onClicked: ConsoleController.ping(pingTargetField.text, pingDataField.text)
+                    onClicked: ConsoleController.ping(pingTargetCombo.currentText, pingDataField.text)
                 }
             }
         }

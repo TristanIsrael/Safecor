@@ -61,3 +61,25 @@ L'argument `--topology` ne devrait pas être obligatoire pour démarrer l'applic
 
 - Lorsque l'utilisateur change la topologie, l'émulateur soit s'arrêter, charger la topologie et démarrer
 - Que se passe-t-il si l'utilisateur attache plusieurs disques avec le même identifiant et/ou le même chemin ?
+
+---
+
+## Suivi des corrections
+
+Ledger des problèmes remontés, traités un par un. Statuts : **Corrigé** · **À faire** · **À clarifier** (question en attente) · **Différé**.
+
+| # | Problème | Type | Statut | Action / plan |
+|---|----------|------|--------|---------------|
+| 1.1 | Thème sombre illisible · pleine largeur · marges | UI | **Corrigé** (à vérifier sur cible) | Style Material demandé (`QT_QUICK_CONTROLS_STYLE`) + color-scheme clair/sombre système (gardé, dégrade proprement). À vérifier visuellement sur le système cible (l'env de test offscreen n'a pas les APIs de thème). |
+| 1.3 | Broker externe / embarqué | UI | **Corrigé** | Reformulé en `(embarqué)` / `(externe)` ; i18n EN/FR mis à jour. |
+| 1.4 | Changement de config non propagé à l'état | Bug | **Corrigé** | `apply_configuration_settings` applique le bloc `settings` d'une config (`screen.rotation`/`enabled`/`default_focus`, `usb.use`) à l'environnement (miroir de `ConfigurationHelper.__merge_configuration`) ; `select_configuration` l'appelle et le panneau d'état re-synchronise via `stateChanged`. |
+| 1.5 | Panneau Actions « undefined undefined » | Bug | **Corrigé** | L'`Event` (dataclass) ne s'exposait pas en QML → le signal émet désormais une ligne formatée `HH:MM:SS source: texte`. |
+| 1.6 | Panneau MQTT Events « undefined undefined » | Bug | **Corrigé** | Idem 1.5. |
+| 1.7 | Texte des logs non sélectionnable | UI | **Corrigé** | Les délégués des 3 listes de journaux passent de `Text` à `TextEdit { readOnly: true; selectByMouse: true }` (sélection + copie). |
+| 1.8 | Disque : dialogue · bouton à droite · multi-disques | UI | **Corrigé** (dialogue différé) | Bouton `Attach` déplacé à droite (après le champ chemin) ; multi-disques confirmé (la `Repeater` liste les disques attachés, refus id/chemin dupliqué). Boîte de dialogue de répertoire **différée** : l'API `FileDialog` de `QtQuick.Dialogs` (propriété `folder`) est absente dans ce build Qt → saisir le chemin dans le champ texte. |
+| 1.9 | Workflow : listes (restart / switch GUI) | UI | **Corrigé** | `ComboBox` listant les domaines métier démarrés. |
+| 1.10 | Logging : disque de save log en liste | UI | **Corrigé** | `ComboBox` listant les disques attachés. |
+| 1.11 | Target : ping en liste | UI | **Corrigé** | `ComboBox` listant les domaines démarrés (confirmer : le ping cible un domaine). |
+| 2.1 | `--topology` obligatoire | Bug | **Corrigé** | `--topology` optionnel pour `--gui` ; topologie chargeable depuis le panneau Setup. |
+| 3.1 | Changement de topologie → stop / chargement / démarrage | Comportement | **Corrigé** | `load_topology` stoppe, recharge et redémarre si l'émulateur tournait ; un bandeau d'avertissement signale que le changement à chaud peut impacter le SST (reset éventuel). |
+| 3.2 | Disques avec même id et/ou même chemin | Comportement | **Corrigé** | L'attach est refusé si l'id ou le chemin est déjà utilisé (action `attach_disk_rejected` journalisée). |

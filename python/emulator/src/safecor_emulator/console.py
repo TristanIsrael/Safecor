@@ -12,6 +12,7 @@ controller is the single bridge (Saphir / demo2 convention).
 This module requires PySide6 (the optional ``gui`` extra).
 """
 
+import time
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import (
@@ -24,7 +25,7 @@ from PySide6.QtCore import (
 )
 
 from .emulator import Emulator
-from .events import EventBus, FileRecorder
+from .events import Event, EventBus, FileRecorder
 from .i18n import DEFAULT_UI_LANGUAGE, SUPPORTED_UI_LANGUAGES, load_translator
 
 
@@ -41,9 +42,10 @@ class ConsoleController(QObject):
     stateChanged = Signal()
     disksChanged = Signal()
     energyChanged = Signal()
-    actionLogged = Signal(object)
-    mqttEventLogged = Signal(object)
+    actionLogged = Signal(str)
+    mqttEventLogged = Signal(str)
     logLine = Signal(str)
+    warning = Signal(str)
     uiLanguageChanged = Signal()
 
     def __init__(
@@ -62,6 +64,7 @@ class ConsoleController(QObject):
         self.__peers_connected: List[str] = []
         self.__environment = None
         self.__disks: List[str] = []
+        self.__disk_paths: Dict[str, str] = {}
         self.__energy_level = 100.0
         self.__plugged = True
         self.__default_language = "en"
@@ -105,13 +108,24 @@ class ConsoleController(QObject):
             bus.subscribe("platform_log", self.__on_log)
 
     def __on_action(self, event):
-        self.actionLogged.emit(event)
+        self.actionLogged.emit(self.__format_event(event))
 
     def __on_mqtt_event(self, event):
-        self.mqttEventLogged.emit(event)
+        self.mqttEventLogged.emit(self.__format_event(event))
 
     def __on_log(self, event):
-        self.logLine.emit(event.text)
+        self.logLine.emit(self.__format_event(event))
+
+    @staticmethod
+    def __format_event(event: Event) -> str:
+        """Render a bus entry as a single, display-ready log line.
+
+        A plain string (rather than the raw :class:`Event`) is emitted so that
+        QML can display it directly: a custom Python object passed through a
+        Qt signal does not expose its attributes to the QML side.
+        """
+        stamp = time.strftime("%H:%M:%S", time.localtime(event.timestamp))
+        return f"{stamp} {event.source}: {event.text}"
 
     def __record_action(self, text: str, payload: Optional[dict] = None):
         if self.__bus_attached is not None:
@@ -166,19 +180,29 @@ class ConsoleController(QObject):
 
     @Slot(str)
     def load_topology(self, path: str):
-        """Load a (new) topology file and rebuild the environment.
+        """Load a (new) topology: stop, reload, then restart if it was running.
 
-        The emulator must not be running (stop it first). An empty path clears
-        the topology (standard environment).
+        An empty path loads the standard environment. A topology change applied
+        while the emulator is running is a *hot* configuration change, so the
+        operator is warned that it may impact the system under test (a reset of
+        the SST may be required).
         """
-        if self.__emulator is not None and self.__emulator.is_running:
-            raise RuntimeError("Stop the emulator before loading a new topology")
+        was_running = self.__emulator is not None and self.__emulator.is_running
+        if was_running:
+            self.stop_emulator()
         self.__emulator = Emulator(topology_path=path or None)
         self.__attach_bus(self.__emulator.event_bus)
         self.__sync_from_emulator()
+        if was_running:
+            self.start_emulator()
+            self.warning.emit(
+                "Topology reloaded and the emulator restarted. This hot change "
+                "may impact the system under test; a reset of the SST may be "
+                "required."
+            )
         self.stateChanged.emit()
         self.disksChanged.emit()
-        self.__record_action("load_topology", {"path": path})
+        self.__record_action("load_topology", {"path": path, "hot": was_running})
 
     @Slot(str)
     def select_configuration(self, name: str):
@@ -189,10 +213,26 @@ class ConsoleController(QObject):
 
     @Slot(str, str)
     def attach_disk(self, disk_id: str, path: str):
-        """Hot-plug a disk and announce it."""
+        """Hot-plug a disk and announce it.
+
+        A disk id and a mount path must both be unique among the attached
+        disks; a duplicate attach is rejected (recorded, but not applied).
+        """
+        if not disk_id:
+            return
+        if disk_id in self.__disks:
+            self.__record_action(
+                "attach_disk_rejected", {"disk": disk_id, "reason": "duplicate id"}
+            )
+            return
+        if path and path in self.__disk_paths.values():
+            self.__record_action(
+                "attach_disk_rejected", {"disk": disk_id, "reason": "duplicate path"}
+            )
+            return
         self.__require_emulator().attach_disk(disk_id, path)
-        if disk_id not in self.__disks:
-            self.__disks.append(disk_id)
+        self.__disks.append(disk_id)
+        self.__disk_paths[disk_id] = path
         self.disksChanged.emit()
         self.__record_action("attach_disk", {"disk": disk_id, "path": path})
 
@@ -202,6 +242,7 @@ class ConsoleController(QObject):
         self.__require_emulator().detach_disk(disk_id)
         if disk_id in self.__disks:
             self.__disks.remove(disk_id)
+        self.__disk_paths.pop(disk_id, None)
         self.disksChanged.emit()
         self.__record_action("detach_disk", {"disk": disk_id})
 

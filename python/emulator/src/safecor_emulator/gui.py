@@ -13,6 +13,7 @@ the controller is the single bridge (Saphir / demo2 convention).
 This module requires PySide6 (the optional ``gui`` extra).
 """
 
+import os
 import sys
 from pathlib import Path
 from typing import Any, Optional, cast
@@ -34,6 +35,11 @@ QML_SINGLETON_NAME = "ConsoleController"
 
 #: Directory holding the QML sources (``main.qml`` + ``Components/``).
 QML_DIR = Path(__file__).parent / "qml"
+
+# Request the standard Material style for the console (Qt Quick Controls 2).
+# Set before the QGuiApplication is created so it is in effect when the QML
+# engine initialises; it falls back to the default style when unavailable.
+os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Material")
 
 
 def build_controller(
@@ -83,6 +89,24 @@ def create_engine(
     return engine
 
 
+def _apply_theme(app: QGuiApplication) -> None:
+    """Follow the system light/dark color scheme (guarded).
+
+    Minimal / offscreen Qt builds may lack the color-scheme APIs; in that case
+    the console keeps the default palette. On a full Qt the window follows the
+    system appearance, fixing illegible text when the system is in dark mode.
+    """
+    try:
+        from PySide6.QtGui import QColorScheme, QStyleHints
+
+        dark = QGuiApplication.colorScheme() == QColorScheme.Dark
+        app.styleHints().setColorScheme(
+            QStyleHints.ColorScheme.Dark if dark else QStyleHints.ColorScheme.Light
+        )
+    except (AttributeError, ImportError, RuntimeError):
+        pass
+
+
 def run_gui(topology_path: Optional[str] = None, **emulator_params: Any) -> int:
     """Build the app + controller, show the window, and run the event loop.
 
@@ -91,6 +115,7 @@ def run_gui(topology_path: Optional[str] = None, **emulator_params: Any) -> int:
     # ``QGuiApplication.instance()`` is stubbed as returning the base
     # ``QCoreApplication``; the live instance is in fact a ``QGuiApplication``.
     app = cast(QGuiApplication, QGuiApplication.instance()) or QGuiApplication(sys.argv)
+    _apply_theme(app)
     controller = build_controller(app, topology_path, **emulator_params)
     engine = create_engine(app, controller)
     if not engine.rootObjects():
