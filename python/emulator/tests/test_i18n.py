@@ -81,3 +81,16 @@ def test_console_set_ui_language_unknown_falls_back(app):
     controller = ConsoleController(parent=app)
     controller.set_ui_language("xx")
     assert controller.uiLanguage == "en"
+
+
+def test_controller_warning_messages_follow_ui_language(app):
+    """Controller warning messages (QObject ``tr``) follow the UI language."""
+    controller = ConsoleController(parent=app)
+    messages = []
+    controller.warning.connect(messages.append)
+    controller.set_ui_language("fr")
+    controller.attach_disk("", "")  # triggers the "Empty disk id." warning
+    assert messages and messages[0] == "Identifiant de disque vide."
+    controller.set_ui_language("en")
+    controller.attach_disk("", "")  # falls back to the English source
+    assert messages[1] == "Empty disk id."

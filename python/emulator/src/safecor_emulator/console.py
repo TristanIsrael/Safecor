@@ -200,9 +200,11 @@ class ConsoleController(QObject):
         if was_running:
             self.start_emulator()
             self.warning.emit(
-                "Topology reloaded and the emulator restarted. This hot change "
-                "may impact the system under test; a reset of the SST may be "
-                "required."
+                self.tr(
+                    "Topology reloaded and the emulator restarted. This hot "
+                    "change may impact the system under test; a reset of the "
+                    "SST may be required."
+                )
             )
         self.stateChanged.emit()
         self.disksChanged.emit()
@@ -223,25 +225,31 @@ class ConsoleController(QObject):
         disks; a duplicate attach is rejected (recorded, but not applied).
         """
         if not disk_id:
-            self.warning.emit("Empty disk id.")
+            self.warning.emit(self.tr("Empty disk id."))
             return
         if not self.__is_running():
-            self.warning.emit("Emulator not started: start it before attaching a disk.")
+            self.warning.emit(
+                self.tr("Emulator not started: start it before attaching a disk.")
+            )
             return
         if path and not os.path.isdir(path):
-            self.warning.emit(f"Invalid path for disk '{disk_id}': {path}")
+            self.warning.emit(
+                self.tr("Invalid path for disk '%s': %s") % (disk_id, path)
+            )
             return
         if disk_id in self.__disks:
             self.__record_action(
                 "attach_disk_rejected", {"disk": disk_id, "reason": "duplicate id"}
             )
-            self.warning.emit(f"Disk id '{disk_id}' is already attached.")
+            self.warning.emit(self.tr("Disk id '%s' is already attached.") % disk_id)
             return
         if path and path in self.__disk_paths.values():
             self.__record_action(
                 "attach_disk_rejected", {"disk": disk_id, "reason": "duplicate path"}
             )
-            self.warning.emit(f"Path '{path}' is already used by another disk.")
+            self.warning.emit(
+                self.tr("Path '%s' is already used by another disk.") % path
+            )
             return
         self.__require_emulator().attach_disk(disk_id, path)
         self.__disks.append(disk_id)
@@ -407,7 +415,7 @@ class ConsoleController(QObject):
         if self.__emulator is None:
             # Surface the error in the GUI (warning banner), not only the shell.
             self.warning.emit(
-                "Emulator not started. Start it before using this action."
+                self.tr("Emulator not started. Start it before using this action.")
             )
             raise RuntimeError("No emulator; call start_emulator() first")
         return self.__emulator

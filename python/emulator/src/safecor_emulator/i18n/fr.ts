@@ -322,4 +322,35 @@
         <translation>État</translation>
     </message>
 </context>
+<context>
+    <name>ConsoleController</name>
+    <message>
+        <source>Topology reloaded and the emulator restarted. This hot change may impact the system under test; a reset of the SST may be required.</source>
+        <translation>Topologie rechargée et émulateur redémarré. Ce changement à chaud peut impacter le système sous test ; un reset du SST peut être nécessaire.</translation>
+    </message>
+    <message>
+        <source>Empty disk id.</source>
+        <translation>Identifiant de disque vide.</translation>
+    </message>
+    <message>
+        <source>Emulator not started: start it before attaching a disk.</source>
+        <translation>Émulateur non démarré : démarrez-le avant d'attacher un disque.</translation>
+    </message>
+    <message>
+        <source>Invalid path for disk '%s': %s</source>
+        <translation>Chemin invalide pour le disque '%s' : %s</translation>
+    </message>
+    <message>
+        <source>Disk id '%s' is already attached.</source>
+        <translation>L'identifiant de disque '%s' est déjà attaché.</translation>
+    </message>
+    <message>
+        <source>Path '%s' is already used by another disk.</source>
+        <translation>Le chemin '%s' est déjà utilisé par un autre disque.</translation>
+    </message>
+    <message>
+        <source>Emulator not started. Start it before using this action.</source>
+        <translation>Émulateur non démarré. Démarrez-le avant d'utiliser cette action.</translation>
+    </message>
+</context>
 </TS>

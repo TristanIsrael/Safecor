@@ -399,4 +399,35 @@
         <translation type="unfinished"></translation>
     </message>
 </context>
+<context>
+    <name>ConsoleController</name>
+    <message>
+        <source>Topology reloaded and the emulator restarted. This hot change may impact the system under test; a reset of the SST may be required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Empty disk id.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Emulator not started: start it before attaching a disk.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Invalid path for disk '%s': %s</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disk id '%s' is already attached.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path '%s' is already used by another disk.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Emulator not started. Start it before using this action.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
 </TS>
