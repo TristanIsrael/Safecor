@@ -6,6 +6,7 @@ The headless path is unchanged and covered indirectly; here we cover the new
 """
 
 import argparse
+import sys
 from unittest import mock
 
 import pytest
@@ -17,6 +18,19 @@ def test_gui_requires_topology():
     with pytest.raises(SystemExit) as exc:
         cli.main(["--gui"])
     assert exc.value.code == 2
+
+
+def test_gui_without_pyside6_gives_friendly_error(tmp_path, capsys):
+    """A missing PySide6 (gui extra) exits with a hint, not an ImportError traceback."""
+    topo = tmp_path / "topology.json"
+    topo.write_text("{}", encoding="utf-8")
+    with (
+        mock.patch.dict(sys.modules, {"safecor_emulator.gui": None}),
+        pytest.raises(SystemExit) as exc,
+    ):
+        cli.main(["--gui", "--topology", str(topo)])
+    assert exc.value.code == 2
+    assert "PySide6" in capsys.readouterr().err
 
 
 def test_gui_launches_run_gui(tmp_path):
@@ -44,8 +58,9 @@ def test_gui_no_reuse_forwarded(tmp_path):
 
 def test_headless_starts_and_stops():
     """Without --gui the headless core runs until interrupted, then stops."""
-    with mock.patch("safecor_emulator.cli.Emulator") as emulator, mock.patch(
-        "safecor_emulator.cli.time.sleep", side_effect=KeyboardInterrupt
+    with (
+        mock.patch("safecor_emulator.cli.Emulator") as emulator,
+        mock.patch("safecor_emulator.cli.time.sleep", side_effect=KeyboardInterrupt),
     ):
         rc = cli.main([])
     assert rc == 0

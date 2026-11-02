@@ -37,7 +37,6 @@ from ..events import EventBus
 
 
 class MockSysUsbController:
-
     def __init__(
         self,
         sync_lock: Event,
@@ -63,7 +62,9 @@ class MockSysUsbController:
         self.__emit("platform_log", message)
         print(f"[SYS-USB] {message}")
 
-    def start(self, source_disks_list: dict, storage_path: str, destination_disk_path: str):
+    def start(
+        self, source_disks_list: dict, storage_path: str, destination_disk_path: str
+    ):
         """Start the MQTT client and expose the given local directories as disks.
 
         :param source_disks_list: mapping of disk id -> root directory (source of files).
@@ -74,8 +75,9 @@ class MockSysUsbController:
         self.__storage_path = storage_path
         self.__destination_disk_path = destination_disk_path
 
-        self.__mqtt_client = MqttClient(f"sys-usb{self.__client_id_suffix}",
-                                         ConnectionType.TCP_DEBUG, "localhost")
+        self.__mqtt_client = MqttClient(
+            f"sys-usb{self.__client_id_suffix}", ConnectionType.TCP_DEBUG, "localhost"
+        )
         self.__mqtt_client.on_connected = self.__on_mqtt_connected
         self.__mqtt_client.on_message = self.__on_mqtt_message
         self.__mqtt_client.start()
@@ -101,7 +103,10 @@ class MockSysUsbController:
         self.__source_disks_list[disk_id] = root_path
         self.__publish(
             Topics.DISK_STATE,
-            NotificationFactory.create_notification_disk_state(disk_id, DiskState.CONNECTED))
+            NotificationFactory.create_notification_disk_state(
+                disk_id, DiskState.CONNECTED
+            ),
+        )
 
     def detach_disk(self, disk_id: str):
         """Hot-unplug a disk: remove ``disk_id`` and announce it.
@@ -115,7 +120,10 @@ class MockSysUsbController:
             return
         self.__publish(
             Topics.DISK_STATE,
-            NotificationFactory.create_notification_disk_state(disk_id, DiskState.DISCONNECTED))
+            NotificationFactory.create_notification_disk_state(
+                disk_id, DiskState.DISCONNECTED
+            ),
+        )
 
     def __on_mqtt_connected(self):
         self.__log("MQTT client connected")
@@ -133,7 +141,9 @@ class MockSysUsbController:
 
     def __message_worker(self, topic: str, payload: dict):
         if topic == f"{Topics.LIST_DISKS}/request":
-            response = ResponseFactory.create_response_disks_list(list(self.__source_disks_list.keys()))
+            response = ResponseFactory.create_response_disks_list(
+                list(self.__source_disks_list.keys())
+            )
             self.__publish(f"{Topics.LIST_DISKS}/response", response)
         elif topic == f"{Topics.LIST_FILES}/request":
             self.__handle_list_files(payload)
@@ -168,17 +178,26 @@ class MockSysUsbController:
                 source_fingerprint = FileHelper.calculate_fingerprint(source_path)
                 dest_fingerprint = FileHelper.calculate_fingerprint(dest_filepath)
 
-                notif = NotificationFactory.create_notification_new_file(Constants.STR_REPOSITORY, filepath, source_fingerprint, dest_fingerprint)
+                notif = NotificationFactory.create_notification_new_file(
+                    Constants.STR_REPOSITORY,
+                    filepath,
+                    source_fingerprint,
+                    dest_fingerprint,
+                )
                 self.__publish(Topics.NEW_FILE, notif)
             except Exception as e:
                 self.__log(f"Error during copy: {str(e)}")
-                notif = NotificationFactory.create_notification_error(disk, filepath, "The file could not be copied")
+                notif = NotificationFactory.create_notification_error(
+                    disk, filepath, "The file could not be copied"
+                )
                 self.__publish(Topics.ERROR, notif)
                 return
         elif topic == f"{Topics.DISCOVER_COMPONENTS}/request":
             self.__handle_discover_components()
         elif topic == f"{Topics.COPY_FILE}/request":
-            if not MqttHelper.check_payload(payload, ["disk", "filepath", "destination"]):
+            if not MqttHelper.check_payload(
+                payload, ["disk", "filepath", "destination"]
+            ):
                 self.__log(f"Missing arguments for topic {topic}")
                 return
 
@@ -206,10 +225,17 @@ class MockSysUsbController:
                 if source_fingerprint != dest_fingerprint:
                     self.__log("ERROR: fingerprints are not equal")
 
-                response = ResponseFactory.create_response_copy_file(filepath, disk, source_fingerprint == dest_fingerprint, source_fingerprint)
+                response = ResponseFactory.create_response_copy_file(
+                    filepath,
+                    disk,
+                    source_fingerprint == dest_fingerprint,
+                    source_fingerprint,
+                )
                 self.__publish(f"{Topics.COPY_FILE}/response", response)
             except Exception:
-                notif = NotificationFactory.create_notification_error(disk, filepath, "The file could not be copied")
+                notif = NotificationFactory.create_notification_error(
+                    disk, filepath, "The file could not be copied"
+                )
                 self.__publish(Topics.ERROR, notif)
         elif topic == f"{Topics.CREATE_FILE}/request":
             self.__handle_create_file(payload)
@@ -221,9 +247,24 @@ class MockSysUsbController:
     def __handle_discover_components(self):
         response = {
             "components": [
-                { "id": Constants.SAFECOR_DISK_CONTROLLER, "label": "Mock disk controller", "type": "core", "state": "ready" },
-                { "id": Constants.SAFECOR_INPUT_CONTROLLER, "label": "Mock input controller", "type": "core", "state": "ready" },
-                { "id": Constants.SAFECOR_SYSTEM_CONTROLLER, "label": "Mock Dom0 controller", "type": "core", "state": "ready" }
+                {
+                    "id": Constants.SAFECOR_DISK_CONTROLLER,
+                    "label": "Mock disk controller",
+                    "type": "core",
+                    "state": "ready",
+                },
+                {
+                    "id": Constants.SAFECOR_INPUT_CONTROLLER,
+                    "label": "Mock input controller",
+                    "type": "core",
+                    "state": "ready",
+                },
+                {
+                    "id": Constants.SAFECOR_SYSTEM_CONTROLLER,
+                    "label": "Mock Dom0 controller",
+                    "type": "core",
+                    "state": "ready",
+                },
             ]
         }
         self.__publish(f"{Topics.DISCOVER_COMPONENTS}/response", response)
@@ -248,7 +289,9 @@ class MockSysUsbController:
             return
 
         files = list()
-        FileHelper.get_folder_contents(root_path, files, len(root_path), recursive, from_dir, name_filters)
+        FileHelper.get_folder_contents(
+            root_path, files, len(root_path), recursive, from_dir, name_filters
+        )
 
         response = ResponseFactory.create_response_list_files(disk, files)
         self.__publish(f"{Topics.LIST_FILES}/response", response)
@@ -277,22 +320,28 @@ class MockSysUsbController:
 
         complete_filepath = f"{self.__destination_disk_path}/{filepath}"
 
-        self.__log(f"Create a file {filepath} of size {len(data)} octets on disk {disk}")
+        self.__log(
+            f"Create a file {filepath} of size {len(data)} octets on disk {disk}"
+        )
 
         try:
-            with open(complete_filepath, 'wb') as f:
+            with open(complete_filepath, "wb") as f:
                 f.write(data)
         except Exception as e:
             self.__log(f"An error occured while writing to file {complete_filepath}")
             self.__log(str(e))
 
-            response = ResponseFactory.create_response_create_file(filepath, disk, "", False)
+            response = ResponseFactory.create_response_create_file(
+                filepath, disk, "", False
+            )
             self.__publish(f"{Topics.CREATE_FILE}/response", response)
             return
 
         # On envoie la notification de succès
         fingerprint = FileHelper.calculate_fingerprint(complete_filepath)
-        response = ResponseFactory.create_response_create_file(complete_filepath, disk, fingerprint, True)
+        response = ResponseFactory.create_response_create_file(
+            complete_filepath, disk, fingerprint, True
+        )
         self.__publish(f"{Topics.CREATE_FILE}/response", response)
 
     def __handle_mount_file(self, payload: dict):
@@ -316,15 +365,22 @@ class MockSysUsbController:
             if not os.path.exists(mount_point):
                 os.mkdir(mount_point)
 
-            if platform.system() == 'Darwin':
-                subprocess.run(["hdiutil", "attach", "-mountpoint", mount_point, archive_filepath], check=False)
+            if platform.system() == "Darwin":
+                subprocess.run(
+                    ["hdiutil", "attach", "-mountpoint", mount_point, archive_filepath],
+                    check=False,
+                )
             elif platform.system() == "Linux":
-                subprocess.run(["mount", "-o", "loop", archive_filepath, mount_point], check=False)
+                subprocess.run(
+                    ["mount", "-o", "loop", archive_filepath, mount_point], check=False
+                )
 
             # Add it to the source disks list
             self.__source_disks_list[archive_filename] = mount_point
 
-            notif = NotificationFactory.create_notification_disk_state(archive_filename, DiskState.MOUNTED)
+            notif = NotificationFactory.create_notification_disk_state(
+                archive_filename, DiskState.MOUNTED
+            )
             self.__publish(Topics.DISK_STATE, notif)
         except Exception as e:
             self.__log(f"ERROR when mounting file {archive_filepath}: {str(e)}")
@@ -343,14 +399,16 @@ class MockSysUsbController:
         mount_point = self.__source_disks_list[disk]
 
         try:
-            if platform.system() == 'Darwin':
+            if platform.system() == "Darwin":
                 subprocess.run(["hdiutil", "detach", mount_point])
             elif platform.system() == "Linux":
                 subprocess.run(["umount", mount_point])
 
             # Remove from the source disks list
             self.__source_disks_list.pop(disk, None)
-            notif = NotificationFactory.create_notification_disk_state(disk, DiskState.UNMOUNTED)
+            notif = NotificationFactory.create_notification_disk_state(
+                disk, DiskState.UNMOUNTED
+            )
             self.__publish(Topics.DISK_STATE, notif)
         except Exception as e:
             self.__log(f"ERROR when unmounting {disk}: {str(e)}")
