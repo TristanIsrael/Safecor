@@ -25,8 +25,8 @@ GroupBox {
 
         // Header row
         RowLayout {
-            Text { text: qsTr("Component"); Layout.preferredWidth: 240; font.bold: true }
-            Text { text: qsTr("State"); Layout.fillWidth: true; font.bold: true }
+            Label { text: qsTr("Component"); Layout.preferredWidth: 240; font.bold: true }
+            Label { text: qsTr("State"); Layout.fillWidth: true; font.bold: true }
         }
         // Data rows
         ListView {
@@ -36,8 +36,8 @@ GroupBox {
             model: ConsoleController.components
             delegate: RowLayout {
                 Layout.fillWidth: true
-                Text { text: modelData["name"]; Layout.preferredWidth: 240; elide: Text.ElideRight }
-                Text { text: modelData["state"]; Layout.fillWidth: true }
+                Label { text: modelData["name"]; Layout.preferredWidth: 240; elide: Text.ElideRight }
+                Label { text: modelData["state"]; Layout.fillWidth: true }
             }
         }
     }

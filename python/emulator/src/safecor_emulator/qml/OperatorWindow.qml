@@ -15,7 +15,7 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Item { Layout.fillWidth: true }
-            Text { text: qsTr("Interface:") }
+            Label { text: qsTr("Interface:") }
             ComboBox {
                 id: uiLanguageCombo
                 model: ConsoleController.supportedUiLanguages
@@ -62,7 +62,7 @@ Item {
 
                 StatePanel {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 220
+                    //Layout.preferredHeight: 220
                 }
 
                 ComponentsPanel {
@@ -94,7 +94,7 @@ Item {
             anchors.leftMargin: 12
             anchors.rightMargin: 12
 
-            Text {
+            Label {
                 id: warningText
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter

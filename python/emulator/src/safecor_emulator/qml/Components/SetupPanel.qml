@@ -13,7 +13,10 @@ Item {
     // / offscreen Qt builds (which lack the advanced FileDialog properties).
     FileDialog {
         id: topologyFileDialog
-        onAccepted: topologyPathField.text = file
+        onAccepted: {
+            console.debug(String(selectedFile).replace("file://", ""))
+            topologyPathField.text = String(selectedFile).replace("file://", "")
+        }
     }
 
     GroupBox {
@@ -28,7 +31,7 @@ Item {
             spacing: 6
 
             RowLayout {
-                Text { text: qsTr("Topology:") }
+                Label { text: qsTr("Topology:") }
                 TextField {
                     id: topologyPathField
                     Layout.fillWidth: true
@@ -48,7 +51,7 @@ Item {
             }
 
             RowLayout {
-                Text { text: qsTr("Configuration:") }
+                Label { text: qsTr("Configuration:") }
                 ComboBox {
                     id: configCombo
                     Layout.fillWidth: true

@@ -27,7 +27,7 @@ ScrollView {
                 Repeater {
                     model: ConsoleController.disks
                     RowLayout {
-                        Text { text: "• " + modelData }
+                        Label { text: "• " + modelData }
                         Button {
                             text: qsTr("Detach")
                             onClicked: ConsoleController.detach_disk(modelData)
@@ -36,7 +36,7 @@ ScrollView {
                 }
 
                 RowLayout {
-                    Text { text: qsTr("id:") }
+                    Label { text: qsTr("id:") }
                     TextField {
                         id: diskIdField
                         Layout.fillWidth: true
@@ -68,7 +68,7 @@ ScrollView {
                 spacing: 4
 
                 RowLayout {
-                    Text { text: qsTr("Level:") }
+                    Label { text: qsTr("Level:") }
                     Slider {
                         id: energySlider
                         Layout.fillWidth: true
@@ -78,7 +78,7 @@ ScrollView {
                         value: ConsoleController.energyLevel
                         onMoved: ConsoleController.set_energy(value, ConsoleController.plugged)
                     }
-                    Text { text: Math.round(ConsoleController.energyLevel) + "%" }
+                    Label { text: Math.round(ConsoleController.energyLevel) + "%" }
                 }
                 RowLayout {
                     CheckBox {
@@ -104,7 +104,7 @@ ScrollView {
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
 
-                Text { text: qsTr("Default:") }
+                Label { text: qsTr("Default:") }
                 ComboBox {
                     id: languageCombo
                     Layout.fillWidth: true
@@ -127,7 +127,7 @@ ScrollView {
                 spacing: 4
 
                 RowLayout {
-                    Text { text: qsTr("Restart domain:") }
+                    Label { text: qsTr("Restart domain:") }
                     ComboBox {
                         id: restartDomainCombo
                         Layout.fillWidth: true
@@ -151,7 +151,7 @@ ScrollView {
                     }
                 }
                 RowLayout {
-                    Text { text: qsTr("Switch GUI to:") }
+                    Label { text: qsTr("Switch GUI to:") }
                     ComboBox {
                         id: switchGuiCombo
                         Layout.fillWidth: true
@@ -178,7 +178,7 @@ ScrollView {
                 spacing: 4
 
                 RowLayout {
-                    Text { text: qsTr("Level:") }
+                    Label { text: qsTr("Level:") }
                     ComboBox {
                         id: logLevelCombo
                         Layout.fillWidth: true
@@ -187,7 +187,7 @@ ScrollView {
                     }
                 }
                 RowLayout {
-                    Text { text: qsTr("Save log:") }
+                    Label { text: qsTr("Save log:") }
                     ComboBox {
                         id: saveLogDiskCombo
                         Layout.preferredWidth: 120
@@ -204,7 +204,7 @@ ScrollView {
                     }
                 }
                 RowLayout {
-                    Text { text: qsTr("Record journal:") }
+                    Label { text: qsTr("Record journal:") }
                     TextField {
                         id: recordJournalField
                         Layout.fillWidth: true
@@ -216,7 +216,7 @@ ScrollView {
                     }
                 }
                 RowLayout {
-                    Text { text: qsTr("Record events:") }
+                    Label { text: qsTr("Record events:") }
                     TextField {
                         id: recordEventsField
                         Layout.fillWidth: true
@@ -241,7 +241,7 @@ ScrollView {
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
 
-                Text { text: qsTr("Ping:") }
+                Label { text: qsTr("Ping:") }
                 ComboBox {
                     id: pingTargetCombo
                     Layout.preferredWidth: 120
