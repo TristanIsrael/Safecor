@@ -44,6 +44,25 @@ def test_load_translator_unknown_language_returns_none():
     assert i18n.load_translator("xx") is None
 
 
+def test_ensure_catalogs_regenerates_missing():
+    """A missing catalog is compiled on demand (fresh-checkout self-healing)."""
+    if i18n._find_lrelease() is None:
+        pytest.skip("lrelease not available in this environment")
+    fr_qm = i18n.translation_file("fr")
+    backup = fr_qm.parent / (fr_qm.name + ".bak")
+    assert fr_qm.is_file()
+    fr_qm.rename(backup)
+    try:
+        assert not fr_qm.is_file()
+        i18n.ensure_catalogs()
+        assert fr_qm.is_file(), "ensure_catalogs did not regenerate the fr catalog"
+        assert i18n.load_translator("fr") is not None
+    finally:
+        if fr_qm.exists():
+            fr_qm.unlink()
+        backup.rename(fr_qm)
+
+
 def test_console_ui_language_default(app):
     controller = ConsoleController(parent=app)
     assert controller.uiLanguage == "en"

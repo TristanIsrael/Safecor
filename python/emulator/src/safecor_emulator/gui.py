@@ -41,8 +41,16 @@ QML_DIR = Path(__file__).parent / "qml"
 # and any per-style palette overrides (``[Style] Palette\...``). It must be
 # pointed at via ``QT_QUICK_CONTROLS_CONF`` before the QGuiApplication is
 # created. When the conf is absent, fall back to the standard Material style.
+#
+# Offscreen (headless) Qt builds are minimal and may not ship the style the
+# conf selects (e.g. iOS), which would prevent the window from loading in
+# tests / CI. In that case an offscreen-safe style is forced; on-screen runs
+# keep the conf's style unchanged.
 _QQC2_CONF = Path(__file__).parent / "qtquickcontrols2.conf"
-if _QQC2_CONF.exists():
+if os.environ.get("QT_QPA_PLATFORM") == "offscreen":
+    os.environ.pop("QT_QUICK_CONTROLS_CONF", None)
+    os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Material")
+elif _QQC2_CONF.exists():
     os.environ.setdefault("QT_QUICK_CONTROLS_CONF", str(_QQC2_CONF))
 else:
     os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Material")
