@@ -202,6 +202,50 @@ def test_require_emulator_warns(qapp, tmp_path):
     assert warnings and "not started" in warnings[0].lower()
 
 
+def test_control_action_not_started_warns(qapp, tmp_path):
+    """An action with an existing but not-started emulator warns in the GUI.
+
+    The raw "Emulator.start() must be called first" RuntimeError must not be the
+    only feedback; the operator sees a friendly warning banner.
+    """
+    disk = tmp_path / "d0"
+    disk.mkdir()
+    emulator = Emulator(
+        source_disks={"d0": str(disk)},
+        storage_path=str(tmp_path / "repo"),
+        destination_disk_path=str(tmp_path / "target"),
+    )  # created, not started
+    controller = ConsoleController(emulator=emulator)
+    warnings = []
+    controller.warning.connect(lambda m: warnings.append(m))
+    try:
+        controller.ping("Dom0", "")
+    except RuntimeError:
+        pass
+    assert warnings and "not started" in warnings[0].lower()
+
+
+def test_start_failure_warns(qapp, tmp_path, monkeypatch):
+    """A failed start (unreachable broker) surfaces a warning, not silence."""
+    disk = tmp_path / "d0"
+    disk.mkdir()
+    controller = ConsoleController(
+        source_disks={"d0": str(disk)},
+        storage_path=str(tmp_path / "repo"),
+        destination_disk_path=str(tmp_path / "target"),
+    )
+
+    def _fail(self):
+        raise RuntimeError("Mock core domains did not connect (unreachable broker)")
+
+    monkeypatch.setattr(Emulator, "start", _fail)
+    warnings = []
+    controller.warning.connect(lambda m: warnings.append(m))
+    controller.start_emulator()
+    assert warnings and "failed to start" in warnings[0].lower()
+    assert controller.running is False
+
+
 # --- energy control ----------------------------------------------------------
 def test_set_energy(qapp, em, controller):
     events = []

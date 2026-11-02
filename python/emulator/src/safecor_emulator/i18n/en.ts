@@ -429,5 +429,9 @@
         <source>Emulator not started. Start it before using this action.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Failed to start the emulator: %s</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>

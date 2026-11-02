@@ -352,5 +352,9 @@
         <source>Emulator not started. Start it before using this action.</source>
         <translation>Émulateur non démarré. Démarrez-le avant d'utiliser cette action.</translation>
     </message>
+    <message>
+        <source>Failed to start the emulator: %s</source>
+        <translation>Échec du démarrage de l'émulateur : %s</translation>
+    </message>
 </context>
 </TS>

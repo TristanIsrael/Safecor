@@ -156,7 +156,12 @@ class ConsoleController(QObject):
         """Create (if needed) and start the emulator, then sync the state."""
         if self.__emulator is None:
             self.__emulator = Emulator(**self.__emulator_params)
-        self.__emulator.start()
+        try:
+            self.__emulator.start()
+        except Exception as error:
+            # Surface the startup failure in the GUI (warning banner).
+            self.warning.emit(self.tr("Failed to start the emulator: %s") % error)
+            return
         self.__attach_bus(self.__emulator.event_bus)
         self.__sync_from_emulator()
         self.__energy_level = 100.0
@@ -213,7 +218,10 @@ class ConsoleController(QObject):
     @Slot(str)
     def select_configuration(self, name: str):
         """Select a hardware configuration (empty string = standard)."""
-        self.__require_emulator().select_configuration(name or None)
+        # Only needs a loaded topology, not a started emulator.
+        self.__require_emulator(require_running=False).select_configuration(
+            name or None
+        )
         self.__record_action("select_configuration", {"name": name})
         self.stateChanged.emit()
 
@@ -411,13 +419,26 @@ class ConsoleController(QObject):
             bus.subscribe(stream, recorder)
 
     # --- helpers -------------------------------------------------------------
-    def __require_emulator(self) -> Emulator:
+    def __require_emulator(self, require_running: bool = True) -> Emulator:
+        """Return the emulator, warning when it is missing or not yet started.
+
+        :param require_running: when ``True`` (the default) the emulator must
+            also be started, so a not-started emulator is surfaced in the GUI
+            instead of leaking a raw ``RuntimeError`` to the log;
+            ``select_configuration`` opts out because it only needs a loaded
+            topology.
+        """
         if self.__emulator is None:
             # Surface the error in the GUI (warning banner), not only the shell.
             self.warning.emit(
                 self.tr("Emulator not started. Start it before using this action.")
             )
             raise RuntimeError("No emulator; call start_emulator() first")
+        if require_running and not self.__is_running():
+            self.warning.emit(
+                self.tr("Emulator not started. Start it before using this action.")
+            )
+            raise RuntimeError("Emulator not started; call start_emulator() first")
         return self.__emulator
 
     def __apply_ui_language(self, code: str):
