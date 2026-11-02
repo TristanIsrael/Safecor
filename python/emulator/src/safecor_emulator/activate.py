@@ -70,10 +70,12 @@ def _build_fake_files(profile: dict, dmi: Optional[dict] = None) -> Dict[str, st
     return files
 
 
-def install_fakes(profile: dict,
-                  topology_content: Optional[str] = None,
-                  domains: Optional[List[str]] = None,
-                  dmi: Optional[dict] = None):
+def install_fakes(
+    profile: dict,
+    topology_content: Optional[str] = None,
+    domains: Optional[List[str]] = None,
+    dmi: Optional[dict] = None,
+):
     """Install the OS/hardware fakes driven by ``profile`` (a dict).
 
     If fakes are already installed they are replaced.
@@ -103,11 +105,11 @@ def install_fakes(profile: dict,
         max = float(profile.get("cpu_freq_max", 3600.0))
 
     class FakeVirtualMemory:
-        total = int(profile.get("mem_total", 8 * 1024 ** 3))
-        available = int(profile.get("mem_available", 4 * 1024 ** 3))
+        total = int(profile.get("mem_total", 8 * 1024**3))
+        available = int(profile.get("mem_available", 4 * 1024**3))
         percent = float(profile.get("mem_percent", 50.0))
-        used = int(profile.get("mem_used", 4 * 1024 ** 3))
-        free = int(profile.get("mem_free", 4 * 1024 ** 3))
+        used = int(profile.get("mem_used", 4 * 1024**3))
+        free = int(profile.get("mem_free", 4 * 1024**3))
 
     class FakePsutil:
         @staticmethod
@@ -156,9 +158,12 @@ def install_fakes(profile: dict,
     orig_run = S.subprocess.run
 
     def fake_run(cmd, *args, **kwargs):
-        if (isinstance(cmd, (list, tuple)) and cmd
-                and os.path.basename(str(cmd[0])) == "xenstore-read"
-                and len(cmd) >= 2):
+        if (
+            isinstance(cmd, (list, tuple))
+            and cmd
+            and os.path.basename(str(cmd[0])) == "xenstore-read"
+            and len(cmd) >= 2
+        ):
             key = str(cmd[1])
             if key.endswith("screen_size"):
                 out = f"{screen_w},{screen_h}"

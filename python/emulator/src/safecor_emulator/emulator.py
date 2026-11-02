@@ -70,17 +70,19 @@ class Emulator:
         configuration (no hardware configuration matches).
     """
 
-    def __init__(self,
-                 profile: Optional[SystemProfile] = None,
-                 source_disks: Optional[Dict[str, str]] = None,
-                 storage_path: Optional[str] = None,
-                 destination_disk_path: Optional[str] = None,
-                 broker_port: int = 1883,
-                 host: str = "localhost",
-                 reuse_broker: bool = True,
-                 start_timeout: float = 10.0,
-                 topology_path: Optional[str] = None,
-                 configuration: Optional[str] = None):
+    def __init__(
+        self,
+        profile: Optional[SystemProfile] = None,
+        source_disks: Optional[Dict[str, str]] = None,
+        storage_path: Optional[str] = None,
+        destination_disk_path: Optional[str] = None,
+        broker_port: int = 1883,
+        host: str = "localhost",
+        reuse_broker: bool = True,
+        start_timeout: float = 10.0,
+        topology_path: Optional[str] = None,
+        configuration: Optional[str] = None,
+    ):
         self.profile = profile if profile is not None else default_profile()
         self.source_disks = dict(source_disks or {})
         self.storage_path = storage_path
@@ -94,7 +96,8 @@ class Emulator:
         self._environment: Optional[Environment] = None
         if topology_path is not None:
             self._environment = build_environment_from_data(
-                json.loads(Path(topology_path).read_text(encoding="utf-8")))
+                json.loads(Path(topology_path).read_text(encoding="utf-8"))
+            )
 
         self._own_broker = False
         self._broker: Optional[MosquittoBroker] = None
@@ -108,7 +111,9 @@ class Emulator:
         # Unique per instance: keeps peer MQTT client-ids unique so several
         # emulators can share the same broker without clashing.
         self._instance_id = uuid.uuid4().hex[:8]
-        self._workdir = tempfile.mkdtemp(prefix=f"safecor_emulator_{self._instance_id}_")
+        self._workdir = tempfile.mkdtemp(
+            prefix=f"safecor_emulator_{self._instance_id}_"
+        )
         self.input = FakeInputDevice(os.path.join(self._workdir, "input.events"))
 
     @property
@@ -269,7 +274,9 @@ class Emulator:
         done = threading.Event()
         client = MqttClient(
             f"emulator-{self._instance_id}-{uuid.uuid4().hex[:6]}",
-            ConnectionType.TCP_DEBUG, self.host)
+            ConnectionType.TCP_DEBUG,
+            self.host,
+        )
 
         def on_connected():
             client.subscribe(response_topic)
@@ -392,9 +399,11 @@ class Emulator:
         self._sys_usb = MockSysUsbController(
             self._sys_usb_lock, client_id_suffix=suffix, event_bus=self._event_bus
         )
-        self._sys_usb.start(self.source_disks,
-                            self.storage_path or "/tmp",
-                            self.destination_disk_path or "/tmp")
+        self._sys_usb.start(
+            self.source_disks,
+            self.storage_path or "/tmp",
+            self.destination_disk_path or "/tmp",
+        )
 
         # 5. wait for both peers to be connected to the broker
         ok_dom0 = self._dom0_lock.wait(self.start_timeout)
@@ -404,7 +413,8 @@ class Emulator:
             raise RuntimeError(
                 f"Mock core domains did not connect within {self.start_timeout}s "
                 f"(dom0={ok_dom0}, sys-usb={ok_usb}). Is the broker reachable on "
-                f"{self.host}:{self.broker_port}?")
+                f"{self.host}:{self.broker_port}?"
+            )
 
         self._started = True
 

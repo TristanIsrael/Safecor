@@ -29,7 +29,6 @@ from ..events import EventBus
 
 
 class MockDom0Controller:
-
     def __init__(
         self,
         sync_lock: Event,
@@ -37,7 +36,9 @@ class MockDom0Controller:
         event_bus: Optional[EventBus] = None,
     ):
         self.__sync_lock = sync_lock
-        self.__mqtt_client = MqttClient(f"Dom0{client_id_suffix}", ConnectionType.TCP_DEBUG, "localhost")
+        self.__mqtt_client = MqttClient(
+            f"Dom0{client_id_suffix}", ConnectionType.TCP_DEBUG, "localhost"
+        )
         self.__storage_path = "/tmp"
         self.__energy_level: float = 100.0
         self.__plugged: bool = True
@@ -183,7 +184,9 @@ class MockDom0Controller:
         self.__publish(f"{Topics.ENERGY_STATE}/response", payload)
 
     def __handle_default_language(self):
-        payload = ResponseFactory.create_response_language_default(self.__default_language)
+        payload = ResponseFactory.create_response_language_default(
+            self.__default_language
+        )
         self.__publish(f"{Topics.DEFAULT_LANGUAGE}/response", payload)
 
     def __handle_restart_domain(self, payload: dict):
@@ -196,8 +199,11 @@ class MockDom0Controller:
 
     def __handle_ping(self, payload: dict):
         response = ResponseFactory.create_response_ping(
-            payload.get("id", ""), "Dom0",
-            payload.get("data", ""), payload.get("sent_at", ""))
+            payload.get("id", ""),
+            "Dom0",
+            payload.get("data", ""),
+            payload.get("sent_at", ""),
+        )
         self.__publish(f"{Topics.PING}/response", response)
 
     # --- workflow / GUI fakes (W2, W4, W5) ------------------------------------

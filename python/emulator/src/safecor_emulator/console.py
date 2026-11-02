@@ -50,7 +50,7 @@ class ConsoleController(QObject):
         self,
         parent: Optional[QObject] = None,
         emulator: Optional[Emulator] = None,
-        **emulator_params
+        **emulator_params,
     ):
         super().__init__(parent)
         self.__emulator = emulator
