@@ -9,7 +9,7 @@ Item {
 
     GroupBox {
         anchors.fill: parent
-        title: "Setup"
+        title: qsTr("Setup")
 
         ColumnLayout {
             anchors.fill: parent
@@ -19,23 +19,23 @@ Item {
             spacing: 6
 
             RowLayout {
-                Text { text: "Topology:" }
+                Text { text: qsTr("Topology:") }
                 TextField {
                     id: topologyPathField
                     Layout.fillWidth: true
                     selectByMouse: true
-                    placeholderText: "path to topology.json"
+                    placeholderText: qsTr("path to topology.json")
                     Component.onCompleted: text = ConsoleController.topologyPath
                 }
                 Button {
-                    text: "Load"
+                    text: qsTr("Load")
                     enabled: !ConsoleController.running
                     onClicked: ConsoleController.load_topology(topologyPathField.text)
                 }
             }
 
             RowLayout {
-                Text { text: "Configuration:" }
+                Text { text: qsTr("Configuration:") }
                 ComboBox {
                     id: configCombo
                     Layout.fillWidth: true
@@ -46,13 +46,13 @@ Item {
 
             RowLayout {
                 Button {
-                    text: "Start"
+                    text: qsTr("Start")
                     Layout.fillWidth: true
                     enabled: !ConsoleController.running
                     onClicked: ConsoleController.start_emulator()
                 }
                 Button {
-                    text: "Stop"
+                    text: qsTr("Stop")
                     Layout.fillWidth: true
                     enabled: ConsoleController.running
                     onClicked: ConsoleController.stop_emulator()

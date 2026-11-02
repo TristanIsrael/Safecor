@@ -9,7 +9,7 @@ Item {
 
     GroupBox {
         anchors.fill: parent
-        title: "State"
+        title: qsTr("State")
 
         GridLayout {
             anchors.fill: parent
@@ -20,62 +20,62 @@ Item {
             columnSpacing: 12
             rowSpacing: 4
 
-            Text { text: "Product"; font.bold: true }
+            Text { text: qsTr("Product"); font.bold: true }
             Text {
                 id: productText
                 objectName: "stateProduct"
-                text: ConsoleController.productName || "(none)"
+                text: ConsoleController.productName || qsTr("(none)")
             }
 
-            Text { text: "Languages"; font.bold: true }
+            Text { text: qsTr("Languages"); font.bold: true }
             Text {
-                text: (ConsoleController.languages.length ? ConsoleController.languages.join(", ") : "(none)")
-                     + "  (default: " + ConsoleController.defaultLanguage + ")"
+                text: (ConsoleController.languages.length ? ConsoleController.languages.join(", ") : qsTr("(none)"))
+                     + qsTr("  (default: ") + ConsoleController.defaultLanguage + ")"
             }
 
-            Text { text: "Screen"; font.bold: true }
+            Text { text: qsTr("Screen"); font.bold: true }
             Text {
                 text: ConsoleController.screenWidth + "×" + ConsoleController.screenHeight
-                     + "   rotation: " + ConsoleController.screenRotation
-                     + "   focus: " + (ConsoleController.screenDefaultFocus || "-")
+                     + qsTr("   rotation: ") + ConsoleController.screenRotation
+                     + qsTr("   focus: ") + (ConsoleController.screenDefaultFocus || "-")
             }
 
-            Text { text: "USB"; font.bold: true }
-            Text { text: ConsoleController.useUsb ? "enabled" : "disabled" }
+            Text { text: qsTr("USB"); font.bold: true }
+            Text { text: ConsoleController.useUsb ? qsTr("enabled") : qsTr("disabled") }
 
-            Text { text: "Business domains"; font.bold: true }
+            Text { text: qsTr("Business domains"); font.bold: true }
             Text {
                 text: ConsoleController.businessDomains.length
                      ? ConsoleController.businessDomains.join(", ")
-                     : "(none)"
+                     : qsTr("(none)")
             }
 
-            Text { text: "Energy"; font.bold: true }
+            Text { text: qsTr("Energy"); font.bold: true }
             Text {
                 text: Math.round(ConsoleController.energyLevel) + "%   "
-                     + (ConsoleController.plugged ? "AC plugged" : "on battery")
+                     + (ConsoleController.plugged ? qsTr("AC plugged") : qsTr("on battery"))
             }
 
-            Text { text: "Broker"; font.bold: true }
+            Text { text: qsTr("Broker"); font.bold: true }
             Text {
-                text: "port " + ConsoleController.brokerPort
+                text: qsTr("port ") + ConsoleController.brokerPort
                      + (ConsoleController.running
-                        ? (ConsoleController.brokerOwned ? " (owned)" : " (reused)")
-                        : " (stopped)")
+                        ? (ConsoleController.brokerOwned ? qsTr(" (owned)") : qsTr(" (reused)"))
+                        : qsTr(" (stopped)"))
             }
 
-            Text { text: "Peers"; font.bold: true }
+            Text { text: qsTr("Peers"); font.bold: true }
             Text {
                 text: ConsoleController.peersConnected.length
                      ? ConsoleController.peersConnected.join(", ")
-                     : "(none)"
+                     : qsTr("(none)")
             }
 
-            Text { text: "Restarted domains"; font.bold: true }
+            Text { text: qsTr("Restarted domains"); font.bold: true }
             Text {
                 text: ConsoleController.restartedDomains.length
                      ? ConsoleController.restartedDomains.join(", ")
-                     : "(none)"
+                     : qsTr("(none)")
             }
         }
     }

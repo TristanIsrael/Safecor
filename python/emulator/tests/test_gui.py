@@ -121,6 +121,23 @@ def test_driven_state_change_updates_view(console, qapp, tmp_path_factory):
     assert product.property("text") == "Beta"
 
 
+def test_ui_language_switch_retranslates(console, qapp):
+    """Switching the UI language retranslates the loaded QML (via retranslate)."""
+    window = console.window
+    assert "Operator Console" in window.property("title")
+
+    console.controller.set_ui_language("fr")
+    _spin(qapp)
+    assert console.controller.uiLanguage == "fr"
+    assert "Console d'exploitation" in window.property("title")
+
+    # Switching back restores the source (English) strings.
+    console.controller.set_ui_language("en")
+    _spin(qapp)
+    assert console.controller.uiLanguage == "en"
+    assert "Operator Console" in window.property("title")
+
+
 def test_build_controller(qapp):
     """build_controller wraps a not-started Emulator in a ConsoleController."""
     controller = build_controller(qapp)

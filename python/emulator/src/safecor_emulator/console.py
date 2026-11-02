@@ -14,10 +14,18 @@ This module requires PySide6 (the optional ``gui`` extra).
 
 from typing import Dict, List, Optional
 
-from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtCore import (
+    Property,
+    QCoreApplication,
+    QObject,
+    QTranslator,
+    Signal,
+    Slot,
+)
 
 from .emulator import Emulator
 from .events import EventBus, FileRecorder
+from .i18n import DEFAULT_UI_LANGUAGE, SUPPORTED_UI_LANGUAGES, load_translator
 
 
 class ConsoleController(QObject):
@@ -36,6 +44,7 @@ class ConsoleController(QObject):
     actionLogged = Signal(object)
     mqttEventLogged = Signal(object)
     logLine = Signal(str)
+    uiLanguageChanged = Signal()
 
     def __init__(
         self,
@@ -59,6 +68,10 @@ class ConsoleController(QObject):
         self.__languages: List[str] = []
         self.__restarted_domains: List[str] = []
 
+        self.__ui_language = DEFAULT_UI_LANGUAGE
+        self.__ui_translator: Optional[QTranslator] = None
+        self.__engine = None
+
         self.__bus_attached: Optional[EventBus] = None
         self.__recorders: Dict[str, FileRecorder] = {}
         self.__pending_recorders: Dict[str, str] = {}
@@ -66,6 +79,16 @@ class ConsoleController(QObject):
         if emulator is not None:
             self.__attach_bus(emulator.event_bus)
             self.__sync_from_emulator()
+
+        self.__apply_ui_language(DEFAULT_UI_LANGUAGE)
+
+    def set_engine(self, engine):
+        """Attach the QML engine so the UI can be retranslated on a language change.
+
+        :param engine: the :class:`QQmlApplicationEngine` that loaded the window
+            (used only to call ``retranslate()``).
+        """
+        self.__engine = engine
 
     # --- event bus wiring ----------------------------------------------------
     def __attach_bus(self, bus: Optional[EventBus]):
@@ -218,6 +241,22 @@ class ConsoleController(QObject):
         self.__record_action("set_language", {"code": code})
 
     @Slot(str)
+    def set_ui_language(self, code: str):
+        """Switch the console interface language (the QML re-translates live).
+
+        This localizes the operator console itself, which is distinct from the
+        emulated product's language (:meth:`set_language`). Unknown codes fall
+        back to :data:`~safecor_emulator.i18n.DEFAULT_UI_LANGUAGE`.
+        """
+        code = code if code in SUPPORTED_UI_LANGUAGES else DEFAULT_UI_LANGUAGE
+        if code == self.__ui_language:
+            return
+        self.__apply_ui_language(code)
+        self.uiLanguageChanged.emit()
+        self.stateChanged.emit()
+        self.__record_action("set_ui_language", {"code": code})
+
+    @Slot(str)
     def restart_domain(self, name: str):
         """Record a domain restart (W1)."""
         em = self.__require_emulator()
@@ -306,6 +345,35 @@ class ConsoleController(QObject):
             raise RuntimeError("No emulator; call start_emulator() first")
         return self.__emulator
 
+    def __apply_ui_language(self, code: str):
+        """Install the catalog for ``code`` on the running app (if any).
+
+        Removing then installing the translator makes Qt emit
+        ``translatorChanged``, which re-evaluates every ``qsTr`` binding in the
+        QML. The translator is kept alive only by this controller's reference
+        (it is unparented), so it is removed before that reference is dropped.
+        With no :class:`QCoreApplication` (bare unit tests) the state is still
+        tracked but no catalog is installed.
+        """
+        app = QCoreApplication.instance()
+        if self.__ui_translator is not None:
+            if app is not None:
+                app.removeTranslator(self.__ui_translator)
+            self.__ui_translator = None
+        self.__ui_language = code
+        if app is None:
+            return
+        if code != DEFAULT_UI_LANGUAGE:
+            translator = load_translator(code)
+            if translator is not None:
+                app.installTranslator(translator)
+                self.__ui_translator = translator
+        # PySide6 does not re-evaluate QML ``qsTr`` bindings when a translator is
+        # installed or removed, so the loaded engine is told explicitly to
+        # retranslate. Without an engine (bare unit tests) there is nothing to do.
+        if self.__engine is not None:
+            self.__engine.retranslate()
+
     # --- getters -------------------------------------------------------------
     def __is_running(self):
         return self.__running
@@ -372,6 +440,12 @@ class ConsoleController(QObject):
     def __get_screen_height(self):
         return self.__emulator.profile.screen_height if self.__emulator else 0
 
+    def __get_ui_language(self):
+        return self.__ui_language
+
+    def __get_supported_ui_languages(self):
+        return list(SUPPORTED_UI_LANGUAGES)
+
     # --- QML-visible properties ----------------------------------------------
     running = Property(bool, __is_running, notify=stateChanged)
     brokerPort = Property(int, __get_broker_port, notify=stateChanged)
@@ -394,3 +468,7 @@ class ConsoleController(QObject):
     topologyPath = Property(str, __get_topology_path, notify=stateChanged)
     screenWidth = Property(int, __get_screen_width, notify=stateChanged)
     screenHeight = Property(int, __get_screen_height, notify=stateChanged)
+    uiLanguage = Property(str, __get_ui_language, notify=uiLanguageChanged)
+    supportedUiLanguages = Property(
+        list, __get_supported_ui_languages, notify=uiLanguageChanged
+    )

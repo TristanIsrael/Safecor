@@ -13,7 +13,7 @@ ScrollView {
 
         // --- Disks -------------------------------------------------------
         GroupBox {
-            title: "Disks"
+            title: qsTr("Disks")
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -26,27 +26,27 @@ ScrollView {
                     RowLayout {
                         Text { text: "• " + modelData }
                         Button {
-                            text: "Detach"
+                            text: qsTr("Detach")
                             onClicked: ConsoleController.detach_disk(modelData)
                         }
                     }
                 }
 
                 RowLayout {
-                    Text { text: "id:" }
+                    Text { text: qsTr("id:") }
                     TextField {
                         id: diskIdField
                         Layout.fillWidth: true
-                        placeholderText: "disk id"
+                        placeholderText: qsTr("disk id")
                     }
                     Button {
-                        text: "Attach"
+                        text: qsTr("Attach")
                         onClicked: ConsoleController.attach_disk(diskIdField.text, diskPathField.text)
                     }
                     TextField {
                         id: diskPathField
                         Layout.fillWidth: true
-                        placeholderText: "root path"
+                        placeholderText: qsTr("root path")
                     }
                 }
             }
@@ -54,7 +54,7 @@ ScrollView {
 
         // --- Energy ------------------------------------------------------
         GroupBox {
-            title: "Energy"
+            title: qsTr("Energy")
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -63,7 +63,7 @@ ScrollView {
                 spacing: 4
 
                 RowLayout {
-                    Text { text: "Level:" }
+                    Text { text: qsTr("Level:") }
                     Slider {
                         id: energySlider
                         Layout.fillWidth: true
@@ -78,26 +78,26 @@ ScrollView {
                 RowLayout {
                     CheckBox {
                         id: pluggedCheck
-                        text: "AC plugged"
+                        text: qsTr("AC plugged")
                         checked: ConsoleController.plugged
                         onToggled: ConsoleController.set_energy(ConsoleController.energyLevel, checked)
                     }
-                    Button { text: "Power off"; onClicked: ConsoleController.power_off() }
-                    Button { text: "Power on"; onClicked: ConsoleController.power_on() }
+                    Button { text: qsTr("Power off"); onClicked: ConsoleController.power_off() }
+                    Button { text: qsTr("Power on"); onClicked: ConsoleController.power_on() }
                 }
             }
         }
 
         // --- Language ----------------------------------------------------
         GroupBox {
-            title: "Language"
+            title: qsTr("Product language")
             RowLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
 
-                Text { text: "Default:" }
+                Text { text: qsTr("Default:") }
                 ComboBox {
                     id: languageCombo
                     Layout.fillWidth: true
@@ -109,7 +109,7 @@ ScrollView {
 
         // --- Workflow ----------------------------------------------------
         GroupBox {
-            title: "Workflow"
+            title: qsTr("Workflow")
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -118,38 +118,38 @@ ScrollView {
                 spacing: 4
 
                 RowLayout {
-                    Text { text: "Restart domain:" }
+                    Text { text: qsTr("Restart domain:") }
                     TextField {
                         id: restartNameField
                         Layout.fillWidth: true
-                        placeholderText: "domain name"
+                        placeholderText: qsTr("domain name")
                     }
                     Button {
-                        text: "Restart"
+                        text: qsTr("Restart")
                         onClicked: ConsoleController.restart_domain(restartNameField.text)
                     }
                 }
                 RowLayout {
                     Button {
-                        text: "Shutdown (W2)"
+                        text: qsTr("Shutdown (W2)")
                         Layout.fillWidth: true
                         onClicked: ConsoleController.shutdown()
                     }
                     Button {
-                        text: "GUI ready (W4)"
+                        text: qsTr("GUI ready (W4)")
                         Layout.fillWidth: true
                         onClicked: ConsoleController.gui_ready()
                     }
                 }
                 RowLayout {
-                    Text { text: "Switch GUI to:" }
+                    Text { text: qsTr("Switch GUI to:") }
                     TextField {
                         id: switchGuiField
                         Layout.fillWidth: true
-                        placeholderText: "domain"
+                        placeholderText: qsTr("domain")
                     }
                     Button {
-                        text: "Switch (W5)"
+                        text: qsTr("Switch (W5)")
                         onClicked: ConsoleController.switch_gui(switchGuiField.text)
                     }
                 }
@@ -158,7 +158,7 @@ ScrollView {
 
         // --- Logging -----------------------------------------------------
         GroupBox {
-            title: "Logging"
+            title: qsTr("Logging")
             ColumnLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
@@ -167,7 +167,7 @@ ScrollView {
                 spacing: 4
 
                 RowLayout {
-                    Text { text: "Level:" }
+                    Text { text: qsTr("Level:") }
                     ComboBox {
                         id: logLevelCombo
                         Layout.fillWidth: true
@@ -176,35 +176,35 @@ ScrollView {
                     }
                 }
                 RowLayout {
-                    Text { text: "Save log:" }
-                    TextField { id: saveLogDiskField; placeholderText: "disk" }
-                    TextField { id: saveLogFileField; placeholderText: "file" }
+                    Text { text: qsTr("Save log:") }
+                    TextField { id: saveLogDiskField; placeholderText: qsTr("disk") }
+                    TextField { id: saveLogFileField; placeholderText: qsTr("file") }
                     Button {
-                        text: "Save"
+                        text: qsTr("Save")
                         onClicked: ConsoleController.save_log(saveLogDiskField.text, saveLogFileField.text)
                     }
                 }
                 RowLayout {
-                    Text { text: "Record journal:" }
+                    Text { text: qsTr("Record journal:") }
                     TextField {
                         id: recordJournalField
                         Layout.fillWidth: true
-                        placeholderText: "path (empty = stop)"
+                        placeholderText: qsTr("path (empty = stop)")
                     }
                     Button {
-                        text: "Set"
+                        text: qsTr("Set")
                         onClicked: ConsoleController.set_record_journal(recordJournalField.text)
                     }
                 }
                 RowLayout {
-                    Text { text: "Record events:" }
+                    Text { text: qsTr("Record events:") }
                     TextField {
                         id: recordEventsField
                         Layout.fillWidth: true
-                        placeholderText: "path (empty = stop)"
+                        placeholderText: qsTr("path (empty = stop)")
                     }
                     Button {
-                        text: "Set"
+                        text: qsTr("Set")
                         onClicked: ConsoleController.set_record_events(recordEventsField.text)
                     }
                 }
@@ -213,25 +213,25 @@ ScrollView {
 
         // --- Debug -------------------------------------------------------
         GroupBox {
-            title: "Debug"
+            title: qsTr("Debug")
             RowLayout {
                 anchors.fill: parent
                 anchors.topMargin: 8
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
 
-                Text { text: "Ping:" }
+                Text { text: qsTr("Ping:") }
                 TextField {
                     id: pingTargetField
-                    placeholderText: "target"
+                    placeholderText: qsTr("target")
                 }
                 TextField {
                     id: pingDataField
                     Layout.fillWidth: true
-                    placeholderText: "data"
+                    placeholderText: qsTr("data")
                 }
                 Button {
-                    text: "Ping"
+                    text: qsTr("Ping")
                     onClicked: ConsoleController.ping(pingTargetField.text, pingDataField.text)
                 }
             }

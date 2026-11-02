@@ -13,7 +13,7 @@ Item {
 
         // --- Actions timeline (top) -------------------------------------
         GroupBox {
-            title: "Actions"
+            title: qsTr("Actions")
             Layout.fillWidth: true
             Layout.preferredHeight: 150
 
@@ -38,7 +38,7 @@ Item {
                     }
                 }
                 Button {
-                    text: "Clear"
+                    text: qsTr("Clear")
                     Layout.alignment: Qt.AlignBottom
                     onClicked: {
                         actionsList.model = []
@@ -52,8 +52,8 @@ Item {
         TabBar {
             id: tabs
             Layout.fillWidth: true
-            TabButton { text: "MQTT events" }
-            TabButton { text: "Platform log" }
+            TabButton { text: qsTr("MQTT events") }
+            TabButton { text: qsTr("Platform log") }
         }
 
         StackLayout {

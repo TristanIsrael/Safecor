@@ -11,6 +11,12 @@ Example::
 
 Then, in another terminal, run your product (e.g. the demo2 app). Press Ctrl+C
 here to stop the emulator.
+
+With ``--gui``, a QML operator console is shown instead of the headless core; it
+drives a topology-shaped emulator. It requires ``--topology`` and the optional
+``gui`` extra (PySide6)::
+
+    safecor-emulator --gui --topology /path/to/topology.json
 """
 
 import argparse
@@ -50,6 +56,14 @@ def _build_parser():
     parser.add_argument("--no-reuse", action="store_true",
                         help="start a dedicated broker instead of reusing one "
                              "already listening on the port")
+    parser.add_argument("--gui", action="store_true",
+                        help="start the graphical operator console (QML window) "
+                             "instead of the headless core; requires --topology "
+                             "and the optional ``gui`` extra (PySide6)")
+    parser.add_argument("--topology",
+                        help="path to a product topology.json (required with --gui); "
+                             "shapes the emulated environment (product, screen, "
+                             "languages, business domains, hardware configurations)")
     return parser
 
 
@@ -70,6 +84,18 @@ def _parse_disks(items):
 def main(argv=None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+
+    if args.gui:
+        if not args.topology:
+            parser.error("--gui requires --topology PATH to a topology.json")
+        # Imported lazily so the headless path does not require PySide6.
+        from safecor_emulator.gui import run_gui
+        return run_gui(
+            topology_path=args.topology,
+            broker_port=args.port,
+            host=args.host,
+            reuse_broker=not args.no_reuse,
+        )
 
     profile = load_profile(args.profile)
     source_disks = _parse_disks(args.disk)

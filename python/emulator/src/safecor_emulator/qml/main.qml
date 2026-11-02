@@ -10,7 +10,7 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 500
     visible: true
-    title: "Safecor Emulator — Operator Console"
+    title: qsTr("Safecor Emulator — Operator Console")
 
     font.family: "Roboto"
     font.pointSize: 13

@@ -78,6 +78,8 @@ def create_engine(
     engine = QQmlApplicationEngine()
     engine.addImportPath(QML_DIR)
     engine.load((QML_DIR / "main.qml").as_uri())
+    # Let the controller retranslate the UI when the operator changes language.
+    controller.set_engine(engine)
     return engine
 
 
