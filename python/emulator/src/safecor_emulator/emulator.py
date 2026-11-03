@@ -55,8 +55,6 @@ class Emulator:
     :param source_disks: mapping of disk id -> root directory that the
         emulated sys-usb exposes as a source disk (where files are read from).
     :param storage_path: local directory that emulates the repository.
-    :param destination_disk_path: local directory that emulates the target disk
-        (where copied/created files are written to).
     :param broker_port: TCP port the emulated broker must listen on
         (default 1883, because the ``safecor`` client hard-codes it in TCP mode).
     :param host: broker host (default ``localhost``).
@@ -76,7 +74,6 @@ class Emulator:
         profile: Optional[SystemProfile] = None,
         source_disks: Optional[Dict[str, str]] = None,
         storage_path: Optional[str] = None,
-        destination_disk_path: Optional[str] = None,
         broker_port: int = 1883,
         host: str = "localhost",
         reuse_broker: bool = True,
@@ -87,7 +84,6 @@ class Emulator:
         self.profile = profile if profile is not None else default_profile()
         self.source_disks = dict(source_disks or {})
         self.storage_path = storage_path
-        self.destination_disk_path = destination_disk_path
         self.broker_port = broker_port
         self.host = host
         self.reuse_broker = reuse_broker
@@ -386,8 +382,6 @@ class Emulator:
                 os.makedirs(path, exist_ok=True)
         if self.storage_path:
             os.makedirs(self.storage_path, exist_ok=True)
-        if self.destination_disk_path:
-            os.makedirs(self.destination_disk_path, exist_ok=True)
 
     def start(self):
         """Start the broker (if needed), install the fakes and start the peers."""
@@ -433,7 +427,6 @@ class Emulator:
         self._sys_usb.start(
             self.source_disks,
             self.storage_path or "/tmp",
-            self.destination_disk_path or "/tmp",
         )
 
         # 5. wait for both peers to be connected to the broker

@@ -6,7 +6,7 @@ import safecor.emulator 1.0
 
 Item {
     id: root
-    implicitHeight: 210
+    implicitHeight: 168
 
     // Native file picker for the topology (fills the path field). Declared
     // with only an ``onAccepted`` handler so it still instantiates on minimal
@@ -15,16 +15,6 @@ Item {
         id: topologyFileDialog
         parentWindow: window
         onAccepted: topologyPathField.text = String(selectedFile).replace("file://", "")
-    }
-
-    FileDialog {
-        id: destinationFileDialog
-        parentWindow: window
-        onAccepted: destinationPathField.text = String(selectedFolder).replace("file://", "")
-        Component.onCompleted: {
-            if ("selectFolder" in destinationFileDialog)
-                destinationFileDialog.selectFolder = true
-        }
     }
 
     GroupBox {
@@ -65,22 +55,6 @@ Item {
                     Layout.fillWidth: true
                     model: ["(standard)"].concat(ConsoleController.configurationNames)
                     onActivated: ConsoleController.select_configuration(currentIndex === 0 ? "" : currentText)
-                }
-            }
-
-            RowLayout {
-                Label { text: qsTr("Target disk:") }
-                TextField {
-                    id: destinationPathField
-                    Layout.fillWidth: true
-                    selectByMouse: true
-                    placeholderText: qsTr("path to target disk directory")
-                    text: ConsoleController.destinationPath
-                    onTextChanged: ConsoleController.destinationPath = text
-                }
-                Button {
-                    text: qsTr("Browse...")
-                    onClicked: destinationFileDialog.open()
                 }
             }
 

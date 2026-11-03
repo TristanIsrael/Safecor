@@ -90,7 +90,6 @@ def test_emulator_roundtrip(tmp_path):
         profile=profile,
         source_disks={"diskA": str(disk_a)},
         storage_path=str(repository),
-        destination_disk_path=str(target),
     ) as em:
         assert em.is_running
 

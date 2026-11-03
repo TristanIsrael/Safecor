@@ -32,7 +32,6 @@ def em(tmp_path):
     emulator = Emulator(
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
     emulator.start()
     yield emulator
@@ -77,7 +76,6 @@ def topo_controller(qapp, tmp_path):
         topology_path=_saphir_topology(tmp_path),
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
     emulator.start()
     yield ConsoleController(emulator=emulator), emulator
@@ -167,7 +165,6 @@ def test_attach_disk_without_emulator_warns(qapp, tmp_path):
     controller = ConsoleController(
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
     warnings = []
     controller.warning.connect(lambda m: warnings.append(m))
@@ -191,7 +188,6 @@ def test_require_emulator_warns(qapp, tmp_path):
     controller = ConsoleController(
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
     warnings = []
     controller.warning.connect(lambda m: warnings.append(m))
@@ -213,7 +209,6 @@ def test_control_action_not_started_warns(qapp, tmp_path):
     emulator = Emulator(
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )  # created, not started
     controller = ConsoleController(emulator=emulator)
     warnings = []
@@ -232,7 +227,6 @@ def test_start_failure_warns(qapp, tmp_path, monkeypatch):
     controller = ConsoleController(
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
 
     def _fail(self):
@@ -397,7 +391,6 @@ def test_start_and_stop_own_emulator(qapp, tmp_path):
     controller = ConsoleController(
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
     assert controller.running is False
     controller.start_emulator()
@@ -415,7 +408,6 @@ def test_load_topology_hot_restart_warns(qapp, tmp_path):
     controller = ConsoleController(
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
     topo2 = tmp_path / "t2.json"
     topo2.write_text(
@@ -459,7 +451,6 @@ def test_select_configuration_applies_screen_settings(qapp, tmp_path):
         topology_path=str(path),
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
     em.start()
     try:

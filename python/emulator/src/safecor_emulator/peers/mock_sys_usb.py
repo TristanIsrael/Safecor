@@ -48,6 +48,7 @@ class MockSysUsbController:
         self.__mqtt_client = None
         self.__client_id_suffix = client_id_suffix
         self.__event_bus = event_bus
+        self.__destination_disk_path = ""
 
     # --- event bus helpers ---------------------------------------------------
     def __emit(self, stream: str, text: str, payload: Optional[dict] = None):
@@ -63,17 +64,15 @@ class MockSysUsbController:
         print(f"[SYS-USB] {message}")
 
     def start(
-        self, source_disks_list: dict, storage_path: str, destination_disk_path: str
+        self, source_disks_list: dict, storage_path: str
     ):
         """Start the MQTT client and expose the given local directories as disks.
 
         :param source_disks_list: mapping of disk id -> root directory (source of files).
         :param storage_path: local directory that emulates the repository.
-        :param destination_disk_path: local directory that emulates the target disk.
         """
         self.__source_disks_list = source_disks_list
         self.__storage_path = storage_path
-        self.__destination_disk_path = destination_disk_path
 
         self.__mqtt_client = MqttClient(
             f"sys-usb{self.__client_id_suffix}", ConnectionType.TCP_DEBUG, "localhost"
@@ -94,6 +93,8 @@ class MockSysUsbController:
     def attach_disk(self, disk_id: str, root_path: str):
         """Hot-plug a disk: expose ``root_path`` as ``disk_id`` and announce it.
 
+        The last attached disk is considered the copy destination (target).
+
         Publishes a ``DISK_STATE`` ``connected`` notification, mirroring what the
         real sys-usb controller does when a USB disk is inserted.
         """
@@ -101,6 +102,7 @@ class MockSysUsbController:
             raise RuntimeError("MockSysUsbController.start() must be called first")
         os.makedirs(root_path, exist_ok=True)
         self.__source_disks_list[disk_id] = root_path
+        self.__destination_disk_path = root_path
         self.__publish(
             Topics.DISK_STATE,
             NotificationFactory.create_notification_disk_state(
