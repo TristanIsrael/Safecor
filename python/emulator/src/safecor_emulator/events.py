@@ -124,10 +124,12 @@ class FileRecorder:
         self._fh = open(path, "a", encoding="utf-8")
 
     def __call__(self, event: Event) -> None:
+        """Append ``event`` to the file as a JSON line (invoked by the bus)."""
         self._fh.write(json.dumps(event.to_dict(), default=str) + "\n")
         self._fh.flush()
 
     def close(self) -> None:
+        """Flush and close the underlying file handle (idempotent)."""
         try:
             self._fh.close()
         except Exception:

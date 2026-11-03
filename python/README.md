@@ -6,3 +6,4 @@ This folder contains the following python packages:
 - [A demo app](demo2/README.md)
 - The emulator / testing infrastructure (`emulator`) — includes a graphical, topology-driven
   operator console (`safecor-emulator --gui`, EN/FR) to drive a Safecor-based product by hand
+  [Operator console guide](../docs/emulator-operator.md)

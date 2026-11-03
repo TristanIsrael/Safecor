@@ -1,18 +1,18 @@
 # Safecor Emulator — Operator Console Plan
 
-> **Status**: **Phase 0 + 1 + 2 + 3 implemented and validated** — 66/66 emulator tests pass;
-> coverage `i18n.py` 100 %, `console.py` 98 %, `gui.py` 97 %, `cli.py` 90 %, `emulator.py` 85 %;
-> zero new lint (`ruff` E/F/I/B) / type (`mypy`) errors. **Phase 5 (packaging + docs) is next.**
+> **Status**: **Phases 0–5 implemented and validated** — all 18 operator testing remarks
+> (1.1–1.18) addressed; emulator test suite green; zero new lint (`ruff` E/F/I/B) /
+> type (`mypy`) errors. **All phases done.**
 >
-> **Last updated**: 2026-11-02
+> **Last updated**: 2026-11-03
 >
 > **Branch**: `feature-241` (off `main`) — **one issue** (#241) for the whole console
 >
 > **Labels**: `emulator` + `feature` + `testing`
 >
-> **Progress**: Phase 0 — done, committed (`44d91a3`) · Phase 1 — done, committed
-> (`35a19b5`) · Phase 2 — done, committed (`4e96c84`) · Phase 3 — done, pending commit ·
-> Phase 4 (test/coverage gate) — met · Phase 5 (packaging + docs) — not started
+> **Progress**: Phase 0 — done (`44d91a3`) · Phase 1 — done (`35a19b5`) · Phase 2 — done
+> (`4e96c84`) · Phase 3 — done · Phase 4 (test/coverage gate) — met · Phase 5 (packaging +
+> docs) — done
 >
 > **References**: [`docs/architecture.md`](../docs/architecture.md) (esp. §5 emulatable surface),
 > [`docs/features.md`](../docs/features.md) (function catalogue),
@@ -200,7 +200,7 @@ exposes the scenario controls as slots.
 - **Gate**: coverage ≥ 85 % on all new modules; zero new lint/type errors (`ruff`); the full
   emulator test suite passes.
 
-## 7. Phase 5 — Packaging + documentation
+## 7. Phase 5 — Packaging + documentation ✅ DONE
 
 - **5.1** Packaging — include `qml/`, `i18n/*.qm` in the wheel (hatch `force-include`);
   the `gui` extra (PySide6) already exists. Confirm `safecor-emulator --gui` works from the
@@ -208,6 +208,19 @@ exposes the scenario controls as slots.
 - **5.2** Documentation — update `docs/` (this architecture doc §6 + a short operator guide),
   `README.md` / `README.fr.md` ("Current features"), and Doxygen comments in the new modules.
 - **5.3** Doxygen — docstrings on `topology_env.py`, `events.py`, `console.py`, `gui.py`.
+
+**Implemented**:
+- **5.1 Packaging** — the wheel already bundles `qml/` (all QML + `qmldir`) and
+  `i18n/{en,fr}.{ts,qm}` because hatchling includes every file under the `safecor_emulator`
+  package dir; verified by building the wheel and listing its contents. The `gui` extra
+  (`PySide6`) already existed.
+- **5.2 Documentation** — `docs/architecture.md` §6 already describes the operator console; a
+  new **operator guide** [`docs/emulator-operator.md`](../docs/emulator-operator.md) documents
+  how to launch + drive the console (layout, setup, controls, observation, i18n). It is linked
+  from `docs/architecture.md` §7 and from `python/README.md`.
+- **5.3 Doxygen** — docstrings were already present on all four modules (module, class, method
+  level); the missing `FileRecorder.__call__` / `FileRecorder.close` docstrings in `events.py`
+  were added.
 
 ## 8. Validated scope — function set + interaction model
 

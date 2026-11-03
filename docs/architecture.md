@@ -300,6 +300,7 @@ are validated offscreen by `tests/test_gui.py` / `tests/test_i18n.py`. See
 | Concern | Document |
 |---------|----------|
 | Function catalogue (what the platform exposes) | [`docs/features.md`](features.md) |
+| Operator console guide (how to drive it) | [`docs/emulator-operator.md`](emulator-operator.md) |
 | Code ↔ documentation sync issues | [`docs/doc-sync-issues.md`](doc-sync-issues.md) |
 | Emulator session context | [`plans/emulator-context.md`](../plans/emulator-context.md) |
 | Emulator operator-console plan | [`plans/emulator-plan.md`](../plans/emulator-plan.md) |
