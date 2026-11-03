@@ -63,6 +63,7 @@ Safecor is a software architecture for building security products (kiosk/embedde
 - All work that modifies existing code happens on a **dedicated branch** (never directly on `main`).
 - Label every issue at creation time. Use component labels (e.g. `emulator`, `lib`, `diag`) plus a type label (`bug`, `feature`, `technical-debt`, `testing`, etc.).
 - Every issue must be added to the **"Safecor Kanban"** project.
+- The text of the commits and comments must be in english.
 - The issue's project status must reflect the actual state of the work:
   | Status | Meaning |
   |---|---|
