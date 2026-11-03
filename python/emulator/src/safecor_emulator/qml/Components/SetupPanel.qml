@@ -16,12 +16,6 @@ Item {
         onAccepted: topologyPathField.text = String(selectedFile).replace("file://", "")
     }
 
-    // Folder picker for the destination (target) disk path.
-    FileDialog {
-        id: destinationFileDialog
-        onAccepted: destinationPathField.text = String(selectedFolder).replace("file://", "")
-    }
-
     GroupBox {
         anchors.fill: parent
         title: qsTr("Setup")
@@ -72,10 +66,6 @@ Item {
                     placeholderText: qsTr("path to target disk directory")
                     text: ConsoleController.destinationPath
                     onTextChanged: ConsoleController.destinationPath = text
-                }
-                Button {
-                    text: qsTr("Browse...")
-                    onClicked: destinationFileDialog.open()
                 }
             }
 
