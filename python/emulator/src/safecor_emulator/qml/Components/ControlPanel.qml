@@ -1,14 +1,27 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import safecor.emulator 1.0
 
-ScrollView {
+Item {
     id: root
-    clip: true
+
+    FileDialog {
+        id: diskPathFileDialog
+        onAccepted: diskPathField.text = String(selectedFolder).replace("file://", "")
+        Component.onCompleted: {
+            if ("selectFolder" in diskPathFileDialog)
+                diskPathFileDialog.selectFolder = true
+        }
+    }
+
+    ScrollView {
+        anchors.fill: parent
+        clip: true
 
     ColumnLayout {
-        width: root.width * 0.9
+        width: parent.width * 0.9
 
         spacing: 16
 
@@ -46,6 +59,10 @@ ScrollView {
                         id: diskPathField
                         Layout.fillWidth: true
                         placeholderText: qsTr("root path")
+                    }
+                    Button {
+                        text: qsTr("Browse...")
+                        onClicked: diskPathFileDialog.open()
                     }
                     Button {
                         text: qsTr("Attach")
@@ -268,5 +285,6 @@ ScrollView {
                 }
             }
         }
+    }
     }
 }
