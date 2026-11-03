@@ -1,13 +1,13 @@
-# Bibliothèque python Panoptiscan
+# Panoptiscan python library
 
-## Dépendances
+## Dependencies
 
-La construction du paquet wheel nécessite le module python `build` :
+Building the wheel package requires the python `build` module:
 ```
 $ pip install build
 ```
 
-## Construction
+## Build
 
 ```
 $ python3 -m build

@@ -1,98 +1,98 @@
-# Installation automatisée de l'infrastructure PXE pour les stations blanches
+# Automated installation of the PXE infrastructure for white stations
 
-Cette documentation décrit l'utilisation d'Ansible pour déployer automatiquement les services nécessaires à la mise en oeuvre du boot PXE pour les stations blanches, c'est-à-dire la capacité à démarrer une station blanche par le réseau.
+This documentation describes the use of Ansible to automatically deploy the services needed for the PXE boot of white stations, i.e. the ability to boot a white station over the network.
 
-## Principe de fonctionnement
+## Working principle
 
-Le déploiement automatisé avec Ansible va installer et configurer chacun des services sélectionnés sur une ou plusieurs machines qui exécuterons ces services. Le déploiement est configuré à l'aide d'un fichier d'*inventaire*.
+The automated deployment with Ansible installs and configures each of the selected services on one or several machines that will run these services. The deployment is configured using an *inventory* file.
 
-## Compatibilité
+## Compatibility
 
-Les scripts d'installation ont été écrits pour déployer les services sur des machines avec un OS Alpine Linux. Dans le cas où un OS différent serait installé, les scripts devront être adaptés.
+The installation scripts were written to deploy the services on machines with an Alpine Linux OS. In case a different OS is installed, the scripts must be adapted.
 
-## Pré-requis
+## Prerequisites
 
-- Identifier les services à installer (dhcp, http, nfs, tftp). Voir le chapitre *description des services*.
-- Créer les VM ou préparer les machines qui vont accueillir les services
-  - Les machines doivent avoir un accès SSH avec un compte d'utilisateur possédant les droits sudo
-  - Python doit être installé sur les machines
-- Identifier les adresses IP, noms d'hôtes ou noms DNS des machines cibles
-- Identifier l'URL du dépôt des paquets Alpine (paquets installés via la commande apk)
-- Identifier l'URL du dépôt contenant les fichiers du noyau Linux (vmlinux-virt, modloop-virt et initramfs-virt)
-- Préparer la machine utilisée pour le déploiement. Voir le chapitre *Préparation au déploiement*.
+- Identify the services to install (dhcp, http, nfs, tftp). See the *description of the services* chapter.
+- Create the VMs or prepare the machines that will host the services
+  - The machines must have SSH access with a user account holding sudo rights
+  - Python must be installed on the machines
+- Identify the IP addresses, hostnames or DNS names of the target machines
+- Identify the URL of the Alpine package repository (packages installed via the apk command)
+- Identify the URL of the repository containing the Linux kernel files (vmlinux-virt, modloop-virt and initramfs-virt)
+- Prepare the machine used for the deployment. See the *Deployment preparation* chapter.
 
-## Description des services
+## Description of the services
 
-Les services qui peuvent être installés sont décrits ci-dessous, l'opérateur décidera de les installer ou non lors de la configuration du déploiement.
+The services that can be installed are described below; the operator will decide whether to install them during the deployment configuration.
 
-- DHCP : Le service DHCP fournit l'adresse IP aux machines du segment réseau mais également (et surtout) les informations pour le boot PXE. Sans cette information, aucune machine ne pourra démarrer par le réseau. (Défaut : no)
+- DHCP: The DHCP service provides the IP address to the machines of the network segment but also (and above all) the information for the PXE boot. Without this information, no machine can boot over the network. (Default: no)
 
-- TFTP : Le service TFTP fournit le fichier noyau PXE qui est téléchargé par les machines clients au début du démarrage par le réseau. Ce service peut être installé sur la même machine que le serveur HTTP ou NFS. (Défaut : yes)
+- TFTP: The TFTP service provides the PXE kernel file that is downloaded by the client machines at the beginning of the network boot. This service can be installed on the same machine as the HTTP or NFS server. (Default: yes)
 
-- HTTP_NFS : Les services HTTP et NFS doivent être sur la même machine sauf si un serveur de partage de fichiers est utilisé et qu'il est monté sur les deux machines. Ces deux services ont besoin d'accéder aux mêmes fichiers. (Défaut : yes)
+- HTTP_NFS: The HTTP and NFS services must be on the same machine unless a file sharing server is used and it is mounted on both machines. These two services need to access the same files. (Default: yes)
 
-  - Le service HTTP fournit les fichiers supplémentaires pour le démarrage par le réseau, en particulier le noyau Linux et la configuration de la machine cliente. Ce serveur ne fournit pas le dépôt de binaires pour l'installation des paquets de la distribution sur la machine cliente (Voir le chapitre *Configuration*). (Défaut : yes)
+  - The HTTP service provides the additional files for the network boot, in particular the Linux kernel and the configuration of the client machine. This server does not provide the binary repository for installing the distribution packages on the client machine (see the *Configuration* chapter). (Default: yes)
 
-  - Le service NFS fournit un stockage pour la configuration des machines clients. Cette machine n'est utilisée que par l'intégrateur des stations blanches et n'est pas nécessaire dans le mode de fonctionnement normal. (Défaut : no).
+  - The NFS service provides a storage for the client machines configuration. This machine is only used by the white station integrator and is not needed in normal operation mode. (Default: no).
 
-### Cinématique du démarrage par le réseau
+### Network boot sequence
 
-Pour mieux comprendre l'enjeu de cette installation, la cinématique suivante explique les rôles de chaque serveur.
+To better understand the stakes of this installation, the following sequence explains the roles of each server.
 
-- Démarrage de la machine cliente
+- Boot of the client machine
 
-- La machine cliente cherche un serveur DHCP pour obtenir une adresse IP.
+- The client machine looks for a DHCP server to obtain an IP address.
 
-- Le serveur DHCP installé répond en donnant une nouvelle adresse IP et une configuration de boot PXE. Celle-ci décrit l'emplacement d'un fichier de noyau PXE à télécharger par la machine clience sur un serveur TFTP.
+- The installed DHCP server responds by giving a new IP address and a PXE boot configuration. This describes the location of a PXE kernel file to be downloaded by the client machine on a TFTP server.
 
-- La machine cliente télécharge le noyau PXE sur le serveur TFTP à l'adresse indiquée par le serveur DHCP.
+- The client machine downloads the PXE kernel on the TFTP server at the address indicated by the DHCP server.
 
-- La machine client boote sur le noyau PXE
+- The client machine boots on the PXE kernel
 
-- Le noyau PXE est configuré pour télécharger le reste de sa configuration et des binaires (notamment le noyau Linux) sur un serveur HTTP. Les données sont téléchargées sur ce serveur HTTP.
+- The PXE kernel is configured to download the rest of its configuration and binaries (notably the Linux kernel) on an HTTP server. The data are downloaded on this HTTP server.
 
-- La machine cliente boote sur le noyau Linux.
+- The client machine boots on the Linux kernel.
 
-- A la fin du boot sur le noyau Linux, la configuration de la machine cliente (paquets à installer) est téléchargée sur le serveur HTTP.
+- At the end of the boot on the Linux kernel, the configuration of the client machine (packages to install) is downloaded on the HTTP server.
 
-- La configuration est appliquée sur la machine cliente et les paquets sont téléchargés sur le dépôt de paquets Alpine puis installés.
+- The configuration is applied on the client machine and the packages are downloaded on the Alpine package repository then installed.
 
-- La machine cliente est prête.
+- The client machine is ready.
 
-#### Stratégie de mise à disposition des noyaux et paquets Alpine
+#### Strategy for providing the Alpine kernels and packages
 
-Deux stratégies sont possibles pour la mise à disposition des artefacts de déploiement :
+Two strategies are possible for providing the deployment artifacts:
 
-1 - (**préférée**) Les artefacts sont mis à disposition par l'intégrateur
+1 - (**preferred**) The artifacts are provided by the integrator
 
-Les URL *depot_alpine* et "depot_noyaux* sont gérées par l'intégrateur. Il les fournit après avoir validé la non-régression sur les paquets mis à disposition (MCO et MCS).
+The *depot_alpine* and *depot_noyaux* URLs are managed by the integrator. He provides them after having validated the non-regression on the packages made available (MCO and MCS).
 
-Dans ce scénario, l'intégrateur a accès à des ressources communes (sur Internet, DECOS ou MEDUSA). Il sélectionne la branche des binaires qu'il souhaite utiliser (version 3.15.5, 3.16.1, edge, etc) et télécharge les paquets pour les mettre à disposition sur un autre dépôt, ou dans un autre répertoire qu'il maîtrise. C'est ce dernier qui sera utilisé pour le démarrage par le réseau.
+In this scenario, the integrator has access to common resources (on Internet, DECOS or MEDUSA). He selects the branch of binaries he wants to use (version 3.15.5, 3.16.1, edge, etc) and downloads the packages to make them available on another repository, or in another directory that he controls. This latter is the one used for the network boot.
 
-2 - (non recommandée) Les artefacts sont mis à disposition sur un dépôt commun
+2 - (not recommended) The artifacts are provided on a common repository
 
-Les URL *depot_alpine* et *depot_noyau* sont génériques et pointent sur un dépôt qui est mis à jour régulièrement (exemple DECOS ou MEDUSA). Cette stratégie a le défaut de ne pas permettre à l'intégrateur de jouer son rôle et de tester les montées de version sur les nouvelles versions de paquet et de noyau.
+The *depot_alpine* and *depot_noyau* URLs are generic and point to a repository that is regularly updated (for example DECOS or MEDUSA). This strategy has the drawback of not allowing the integrator to play his role and to test version upgrades on the new package and kernel versions.
 
-## Installation de l'infrastructure
+## Installation of the infrastructure
 
-Cette partie décrit les étapes de l'installation (ou déploiement) de l'infrastructure pour le boot PXE.
+This part describes the steps of the installation (or deployment) of the infrastructure for the PXE boot.
 
-### Préparation au déploiement
+### Deployment preparation
 
-Une machine va être utilisée pour installer et configurer les différents services sur chaque serveur. Cette machine utiliser Ansible pour réaliser toutes les actions.
+A machine will be used to install and configure the different services on each server. This machine will use Ansible to perform all the actions.
 
-Il faut donc tout d'abord créer une machine virtuelle pour le déploiement. La machine virtuelle devra être installée avec un OS Linux (Alpine de préférence). Le guide d'installation ci-dessous est adapté à Alpine Linux, pour une autre distribution, les commandes devront être adaptées.
+It is therefore necessary to first create a virtual machine for the deployment. The virtual machine must be installed with a Linux OS (Alpine preferably). The installation guide below is adapted to Alpine Linux; for another distribution, the commands must be adapted.
 
-### Configuration du système
+### System configuration
 
-Modifier le fichier /etc/apk/repositories pour qu'il corresponde à l'exemple ci-dessous et adapter les URL en fonction de votre configuration locale.
+Modify the /etc/apk/repositories file to match the example below and adapt the URLs according to your local configuration.
 
 ```
 http://192.168.10.3/alpine/latest-stable/main/
 http://192.168.10.3/alpine/latest-stable/community/
 ```
 
-### Installation des outils
+### Installation of the tools
 
 ```
 $ sudo apk update
@@ -100,7 +100,7 @@ $ sudo apk upgrade
 $ sudo apk add ansible sshpass
 ```
 
-### Récupération des sources du projet
+### Retrieving the project sources
 
 ```
 $ mkdir -p ~/panoptiscan
@@ -108,97 +108,97 @@ $ cd ~/panoptiscan
 $ git clone http://serveur_git/panoptiscan/panoptiscan.git
 ```
 
-### Configuration du déploiement
+### Deployment configuration
 
-Pour configurer l'installation il faut modifier les fichiers suivants.
+To configure the installation, the following files must be modified.
 
 #### inventory.yml
 
-Ce fichier doit être créé à partir du fichier exemple inventory.yml.dist.
+This file must be created from the example file inventory.yml.dist.
 
 ``` $ cp inventory.yml.dist inventory.yml```
 
-Modifier le fichier en fonction du contexte de l'installation. Pour activer ou désactiver un service, il faut modifier la variable correspondante dans le fichier defaults/main.yml décrit ci-dessous.
+Modify the file according to the installation context. To enable or disable a service, the corresponding variable must be modified in the defaults/main.yml file described below.
 
-Ce fichier définit également des variables indispensables à l'installation. Adapter les variables en fonction du contexte de l'installation.
+This file also defines variables that are essential to the installation. Adapt the variables according to the installation context.
 
-| Variable     | Description                                   | Obligatoire ? | Valeur par défaut |
-|--------------|-----------------------------------------------|---------------|-------------------|
-| install_dhcp | Définit si le serveur DHCP doit être installé | Non           | no                |
-| install_tftp | Définit si le serveur TFTP doit être installé | Non           | yes               |
-| install_http | Définit si le serveur HTTP doit être installé | Oui           | yes               |
-| install_nfs | Définit si le serveur NFS doit être installé | Oui           | yes               |
-| depot_alpine | URL du dépôt Alpine                           | Oui           |                   |
-| depot_noyaux | URL contenant les noyaux Linux Alpine         | Oui           |                   |
-| dhcp_domain       | Nom de domaine pour le réseau local | Oui | panoptiscan.lan |
-| lan_subnet        | Sous-réseau IPv4 pour le réseau local | Oui | 192.168.10.0 |
-| lan_netmask       | Masque de sous-réseau IPv4 pour le réseau local | Oui | 255.255.255.0 |
-| lan_ip_start      | Début de la plage d'adresses IPv4 distribuées par le serveur DHCP | Oui | 192.168.10.10 |
-| lan_ip_end        | Fin de la plage d'adresses IPv4 distribuées par le serveur DHCP | Oui | 192.168.10.253 |
-| lan_ip_broadcast  | Adresse IPv4 de broadcast pour le réseau local | Oui | 192.168.10.255 |
-| http_server  | Adresse IPv4 du serveur HTTP | 192.168.10.2 | |
-| tftp_server  | Adresse IPv4 du serveur TFTP | 192.168.10.2 | |
-| dhcp_server  | Adresse IPv4 du serveur DHCP | 192.168.10.1 | |
-| nfs_server  | Adresse IPv4 du serveur NFS | 192.168.10.2 | |
+| Variable     | Description                                   | Mandatory? | Default value |
+|--------------|-----------------------------------------------|------------|---------------|
+| install_dhcp | Defines whether the DHCP server must be installed | No         | no            |
+| install_tftp | Defines whether the TFTP server must be installed | No         | yes           |
+| install_http | Defines whether the HTTP server must be installed | Yes        | yes           |
+| install_nfs  | Defines whether the NFS server must be installed | Yes        | yes           |
+| depot_alpine | URL of the Alpine repository                   | Yes        |               |
+| depot_noyaux | URL containing the Alpine Linux kernels        | Yes        |               |
+| dhcp_domain       | Domain name for the local network | Yes | panoptiscan.lan |
+| lan_subnet        | IPv4 subnet for the local network | Yes | 192.168.10.0 |
+| lan_netmask       | IPv4 subnet mask for the local network | Yes | 255.255.255.0 |
+| lan_ip_start      | Start of the range of IPv4 addresses distributed by the DHCP server | Yes | 192.168.10.10 |
+| lan_ip_end        | End of the range of IPv4 addresses distributed by the DHCP server | Yes | 192.168.10.253 |
+| lan_ip_broadcast  | IPv4 broadcast address for the local network | Yes | 192.168.10.255 |
+| http_server  | IPv4 address of the HTTP server | 192.168.10.2 | |
+| tftp_server  | IPv4 address of the TFTP server | 192.168.10.2 | |
+| dhcp_server  | IPv4 address of the DHCP server | 192.168.10.1 | |
+| nfs_server  | IPv4 address of the NFS server | 192.168.10.2 | |
 
-**ATTENTION : les URL doivent contenir un / en fin de ligne**
+**WARNING: the URLs must contain a / at the end of the line**
 
-#### Utilisation d'un serveur DHCP existant
+#### Using an existing DHCP server
 
-Si un serveur DHCP existe déjà, il faut le configurer pour qu'il donne les informations de boot :
+If a DHCP server already exists, it must be configured to provide the boot information:
 
-- activer le boot réseau : activé
+- enable network boot: enabled
 
-- adresse du serveur TFTP : *à remplir*
+- TFTP server address: *to fill in*
 
-- prochain serveur : *saisir l'adresse du serveur TFTP*
+- next server: *enter the address of the TFTP server*
 
-- nom de fichier BIOS par défaut : gpxe.kpxe
+- default BIOS filename: gpxe.kpxe
 
-### Exécution de l'installation
+### Running the installation
 
-L'installation est réalisée de façon totalement automatisée par Ansible grâce à la commande suivante :
+The installation is performed fully automatically by Ansible thanks to the following command:
 
 ```
 $ cd ~/panoptiscan/ansible/deploy-infra-pxe
 $ ansible-playbook -i inventory.yml deploy-infra-pxe.yml
 ```
 
-A la fin de l'installation, une vérification de bon fonctionnement. Elle s'assure que :
+At the end of the installation, a proper functioning verification is performed. It ensures that:
 
-- Les serveurs sont joignables
+- The servers are reachable
 
-- Les services sont fonctionnels
+- The services are functional
 
-- Les fichiers sont bien disponibles à l'endroit attendu.
+- The files are well available at the expected location.
 
-*Il est recommandé de conserver la machine de déploiement, ou une sauvegarde, afin de mettre à jour plus facilement l'infrastructure ultérieurement. Au minimum il faudra conserver le fichier iventory.yml.*
+*It is recommended to keep the deployment machine, or a backup, in order to more easily update the infrastructure later. At a minimum, the iventory.yml file must be kept.*
 
-## Mise à jour
+## Update
 
-La mise à jour de l'infrastructure de boot PXE se fait avec les mêmes outils que lors de l'installation. Les étapes de mise à jour sont les suivantes :
+The update of the PXE boot infrastructure is done with the same tools as during the installation. The update steps are the following:
 
-- Mise à jour du dépôt Alpine
+- Update the Alpine repository
 
-- Mise à jour des fichiers du projet Panoptiscan dans le dépôt GIT ou directement sur la machine de déploiement
+- Update the Panoptiscan project files in the GIT repository or directly on the deployment machine
 
-- Exécution du script d'installation (voir chapitre *Exécution de l'installation*)
+- Run the installation script (see the *Running the installation* chapter)
 
-## Dette
+## Debt
 
-Ce chapitre présente la dette identifiée et à corriger.
+This chapter presents the identified debt to be fixed.
 
 | Type     | Description                                   |
 |----------|-----------------------------------------------|
-| SSI      | La règle de filtrage sur le service NFS (/etc/exports) doit être revue pour ne permettre l'accès en écriture qu'à l'intégrateur. |
-| SSI      | Les droits d'accès au répertoire de données PXE sur le serveur HTTP/NFS sont 0777 car il n'y a pas de groupe commun entre HTTP et NFS. |
+| SSI      | The filtering rule on the NFS service (/etc/exports) must be reviewed to only allow write access to the integrator. |
+| SSI      | The access rights to the PXE data directory on the HTTP/NFS server are 0777 because there is no common group between HTTP and NFS. |
 
 ## Notes
 
-### Boot raspberry Pi
+### Raspberry Pi boot
 
-- récupérer l'archive alpine-rpi-*-aarch64.tar.gz et la décompresser dans /var/tftpboot sur le serveur TFTP
-- supprimer les fichiers /var/tftpboot/boot/*-rpi et ne conserver que les *-rpi4
-- copier le fichier /var/tftpboot/boot/modloop-rpi4 dans le dossier /var/www/pxe/
-- sur le dépot Panoptiscan créer un lien symbolique entre le dossier x86_64 et le dossier aarch64 
-- installer les fichiers clamav dans les dépôts
+- retrieve the alpine-rpi-*-aarch64.tar.gz archive and decompress it in /var/tftpboot on the TFTP server
+- delete the /var/tftpboot/boot/*-rpi files and keep only the *-rpi4
+- copy the /var/tftpboot/boot/modloop-rpi4 file in the /var/www/pxe/ directory
+- on the Panoptiscan repository create a symbolic link between the x86_64 directory and the aarch64 directory
+- install the clamav files in the repositories

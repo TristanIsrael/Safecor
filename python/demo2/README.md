@@ -1,47 +1,46 @@
 # Safecor Demonstration application
 
-## Fonctionnement
+## How it works
 
-Ce projet de démonstration permet de mettre en évidence les mécanismes de communication inter-domaines au sein du socle Safecor.
+This demonstration project highlights the inter-domain communication mechanisms of the Safecor platform.
 
-L'interface graphique fournit un champ de saisie qui permet à l'utilisateur d'entrer un message. Le message sera ensuite envoyé au travers du broker puis reçu par un premier composant qui l'enrichira avant d'émettre une réponse. Cette réponse sera ensuite captée par un deuxième composant qui l'enrichira à son tour.
+The graphical interface provides an input field that allows the user to enter a message. The message is then sent through the broker and received by a first component that enriches it before emitting a response. This response is then captured by a second component that enriches it in turn.
 
-Afin d'illustrer le fonctionnement des requêtes vers le socle, chaque composant enrichira le message initial avec des éléments issus du système :
-- nb_cpu - La quantité de CPU du système.
-- is_plugged - vrai si le système est connecté à une alimentation secteur, faux s'il fonctionne sur batterie.
+To illustrate the flow of requests to the platform, each component enriches the initial message with elements from the system:
+- nb_cpu - The number of CPUs of the system.
+- is_plugged - true if the system is connected to AC power, false if it is running on battery.
 
-### Commandes et messages
+### Commands and messages
 
-Les `topics` utilisés sont les suivants :
+The `topics` used are the following:
 
 | Topic | Arguments | Description |
 |--|--|--|
-| `demo/lambda/request` | `{ "message": "le message saisi par l'utilisateur" }` | Le message saisit par l'utilisateur est transmis aux composants du système par ce topic. |
-| `demo/lambda/step/#` | `{ "message": "le message saisi par l'utilisateur et enrichi à l'étape #" }` | Le message est suivi par l'un ou l'autre des composants et enrichi puis transmis. |
-| `demo/lambda/response` | `{ "result": "le message enrichi final" }` | Le résultat du traitement est retourné au travers de ce message. |
+| `demo/lambda/request` | `{ "message": "the message entered by the user" }` | The message entered by the user is transmitted to the system components through this topic. |
+| `demo/lambda/step/#` | `{ "message": "the message entered by the user and enriched at step #" }` | The message is processed by one of the components, enriched, and then transmitted. |
+| `demo/lambda/response` | `{ "result": "the final enriched message" }` | The result of the processing is returned through this message. |
 
-### Composants
+### Components
 
-Le système de démonstration comporte 3 composants :
+The demonstration system has 3 components:
 
-| Composant | Rôle | Fichier |
+| Component | Role | File |
 |--|--|--|
-| GUI | Affiche l'interface graphique et gère les interactions avec l'utilisateur | `AppController.py` |
-| Composant 1 | Premier composant d'enrichissement | `Composant1.py` |
-| Composant 2 | Deuxième composant d'enrichissement | `Composant2.py` |
+| GUI | Displays the graphical interface and handles the interactions with the user | `AppController.py` |
+| Component 1 | First enrichment component | `Composant1.py` |
+| Component 2 | Second enrichment component | `Composant2.py` |
 
-## Dépendances
+## Dependencies
 
-La construction du paquet wheel nécessite le module python `build` :
+Building the wheel package requires the python `build` module:
 ```
 $ pip install build
 ```
 
-**Une connexion Internet est nécessaire**
+**An Internet connection is required**
 
-## Construction
+## Build
 
 ```
 $ python3 -m build --no-isolation
 ```
-

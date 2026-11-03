@@ -2,44 +2,44 @@
 
  Panoptiscan
 
-## Use cases à traiter
+## Use cases to handle
 
-- Logger les performances et la consommation mémoire en mode DEBUG
+- Log the performance and the memory consumption in DEBUG mode
 
-- Désacidifier les fichiers sur la station pour les scanne
+- Deacidize the files on the station to scan them
 
-## Exigences
+## Requirements
 
-- La station blanche ne doit pas avoir de périphérique de masse connecté (disque dur, carte mémoire)
+- The white station must not have any mass storage device connected (hard disk, memory card)
 
-- Elle doit être construite à partir d'un master homologué, ce master doit être vérifié
+- It must be built from an approved master, this master must be verified
 
-- en cas de détection de virus, ne copier que les fichiers sains
+- In case of virus detection, copy only the clean files
 
-- le journal des scans est copié en même temps que les fichiers
+- The scan journal is copied at the same time as the files
 
-## Pistes envisagées
+## Approaches considered
 
-- Définition d'un master avec YOCTO, facilement modifiable, maîtrisé et déployable -> Sortie au format IMG
+- Definition of a master with YOCTO, easily modifiable, mastered and deployable -> Output in IMG format
 
 ## Bug fixes
 
-- OK après l'insertion du support 1 : modifier le message "Insérer une deuxième clé USB"
+- OK after inserting the first media: change the message "Insert a second USB key"
 
-- après le scan :
+- After the scan:
 
-- OK cacher la barre de progression
+- OK hide the progress bar
 
-- remonter les chiffres des résultats
+- Display the result figures
 
-- afficher le bouton de copie et le bouton d'éjection côte-à-côte
+- Display the copy button and the eject button side by side
 
-- ajouter un bouton pour éteindre le dispositif
+- Add a button to power off the device
 
-## Débogage
+## Debugging
 
 - https://github.com/pyutils/line_profiler
 
-## Icones
+## Icons
 
 https://iconsplace.com/custom-color/eject-icon-17/
