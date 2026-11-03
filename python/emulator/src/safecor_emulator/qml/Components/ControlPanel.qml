@@ -1,11 +1,18 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import safecor.emulator 1.0
 
 ScrollView {
     id: root
     clip: true
+
+    // Folder picker for the source disk path.
+    FileDialog {
+        id: diskPathFileDialog
+        onAccepted: diskPathField.text = String(selectedFolder).replace("file://", "")
+    }
 
     ColumnLayout {
         width: root.width * 0.9
@@ -48,8 +55,20 @@ ScrollView {
                         placeholderText: qsTr("root path")
                     }
                     Button {
+                        text: qsTr("Browse...")
+                        onClicked: diskPathFileDialog.open()
+                    }
+                    Button {
                         text: qsTr("Attach")
                         onClicked: ConsoleController.attach_disk(diskIdField.text, diskPathField.text)
+                    }
+                }
+
+                Connections {
+                    target: ConsoleController
+                    function onDiskAttached() {
+                        diskIdField.text = ""
+                        diskPathField.text = ""
                     }
                 }
             }
