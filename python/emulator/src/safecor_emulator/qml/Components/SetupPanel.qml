@@ -34,11 +34,13 @@ Item {
                     id: topologyPathField
                     Layout.fillWidth: true
                     selectByMouse: true
+                    enabled: !ConsoleController.running
                     placeholderText: qsTr("path to topology.json")
                     Component.onCompleted: text = ConsoleController.topologyPath
                 }
                 Button {
                     text: qsTr("Browse...")
+                    enabled: !ConsoleController.running
                     onClicked: topologyFileDialog.open()
                 }
                 Button {
@@ -53,6 +55,7 @@ Item {
                 ComboBox {
                     id: configCombo
                     Layout.fillWidth: true
+                    enabled: !ConsoleController.running
                     model: ["(standard)"].concat(ConsoleController.configurationNames)
                     onActivated: ConsoleController.select_configuration(currentIndex === 0 ? "" : currentText)
                 }

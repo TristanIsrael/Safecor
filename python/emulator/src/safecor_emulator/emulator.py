@@ -83,7 +83,7 @@ class Emulator:
     ):
         self.profile = profile if profile is not None else default_profile()
         self.source_disks = dict(source_disks or {})
-        self.storage_path = storage_path
+        self.storage_path = storage_path or "/tmp/safecor/storage"
         self.broker_port = broker_port
         self.host = host
         self.reuse_broker = reuse_broker
@@ -419,14 +419,14 @@ class Emulator:
         self._dom0 = MockDom0Controller(
             self._dom0_lock, client_id_suffix=suffix, event_bus=self._event_bus
         )
-        self._dom0.start(self.storage_path or "/tmp")
+        self._dom0.start(self.storage_path)
 
         self._sys_usb = MockSysUsbController(
             self._sys_usb_lock, client_id_suffix=suffix, event_bus=self._event_bus
         )
         self._sys_usb.start(
             self.source_disks,
-            self.storage_path or "/tmp",
+            self.storage_path,
         )
 
         # 5. wait for both peers to be connected to the broker
