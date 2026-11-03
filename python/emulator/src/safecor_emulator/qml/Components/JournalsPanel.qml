@@ -24,33 +24,43 @@ Item {
                 anchors.rightMargin: 8
                 spacing: 6
 
-                TextArea {
+                LogListView {
                     id: actionsArea
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    readOnly: true
-                    selectByMouse: true
-                    clip: true
-                    wrapMode: TextArea.WrapAtWordBoundaryOrAnywhere
-                    font.pointSize: 12
                 }
-                Button {
-                    text: qsTr("Clear")
-                    Layout.alignment: Qt.AlignBottom
-                    onClicked: {
-                        actionsArea.clear()
-                        ConsoleController.clear_actions()
+                ColumnLayout {
+                    spacing: 4
+                    Button {
+                        text: qsTr("Clear")
+                        onClicked: {
+                            actionsArea.clear()
+                            ConsoleController.clear_actions()
+                        }
+                    }
+                    Button {
+                        text: qsTr("Copy")
+                        onClicked: actionsArea.copySelected()
                     }
                 }
             }
         }
 
         // --- MQTT events + platform log (bottom, tabs) ------------------
-        TabBar {
-            id: tabs
+        RowLayout {
             Layout.fillWidth: true
-            TabButton { text: qsTr("MQTT events") }
-            TabButton { text: qsTr("Platform log") }
+            spacing: 6
+
+            TabBar {
+                id: tabs
+                Layout.fillWidth: true
+                TabButton { text: qsTr("MQTT events") }
+                TabButton { text: qsTr("Platform log") }
+            }
+            Button {
+                text: qsTr("Copy")
+                onClicked: (tabs.currentIndex === 0 ? mqttArea : logArea).copySelected()
+            }
         }
 
         StackLayout {
@@ -58,21 +68,11 @@ Item {
             Layout.fillHeight: true
             currentIndex: tabs.currentIndex
 
-            TextArea {
+            LogListView {
                 id: mqttArea
-                readOnly: true
-                selectByMouse: true
-                clip: true
-                wrapMode: TextArea.WrapAtWordBoundaryOrAnywhere
-                font.pointSize: 12
             }
-            TextArea {
+            LogListView {
                 id: logArea
-                readOnly: true
-                selectByMouse: true
-                clip: true
-                wrapMode: TextArea.WrapAtWordBoundaryOrAnywhere
-                font.pointSize: 12
             }
         }
     }

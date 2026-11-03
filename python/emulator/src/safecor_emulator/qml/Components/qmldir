@@ -4,3 +4,4 @@ ControlPanel 1.0 ControlPanel.qml
 StatePanel 1.0 StatePanel.qml
 ComponentsPanel 1.0 ComponentsPanel.qml
 JournalsPanel 1.0 JournalsPanel.qml
+LogListView 1.0 LogListView.qml

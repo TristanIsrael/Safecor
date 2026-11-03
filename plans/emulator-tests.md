@@ -76,6 +76,10 @@ Le contenu des panneaux de logs doit pouvoir être sélectionné pour un copier-
 
 - J'ai modifié le thème (Material -> iOS) et j'ai créé un fichier qtquickcontrols2.conf mais je n'arrive pas à le faire prendre en compte dans le package python.
 
+### 1.18 Listes non scrollables
+
+- La liste de messages MQTT et le journal ne sont pas scrollables, quand la liste depasse la hauteur du composant, les nouveaux messages ne peuvent pas être consultés.
+
 ## 2. Problèmes au démarrage
 
 ### 2.1 Topologie obligatoire
