@@ -2,7 +2,7 @@
 
 Starts the emulated Safecor core (broker + mock Dom0 + mock sys-usb) and keeps
 it running so that a Safecor-based product can be launched in another terminal
-against it. Use ``--profile`` / ``--disk`` / ``--storage`` / ``--destination``
+against it. Use ``--profile`` / ``--disk`` / ``--storage``
 to shape the emulated system.
 
 Example::
@@ -55,7 +55,6 @@ def _build_parser():
         "disk id, PATH its root directory",
     )
     parser.add_argument("--storage", help="directory that emulates the repository")
-    parser.add_argument("--destination", help="directory that emulates the target disk")
     parser.add_argument(
         "--port", type=int, default=1883, help="broker TCP port (default 1883)"
     )
@@ -127,13 +126,11 @@ def main(argv=None) -> int:
     workdir = os.path.join(tempfile.gettempdir(), "safecor_emulator")
     os.makedirs(workdir, exist_ok=True)
     storage = args.storage or os.path.join(workdir, "repository")
-    destination = args.destination or os.path.join(workdir, "target")
 
     em = Emulator(
         profile=profile,
         source_disks=source_disks,
         storage_path=storage,
-        destination_disk_path=destination,
         broker_port=args.port,
         host=args.host,
         reuse_broker=not args.no_reuse,
@@ -153,7 +150,6 @@ def main(argv=None) -> int:
         f"screen={profile.screen_width}x{profile.screen_height}"
     )
     print(f"  repository  : {storage}")
-    print(f"  target disk : {destination}")
     for name, path in source_disks.items():
         print(f"  disk {name}: {path}")
     print("Press Ctrl+C to stop.")

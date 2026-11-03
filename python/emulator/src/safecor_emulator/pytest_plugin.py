@@ -52,7 +52,6 @@ def emulator(tmp_path_factory):
         profile=default_profile(),
         source_disks={"disk0": str(disk0)},
         storage_path=str(base / "repository"),
-        destination_disk_path=str(base / "target"),
     )
     em.start()
     yield em

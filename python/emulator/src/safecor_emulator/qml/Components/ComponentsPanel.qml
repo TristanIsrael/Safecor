@@ -7,14 +7,6 @@ GroupBox {
     id: root
     title: qsTr("Components")
 
-    // Periodic refresh while the emulator is running (1.15: an up-to-date list).
-    Timer {
-        interval: 4000
-        running: ConsoleController.running
-        repeat: true
-        onTriggered: ConsoleController.refresh_components()
-    }
-
     ColumnLayout {
         anchors.fill: parent
         anchors.topMargin: 8

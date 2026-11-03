@@ -17,7 +17,6 @@ def em(tmp_path):
     emulator = Emulator(
         source_disks={"d0": str(disk)},
         storage_path=str(tmp_path / "repo"),
-        destination_disk_path=str(tmp_path / "target"),
     )
     emulator.start()
     yield emulator

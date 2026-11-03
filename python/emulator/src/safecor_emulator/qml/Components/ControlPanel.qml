@@ -17,6 +17,16 @@ Item {
         }
     }
 
+    FileDialog {
+        id: storagePathFileDialog
+        parentWindow: window
+        onAccepted: storagePathField.text = String(selectedFolder).replace("file://", "")
+        Component.onCompleted: {
+            if ("selectFolder" in storagePathFileDialog)
+                storagePathFileDialog.selectFolder = true
+        }
+    }
+
     ScrollView {
         anchors.fill: parent
         clip: true
@@ -68,6 +78,24 @@ Item {
                         Button {
                             text: qsTr("Attach")
                             onClicked: ConsoleController.attach_disk(diskIdField.text, diskPathField.text)
+                        }
+                    }
+
+                    RowLayout {
+                        Label { text: qsTr("Repository:") }
+                        TextField {
+                            id: storagePathField
+                            Layout.fillWidth: true
+                            selectByMouse: true
+                            enabled: !ConsoleController.running
+                            placeholderText: qsTr("repository path")
+                            text: ConsoleController.storagePath
+                            onTextChanged: ConsoleController.storagePath = text
+                        }
+                        Button {
+                            text: qsTr("Browse...")
+                            enabled: !ConsoleController.running
+                            onClicked: storagePathFileDialog.open()
                         }
                     }
 
