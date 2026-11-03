@@ -19,4 +19,5 @@ ApplicationWindow {
         id: operatorWindow
         anchors.fill: parent
     }
+    
 }

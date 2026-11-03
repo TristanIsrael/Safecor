@@ -49,6 +49,7 @@ class ConsoleController(QObject):
     logLine = Signal(str)
     warning = Signal(str)
     uiLanguageChanged = Signal()
+    diskAttached = Signal()
 
     def __init__(
         self,
@@ -73,6 +74,7 @@ class ConsoleController(QObject):
         self.__default_language = "en"
         self.__languages: List[str] = []
         self.__restarted_domains: List[str] = []
+        self.__destination_path: str = ""
 
         self.__ui_language = DEFAULT_UI_LANGUAGE
         self.__ui_translator: Optional[QTranslator] = None
@@ -155,7 +157,10 @@ class ConsoleController(QObject):
     def start_emulator(self):
         """Create (if needed) and start the emulator, then sync the state."""
         if self.__emulator is None:
-            self.__emulator = Emulator(**self.__emulator_params)
+            params = dict(self.__emulator_params)
+            if self.__destination_path:
+                params["destination_disk_path"] = self.__destination_path
+            self.__emulator = Emulator(**params)
         try:
             self.__emulator.start()
         except Exception as error:
@@ -263,6 +268,7 @@ class ConsoleController(QObject):
         self.__disks.append(disk_id)
         self.__disk_paths[disk_id] = path
         self.disksChanged.emit()
+        self.diskAttached.emit()
         self.__record_action("attach_disk", {"disk": disk_id, "path": path})
 
     @Slot(str)
@@ -555,6 +561,12 @@ class ConsoleController(QObject):
     def __get_supported_ui_languages(self):
         return list(SUPPORTED_UI_LANGUAGES)
 
+    def __get_destination_path(self):
+        return self.__destination_path
+
+    def __set_destination_path(self, path: str):
+        self.__destination_path = path
+
     # --- QML-visible properties ----------------------------------------------
     running = Property(bool, __is_running, notify=stateChanged)
     brokerPort = Property(int, __get_broker_port, notify=stateChanged)
@@ -582,4 +594,7 @@ class ConsoleController(QObject):
     uiLanguage = Property(str, __get_ui_language, notify=uiLanguageChanged)
     supportedUiLanguages = Property(
         list, __get_supported_ui_languages, notify=uiLanguageChanged
+    )
+    destinationPath = Property(
+        str, __get_destination_path, __set_destination_path, notify=stateChanged
     )

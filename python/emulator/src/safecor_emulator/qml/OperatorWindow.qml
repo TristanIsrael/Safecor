@@ -40,8 +40,8 @@ Item {
             // Left column: setup + controls
             ColumnLayout {
                 Layout.fillHeight: true                
-                width: root.width * 0.5
-                //Layout.minimumWidth: 320
+                Layout.preferredWidth: root.width * 0.5
+                Layout.minimumWidth: 320
                 //Layout.maximumWidth: 460
                 Layout.margins: 16
                 spacing: 8
@@ -70,22 +70,17 @@ Item {
                     spacing: 8                
 
                     StatePanel {
-                        width: parent.width
-                        //Layout.fillWidth: true
-                        //Layout.preferredHeight: 220
+                        width: parent.width                        
                     }
 
                     ComponentsPanel {
                         width: parent.width
-                        //Layout.fillWidth: true
                         Layout.preferredHeight: 160
                     }
 
                     JournalsPanel {
                         width: parent.width
-                        Layout.preferredHeight: 400
-                        //Layout.fillWidth: true
-                        //Layout.fillHeight: true
+                        Layout.preferredHeight: 400                        
                     }
 
                     Item {
