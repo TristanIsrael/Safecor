@@ -16,15 +16,6 @@ Item {
         onAccepted: topologyPathField.text = String(selectedFile).replace("file://", "")
     }
 
-    FileDialog {
-        id: destinationFileDialog
-        onAccepted: destinationPathField.text = String(selectedFolder).replace("file://", "")
-        Component.onCompleted: {
-            if ("selectFolder" in destinationFileDialog)
-                destinationFileDialog.selectFolder = true
-        }
-    }
-
     GroupBox {
         anchors.fill: parent
         title: qsTr("Setup")
@@ -75,10 +66,6 @@ Item {
                     placeholderText: qsTr("path to target disk directory")
                     text: ConsoleController.destinationPath
                     onTextChanged: ConsoleController.destinationPath = text
-                }
-                Button {
-                    text: qsTr("Browse...")
-                    onClicked: destinationFileDialog.open()
                 }
             }
 
