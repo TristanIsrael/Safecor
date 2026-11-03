@@ -137,4 +137,5 @@ def run_gui(topology_path: Optional[str] = None, **emulator_params: Any) -> int:
     # The QML root is an ``ApplicationWindow`` (a ``QQuickWindow`` at runtime).
     window = cast(QQuickWindow, engine.rootObjects()[0])
     window.show()
+
     return app.exec()

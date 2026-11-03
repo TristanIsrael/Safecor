@@ -13,11 +13,13 @@ Item {
     // / offscreen Qt builds (which lack the advanced FileDialog properties).
     FileDialog {
         id: topologyFileDialog
+        parentWindow: window
         onAccepted: topologyPathField.text = String(selectedFile).replace("file://", "")
     }
 
     FileDialog {
         id: destinationFileDialog
+        parentWindow: window
         onAccepted: destinationPathField.text = String(selectedFolder).replace("file://", "")
         Component.onCompleted: {
             if ("selectFolder" in destinationFileDialog)
