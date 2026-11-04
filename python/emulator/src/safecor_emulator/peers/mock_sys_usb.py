@@ -134,8 +134,14 @@ class MockSysUsbController:
 
     def __on_mqtt_connected(self):
         self.__log("MQTT client connected")
-        self.__mqtt_client.subscribe(f"{Topics.SYSTEM}/+/+/request")
-        self.__mqtt_client.subscribe(f"{Topics.DISCOVER}/+/request")
+        self.__mqtt_client.subscribe(f"{Topics.LIST_DISKS}/request")
+        self.__mqtt_client.subscribe(f"{Topics.LIST_FILES}/request")
+        self.__mqtt_client.subscribe(f"{Topics.READ_FILE}/request")
+        self.__mqtt_client.subscribe(f"{Topics.COPY_FILE}/request")
+        self.__mqtt_client.subscribe(f"{Topics.CREATE_FILE}/request")
+        self.__mqtt_client.subscribe(f"{Topics.MOUNT_FILE}/request")
+        self.__mqtt_client.subscribe(f"{Topics.UNMOUNT}/request")
+        self.__mqtt_client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/request")
 
         # Finally we announce our components
         self.__handle_discover_components()

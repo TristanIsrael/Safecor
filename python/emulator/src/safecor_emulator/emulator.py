@@ -325,30 +325,58 @@ class Emulator:
     def discover_components(self) -> List[Dict[str, str]]:
         """Query the peers for their components and return a flat list.
 
-        Publishes a ``DISCOVER_COMPONENTS`` request and collects the response
-        (the mock sys-usb announces its controllers). Each entry is
-        ``{"name": <label>, "state": <state>}``. Returns an empty list when the
-        emulator is not running or the request times out.
+        Publishes a ``DISCOVER_COMPONENTS`` request and collects all responses
+        from every peer (mock core domains and external product components)
+        over a short window. Each entry is ``{"name": <label>, "state": <state>}``.
+        Returns an empty list when the emulator is not running.
         """
         if self._sys_usb is None:
             return []
-        from safecor import Topics
+        from safecor import ConnectionType, MqttClient, Topics
 
-        response = self._request_response(
-            f"{Topics.DISCOVER_COMPONENTS}/request",
-            f"{Topics.DISCOVER_COMPONENTS}/response",
-            {},
-            timeout=3.0,
+        responses: list = []
+        connected = threading.Event()
+        client = MqttClient(
+            f"emulator-{self._instance_id}-{uuid.uuid4().hex[:6]}",
+            ConnectionType.TCP_DEBUG,
+            self.host,
         )
+
+        def on_connected():
+            client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/response")
+            connected.set()
+
+        def on_message(topic, msg_payload):
+            if topic == f"{Topics.DISCOVER_COMPONENTS}/response":
+                responses.append(msg_payload)
+
+        client.on_connected = on_connected
+        client.on_message = on_message
+        client.start()
+        try:
+            if not connected.wait(3.0):
+                return []
+            time.sleep(0.2)
+            client.publish(f"{Topics.DISCOVER_COMPONENTS}/request", {})
+            # Collect all responses over a 2 s window (external components
+            # in separate processes may respond slightly later than in-process peers).
+            time.sleep(2.0)
+        finally:
+            try:
+                client.stop()
+            except Exception:
+                pass
+
         components: List[Dict[str, str]] = []
-        if isinstance(response, dict):
-            for comp in response.get("components", []):
-                components.append(
-                    {
-                        "name": comp.get("label") or comp.get("id") or "?",
-                        "state": comp.get("state", "unknown"),
-                    }
-                )
+        for response in responses:
+            if isinstance(response, dict):
+                for comp in response.get("components", []):
+                    components.append(
+                        {
+                            "name": comp.get("label") or comp.get("id") or "?",
+                            "state": comp.get("state", "unknown"),
+                        }
+                    )
         return components
 
     # --- fake input --------------------------------------------------------

@@ -53,7 +53,9 @@ Item {
                     Repeater {
                         model: ConsoleController.disks
                         RowLayout {
-                            Label { text: "• " + modelData }
+                            Label {
+                                text: "• " + modelData + " (" + (ConsoleController.diskPaths[modelData] || "") + ")"
+                            }
                             Button {
                                 text: qsTr("Detach")
                                 onClicked: ConsoleController.detach_disk(modelData)

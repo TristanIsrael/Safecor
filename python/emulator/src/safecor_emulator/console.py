@@ -546,6 +546,9 @@ class ConsoleController(QObject):
                     domains.append(name)
         return domains
 
+    def __get_disk_paths(self):
+        return dict(self.__disk_paths)
+
     def __get_components(self):
         return list(self.__components)
 
@@ -582,6 +585,7 @@ class ConsoleController(QObject):
     peersConnected = Property(list, __get_peers_connected, notify=stateChanged)
     environment = Property(object, __get_environment, notify=stateChanged)
     disks = Property(list, __get_disks, notify=disksChanged)
+    diskPaths = Property(object, __get_disk_paths, notify=disksChanged)
     components = Property(list, __get_components, notify=componentsChanged)
     energyLevel = Property(float, __get_energy_level, notify=energyChanged)
     plugged = Property(bool, __get_plugged, notify=energyChanged)
