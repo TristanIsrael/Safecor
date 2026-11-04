@@ -189,8 +189,13 @@ class ConsoleController(QObject):
             self.__sync_from_emulator()
         self.__running = False
         self.__peers_connected = []
+        self.__disks = []
+        self.__disk_paths = {}
+        self.__restarted_domains = []
+        self.__components = []
         self.stateChanged.emit()
         self.disksChanged.emit()
+        self.componentsChanged.emit()
         self.__record_action("stop_emulator", {})
 
     @Slot(str)
@@ -532,6 +537,8 @@ class ConsoleController(QObject):
     def __get_started_domains(self):
         """Domains that are started: the always-mocked core peers (``Dom0``,
         ``sys-usb``) plus the topology's business domains, in that order."""
+        if not self.__running:
+            return []
         domains = list(self.__peers_connected)
         if self.__environment:
             for name in self.__environment.business_domain_names():
