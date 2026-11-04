@@ -31,6 +31,8 @@ Item {
         anchors.fill: parent
         clip: true
 
+        contentWidth: availableWidth *0.98
+
         ColumnLayout {
             id: lyt
             width: parent.width
