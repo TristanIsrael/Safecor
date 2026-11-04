@@ -67,6 +67,7 @@ The shared staging area (`__repository__`, `/usr/lib/safecor/storage` on Dom0).
 | R1 | List repository files | `get_files_list("__repository__", …)` | `disks/list_files` | req/resp | same as S3, disk = `__repository__` | Dom0 | ✅ |
 | R2 | Delete a repository file | `delete_file(filepath, "__repository__")` | `disks/delete_file` | req + notif | same as S7; notif `disks/deleted_file` | Dom0 | ✅ |
 | R3 | Repository file fingerprint | `get_file_fingerprint(filepath, "__repository__")` | `disks/file_fingerprint` | req/resp | same as S8 | Dom0 | ✅ (real `FileHelper` on the local repo dir) |
+| R4 | Get repository mount path | `request_repository_path()` | `disks/repository_path` | req/resp | req: — ; resp: `path` | Dom0 | ✅ (returns the configured `storage_path`) |
 
 ## 3. System & workflow (provided by Dom0)
 
@@ -152,7 +153,7 @@ are the **inputs** the operator console will let a human define.
 | Area | Faked ✅ | Partial ⚠️ | Missing ❌ | Doc'd not impl. 📄 |
 |------|----------|-----------|-----------|--------------------|
 | Storage & disks (sys-usb) | S1-S11 | — | S12 (clear-queues) | S13 (storage_info) |
-| Repository (Dom0) | R1-R3 | — | — | — |
+| Repository (Dom0) | R1-R4 | — | — | — |
 | System & workflow (Dom0) | W1 | W2, W3, W4, W5 | — | W6 (monitoring) |
 | Energy (Dom0) | E1 | — | — | — |
 | Settings & languages (Dom0) | — | L2 (default) | L1, L3, L4, L5 | — |

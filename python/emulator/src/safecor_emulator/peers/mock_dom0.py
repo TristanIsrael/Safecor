@@ -125,6 +125,7 @@ class MockDom0Controller:
         self.__mqtt_client.subscribe(Topics.GUI_READY)
         self.__mqtt_client.subscribe(f"{Topics.SWITCH_GUI}/request")
         self.__mqtt_client.subscribe(f"{Topics.PING}/request")
+        self.__mqtt_client.subscribe(f"{Topics.REPOSITORY_PATH}/request")
         self.__sync_lock.set()
 
     def __on_mqtt_message(self, topic: str, payload: dict):
@@ -147,6 +148,8 @@ class MockDom0Controller:
             self.__handle_switch_gui(payload)
         elif topic == f"{Topics.PING}/request":
             self.__handle_ping(payload)
+        elif topic == f"{Topics.REPOSITORY_PATH}/request":
+            self.__handle_repository_path()
 
     # --- command handlers ----------------------------------------------------
     def __handle_delete_file(self, payload: dict):
@@ -205,6 +208,10 @@ class MockDom0Controller:
             payload.get("sent_at", ""),
         )
         self.__publish(f"{Topics.PING}/response", response)
+
+    def __handle_repository_path(self):
+        payload = {"path": self.__storage_path}
+        self.__publish(f"{Topics.REPOSITORY_PATH}/response", payload)
 
     # --- workflow / GUI fakes (W2, W4, W5) ------------------------------------
     def request_shutdown(self, payload: Optional[dict] = None) -> dict:

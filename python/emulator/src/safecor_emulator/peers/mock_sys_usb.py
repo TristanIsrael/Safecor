@@ -49,6 +49,7 @@ class MockSysUsbController:
         self.__client_id_suffix = client_id_suffix
         self.__event_bus = event_bus
         self.__destination_disk_path = ""
+        self.__known_disk_ids: set = set()
 
     # --- event bus helpers ---------------------------------------------------
     def __emit(self, stream: str, text: str, payload: Optional[dict] = None):
@@ -94,6 +95,7 @@ class MockSysUsbController:
         """Hot-plug a disk: expose ``root_path`` as ``disk_id`` and announce it.
 
         The last attached disk is considered the copy destination (target).
+        Re-attaching a previously known disk does not change the destination.
 
         Publishes a ``DISK_STATE`` ``connected`` notification, mirroring what the
         real sys-usb controller does when a USB disk is inserted.
@@ -101,8 +103,11 @@ class MockSysUsbController:
         if self.__mqtt_client is None:
             raise RuntimeError("MockSysUsbController.start() must be called first")
         os.makedirs(root_path, exist_ok=True)
+        is_new_disk = disk_id not in self.__known_disk_ids
+        self.__known_disk_ids.add(disk_id)
         self.__source_disks_list[disk_id] = root_path
-        self.__destination_disk_path = root_path
+        if is_new_disk:
+            self.__destination_disk_path = root_path
         self.__publish(
             Topics.DISK_STATE,
             NotificationFactory.create_notification_disk_state(

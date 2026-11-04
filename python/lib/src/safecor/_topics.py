@@ -30,6 +30,7 @@ class Topics():
     MOUNT_FILE = f"{DISKS}/mount_file"
     UNMOUNT = f"{DISKS}/unmount"
     DELETED_FILE = f"{DISKS}/deleted_file"
+    REPOSITORY_PATH = f"{DISKS}/repository_path"
 
     # Workflow management
     SHUTDOWN = f"{WORKFLOW}/shutdown"
