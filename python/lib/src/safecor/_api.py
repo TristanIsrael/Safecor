@@ -604,6 +604,19 @@ class Api(metaclass=SingletonMeta):
         self.__mqtt_client.publish(f"{Topics.SYSTEM_INFO}/request", {})
 
 
+    def request_repository_path(self) -> None:
+        """
+        Asks the system for the repository mount path.
+
+        The response is provided on the topic :attr:`Topics.REPOSITORY_PATH`
+        with the following payload::
+
+            {
+                "path": "/usr/lib/safecor/storage"
+            }
+        """
+        self.__mqtt_client.publish(f"{Topics.REPOSITORY_PATH}/request", {})
+
     def clear_sys_usb_queues(self):
         """ Queries sys-usb to clear its queues.
         """
