@@ -51,9 +51,58 @@ Safecor is a software architecture for building security products (kiosk/embedde
 - Docs: Sphinx (autodoc + RTD theme), published on GitHub Pages; CI via GitHub Actions (`build-all.yml`, `documentation.yml`).
 - License: proprietary and restrictive (no fork/copy/reuse without written permission).
 
+## Installation packages
+
+- Safecor components are packaged into Alpine Linux packages (APK).
+- The Alpine Linux packages definitions are in `setup/packages/safecor`.
+  - `setup/packages/safecor/safecor-container-debian` is the package that installs a Debian LXC container in a Domain of a Safecor system.
+  - `setup/packages/safecor/safecor-core` is the package that contains the Dom0 core controller and the scripts that setup the core of Safecor.
+  - `setup/packages/safecor/safecor-diag` is a package that setup the diagnostic app on a platform. It does not contain Safecor.
+  - `setup/packages/safecor/safecor-domu-base` is a package that prepares a Domain to be integrated into a Safecor system. 
+  - `setup/packages/safecor/safecor-gui-base` is a package that prepares a Domain to be integrated into a Safecor system as graphical user interface (GUI). 
+  - `setup/packages/safecor/safecor-hardening` is a package that hardens a Domain in a Safecor system. 
+  - `setup/packages/safecor/safecor-lib` is a dependency package that installs the Safecor python library. 
+  - `setup/packages/safecor/safecor-splash` is the package that setup the splash screen of a Safecor vanilla system. 
+  - `setup/packages/safecor/safecor-sys-usb` is the package installed in the sys-usb Domain of a Safecor system. 
+  - `setup/packages/safecor/safecor-syslog` is the package that connects a Domain to the Safecor logging facility using `syslog`. 
+  - `setup/packages/safecor/safecor-tests` is a testing Safecor appliance. 
+  - `setup/packages/safecor/safecor-tests-gui` is the package that setup the graphical user interface (GUI) of the test appliance. 
+
+## Build
+
+- Versioning rule (scheme `MAJOR.MINOR.PATCH`, e.g. `2.2.0`):
+  - A bug fix bumps the last digit (patch) only.
+  - A new feature bumps the second digit (minor) and resets the last digit to 0.
+  - The first digit (major) is bumped only by the product maintainer.
+- When the components versions are modified, the Alpine Linux packages must be updated to reflect the components versions.
+
 ## Coding standards
 
-- Follow the existing naming conventions
+- Follow the existing naming conventions. The codebase is the reference; when in doubt, match the surrounding code.
+- Use `ruff` format to format Python code consistently.
+- Do not introduce unrelated formatting changes.
+
+Naming conventions:
+
+| Domain | Convention | Examples |
+|---|---|---|
+| Python — classes | `PascalCase` | `ApplicationController`, `EMAETAEstimator` |
+| Python — methods / variables | `snake_case` | `start_transfer`, `remaining_time` |
+| Python — private methods | double-underscore (name mangling) | `__set_system_state`, `__handle_disk_state` |
+| Python — constants | `UPPER_SNAKE` | `ANTIVIRUS_NEEDED`, `TOPIC_ANALYSIS`, `DEVMODE` |
+| Python — enums | `PascalCase` (no underscores) | `SystemAnalysisRunning`, `FileClean` |
+| QML — components | `PascalCase` | `AnalysisPanel`, `FilesSelectionPanel` |
+| QML — properties / bindings | `camelCase` | `systemState`, `queueSize`, `nbClean` |
+| MQTT topics | `saphir/analysis/{request,response,status,error,stop,resume,reset}`; `system/...` | — |
+
+- Comments, documentation and commits are in **English** (see *Documentation standards*).
+
+## Linting and static analysis
+
+- Use `ruff` check to detect linting issues, potential bugs, and violations of coding conventions.
+- Run static analysis on all modified Python files, included newly added files.
+- Do not suppress linting rules unless there is a clear justification.
+- Use type checking and resolve any new type errors introduced by the changes.
 
 ## Issue tracking
 
@@ -75,6 +124,18 @@ Safecor is a software architecture for building security products (kiosk/embedde
 - **Never commit** before running:
   1. The tests specific to the issue being worked on.
   2. The project's non-regression test suite (full `pytest` run).
+
+## Quality gates
+- **Never commit** before verifying the respect of the coding standards on the added code.
+- Run formatting checks before committing changes.
+- Resolve all linting errors before committing changes.
+- **Never push** before running:
+  1. The tests specific to the issue being worked on.
+  2. The project's non-regression test suite (full `pytest` run).
+- **Never push** without adding unit tests on the added code.
+- **Never push** when the code coverage is under 85%.
+- After push, the Github issue must be updated (task and status).
+- **Never commit** before updating the documentation and the plans if needed.
 
 ## Chat rules
 
