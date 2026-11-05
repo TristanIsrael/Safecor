@@ -120,6 +120,10 @@ class MockSysUsbController:
 
         Publishes a ``DISK_STATE`` ``disconnected`` notification.
         """
+        print(
+            f"[MockSysUsb] detach_disk: {disk_id!r} "
+            f"(in list: {disk_id in self.__source_disks_list})"
+        )
         if self.__mqtt_client is None:
             raise RuntimeError("MockSysUsbController.start() must be called first")
         if self.__source_disks_list.pop(disk_id, None) is None:
