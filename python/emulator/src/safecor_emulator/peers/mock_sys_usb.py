@@ -120,10 +120,6 @@ class MockSysUsbController:
 
         Publishes a ``DISK_STATE`` ``disconnected`` notification.
         """
-        print(
-            f"[MockSysUsb] detach_disk: {disk_id!r} "
-            f"(in list: {disk_id in self.__source_disks_list})"
-        )
         if self.__mqtt_client is None:
             raise RuntimeError("MockSysUsbController.start() must be called first")
         if self.__source_disks_list.pop(disk_id, None) is None:
@@ -220,9 +216,20 @@ class MockSysUsbController:
 
             disk = payload.get("disk", "")
             filepath = payload.get("filepath", "")
+            destination = payload.get("destination", "")
 
             if disk not in self.__source_disks_list:
                 self.__log(f"ERROR: The disk {disk} does not exist.")
+                return
+
+            if destination not in self.__source_disks_list:
+                self.__log(
+                    f"ERROR: The destination disk {destination} is not connected."
+                )
+                response = ResponseFactory.create_response_copy_file(
+                    filepath, disk, False, ""
+                )
+                self.__publish(f"{Topics.COPY_FILE}/response", response)
                 return
 
             root_path = self.__source_disks_list[disk]
@@ -324,6 +331,14 @@ class MockSysUsbController:
 
         if disk == Constants.STR_REPOSITORY:
             # Ignored
+            return
+
+        if disk not in self.__source_disks_list:
+            self.__log(f"ERROR: The disk {disk} is not connected.")
+            response = ResponseFactory.create_response_create_file(
+                filepath, disk, "", False
+            )
+            self.__publish(f"{Topics.CREATE_FILE}/response", response)
             return
 
         decoded = base64.b64decode(base64_data)
