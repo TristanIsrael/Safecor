@@ -7,23 +7,23 @@ import safecor.emulator 1.0
 Item {
     id: root
 
-    FileDialog {
+    FolderDialog {
         id: diskPathFileDialog
         parentWindow: window
         onAccepted: diskPathField.text = String(selectedFolder).replace("file://", "")
         Component.onCompleted: {
-            if ("selectFolder" in diskPathFileDialog)
-                diskPathFileDialog.selectFolder = true
+            if ("selectedFolder" in diskPathFileDialog)
+                diskPathFileDialog.selectedFolder = true
         }
     }
 
-    FileDialog {
+    FolderDialog {
         id: storagePathFileDialog
         parentWindow: window
         onAccepted: storagePathField.text = String(selectedFolder).replace("file://", "")
         Component.onCompleted: {
-            if ("selectFolder" in storagePathFileDialog)
-                storagePathFileDialog.selectFolder = true
+            if ("selectedFolder" in storagePathFileDialog)
+                storagePathFileDialog.selectedFolder = true
         }
     }
 
