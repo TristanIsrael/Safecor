@@ -482,7 +482,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/py3-paho-mqtt2*.apk
 
   build-fuse-archive:
     needs: [ prepare ]
@@ -512,7 +512,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/fuse-archive*.apk
           
   build-safecor-lib:
     needs: [ prepare ]
@@ -542,7 +542,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-lib*.apk
 
   build-alpine-virt-kernel:
     needs: [ prepare ]
@@ -569,7 +569,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/main/x86_64/ # The package comes from aports    
+          filepath: /home/builder/packages/main/x86_64/alpine-virt*.apk # The package comes from aports    
 
   build-xtables-addons-safecor-virt:
     needs: [ prepare ]
@@ -619,7 +619,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/main/x86_64/ # The package comes from aports    
+          filepath: /home/builder/packages/main/x86_64/xtables-addons-lts*.apk # The package comes from aports    
 
   build-safecor-virt-iso:
     needs: [ prepare ]
@@ -674,7 +674,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/  
+          filepath: /home/builder/packages/safecor/x86_64/alpine-iso*.apk 
 
   build-lxc-container-debian:
     needs: [ prepare ]
@@ -755,7 +755,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-container-debian*.apk
 
   build-safecor-core:
     needs: [ prepare ]
@@ -786,7 +786,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-core*.apk
 
   build-safecor-hardening:
     needs: [ prepare ]
@@ -818,7 +818,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-hardening*.apk
 
   build-safecor-syslog:
     needs: [ prepare ]
@@ -850,7 +850,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-syslog*.apk
 
   build-safecor-splash:
     needs: [ prepare ]
@@ -880,7 +880,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-splash*.apk
 
   build-safecor-sys-usb:
     needs: [ prepare ]
@@ -911,7 +911,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-sys-usb*.apk
 
   build-safecor-gui-base:
     needs: [ prepare ]
@@ -942,7 +942,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-gui-base*.apk
 
   build-safecor-domu-base:
     needs: [ prepare ]
@@ -973,7 +973,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-domu-base*.apk
 
   build-app-tests:
     #needs: [ prepare, build-safecor-lib, build-safecor-core, build-safecor-sys-usb, build-safecor-gui-base ]
@@ -1003,7 +1003,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-tests-gui*.apk
 
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -1044,7 +1044,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/x86_64/safecor-diag*.apk
 
   build-iso-diag:
     needs: [ prepare, build-app-diag ]
