@@ -173,6 +173,15 @@ class TestDom0Controller(unittest.TestCase):
         self.assertEqual(comp["id"], Constants.SAFECOR_SYSTEM_CONTROLLER)
         self.assertEqual(comp["state"], ComponentState.READY.value)
 
+    # --- repository path -------------------------------------------------
+
+    def test_handle_repository_path(self):
+        self.ctrl._Dom0Controller__handle_repository_path()
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.REPOSITORY_PATH}/response",
+            {"path": Constants.DOMU_REPOSITORY_PATH}
+        )
+
     # --- settings: languages --------------------------------------------
 
     def test_handle_settings_languages_list(self):
@@ -250,6 +259,15 @@ class TestDom0Controller(unittest.TestCase):
         )
         self.mqtt.publish.assert_called_once()
 
+    def test_message_worker_dispatch_repository_path(self):
+        self.ctrl._Dom0Controller__message_worker(
+            f"{Topics.REPOSITORY_PATH}/request", {}
+        )
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.REPOSITORY_PATH}/response",
+            {"path": Constants.DOMU_REPOSITORY_PATH}
+        )
+
     def test_message_worker_unknown_topic(self):
         # An unknown topic must not raise nor publish
         self.ctrl._Dom0Controller__message_worker("some/unknown/topic", {})
@@ -263,6 +281,12 @@ class TestDom0Controller(unittest.TestCase):
         self.ctrl._Dom0Controller__on_mqtt_connected()
         self.assertGreaterEqual(self.mqtt.subscribe.call_count, 10)
         self.system.return_value.set_setting.assert_called()
+
+    def test_on_mqtt_connected_subscribes_repository_path(self):
+        self.system.return_value.parse_kernel_command_line_settings.return_value = {}
+        self.topology.default_language = "en"
+        self.ctrl._Dom0Controller__on_mqtt_connected()
+        self.mqtt.subscribe.assert_called_with(f"{Topics.REPOSITORY_PATH}/request")
 
 
 if __name__ == "__main__":
