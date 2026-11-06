@@ -99,8 +99,8 @@ build() {
 }
 
 check() {
-    # Verify domu.apkovl.tar.gz.tmpl file count
-    nb_fichiers=`tar tvzf $srcdir/domu.apkovl.tar.gz.tmpl | wc -l`
+    # Verify domu.apkovl.tar.gz file count (renamed by build() from .tmpl)
+    nb_fichiers=`tar tvzf $srcdir/domu.apkovl.tar.gz | wc -l`
     if [ $nb_fichiers != 42 ]; then 
         echo "Incorrect files count in the overlay."
         echo "... found=$nb_fichiers, expected=42"
