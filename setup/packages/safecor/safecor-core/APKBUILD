@@ -18,7 +18,6 @@ install="$pkgname.pre-install $pkgname.post-install $pkgname.pre-deinstall $pkgn
 checkdepends=""
 subpackages=""
 replaces="alpine-release alpine-baselayout alpine-baselayout-data mosquitto grub openrc qemu-system-x86_64"
-options="!check"  # no tests provided
 
 source="
 https://alefbet.net/github/safecor/iso/safecor-safecor-virt-x86_64.iso
@@ -100,13 +99,21 @@ build() {
 }
 
 check() {
-    nb_fichiers=`tar tvzf $srcdir/domu.apkovl.tar.gz | wc -l`
-    if [ $nb_fichiers != 32 ]; then 
+    # Verify domu.apkovl.tar.gz.tmpl file count
+    nb_fichiers=`tar tvzf $srcdir/domu.apkovl.tar.gz.tmpl | wc -l`
+    if [ $nb_fichiers != 42 ]; then 
         echo "Incorrect files count in the overlay."
-        echo "... found=$nb_fichiers, expected=32"
-        echo "Please verify the folder domu_apkvol.tmpl"
+        echo "... found=$nb_fichiers, expected=42"
+        echo "Please verify the folder domu_apkovl.tmpl"
         return 1
     fi
+    #
+    # TODO: Write integration tests for Safecor Core scripts.
+    # These tests require Xen, Dom0 environment, and full hardware stack.
+    # Run locally with: python3 -m pytest python/tests/ or use the emulator.
+    #
+    echo "Skipping Safecor Core integration tests (requires Xen/Dom0)."
+    echo "See issue #252 for tracking core test development."
 }
 
 package() {

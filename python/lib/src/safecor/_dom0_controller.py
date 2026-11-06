@@ -100,6 +100,7 @@ class Dom0Controller():
         self.mqtt_client.subscribe(f"{Topics.PING}/request")
         self.mqtt_client.subscribe(f"{Topics.SETTINGS}/+/request")
         self.mqtt_client.subscribe(f"{Topics.SWITCH_GUI}/request")
+        self.mqtt_client.subscribe(f"{Topics.REPOSITORY_PATH}/request")
 
         # Handle the kernel's or configuration command line settings
         self.__handle_settings()
@@ -140,6 +141,8 @@ class Dom0Controller():
                 self.__handle_system_settings(topic, payload)
             elif topic == f"{Topics.SWITCH_GUI}/request":
                 self.__handle_switch_gui(payload)
+            elif topic == f"{Topics.REPOSITORY_PATH}/request":
+                self.__handle_repository_path()
         except Exception:
             Logger.print("An exception occured while handling the message")
 
@@ -298,6 +301,10 @@ class Dom0Controller():
         payload = ResponseFactory.create_response_component_state([comp])
 
         self.mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", payload)
+
+    def __handle_repository_path(self):
+        payload = {"path": Constants.DOMU_REPOSITORY_PATH}
+        self.mqtt_client.publish(f"{Topics.REPOSITORY_PATH}/response", payload)
 
     def __handle_ping(self, payload):
         ping_id = payload.get("id", "")

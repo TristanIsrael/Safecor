@@ -608,11 +608,11 @@ class Api(metaclass=SingletonMeta):
         """
         Asks the system for the repository mount path.
 
-        The response is provided on the topic :attr:`Topics.REPOSITORY_PATH`
+        The response is provided on the topic :attr:`Topics.REPOSITORY_PATH`/response
         with the following payload::
 
             {
-                "path": "/usr/lib/safecor/storage"
+                "path": "/mnt/storage"
             }
         """
         self.__mqtt_client.publish(f"{Topics.REPOSITORY_PATH}/request", {})
