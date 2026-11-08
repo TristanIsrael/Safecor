@@ -531,6 +531,12 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+
+      - name: Install dependencies
+        shell: sh
+        run: |
+          # Installs mosquitto
+          apk add mosquitto
  
       - name: Build APK
         uses: ./.github/actions/build-apk
