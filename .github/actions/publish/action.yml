@@ -65,7 +65,7 @@ runs:
       run: |
         ssh -p 222 -4 -i ssh/id_rsa -o StrictHostKeyChecking=no github-safecor@alefbet.net <<'EOF'
           set -e
-          docker run --rm -v /var/www/www.alefbet.net/github/safecor/x86_64:/mnt/apk -v /home/github-safecor:/mnt/keys alpine:3.20 sh -c "
+          docker run --rm -v /var/www/www.alefbet.net/github/safecor/x86_64:/mnt/apk -v /home/github-safecor:/mnt/keys alpine:3.21 sh -c "
             apk add --no-cache alpine-sdk
             cp /mnt/keys/safecor.rsa.pub /etc/apk/keys
             cd /mnt/apk
