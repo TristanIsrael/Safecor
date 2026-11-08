@@ -2,7 +2,7 @@
 # Maintainer: Tristan Isra..l <tristan.israel@alefbet.net>
 pkgname=safecor-lib
 pkgver=1.4
-pkgrel=0
+pkgrel=1
 pkgdesc="Safecor - Python library"
 url="https://www.alefbet.net/"
 arch="noarch"
@@ -46,5 +46,5 @@ check() {
 
 package() {
     cd "$srcdir/lib/dist"
-    python3 -m installer --destdir=$pkgdir safecor-$pkgver.$pkgrel-py3-none-any.whl
+    python3 -m installer --destdir=$pkgdir safecor-lib-$pkgver.$pkgrel-py3-none-any.whl
 }
