@@ -792,7 +792,6 @@ jobs:
     needs: [ prepare ]
     if: |
       needs.prepare.outputs.check-safecor-hardening == 'true' ||
-      needs.prepare.outputs.check-safecor-core == 'true' ||
       needs.prepare.outputs.check-safecor-app-tests == 'true'
     runs-on: ubuntu-latest
  
@@ -824,7 +823,6 @@ jobs:
     needs: [ prepare ]
     if: |
       needs.prepare.outputs.check-safecor-syslog == 'true' ||
-      needs.prepare.outputs.check-safecor-core == 'true' ||
       needs.prepare.outputs.check-safecor-app-tests == 'true'
     runs-on: ubuntu-latest
  
