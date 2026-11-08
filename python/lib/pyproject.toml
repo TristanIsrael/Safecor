@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "safecor"
-version = "1.4.0"
+version = "1.4.1"
 authors = [ 
     { name="Tristan Israël", email="tristan.israel@alefbet.net" }, 
 ]
@@ -46,7 +46,7 @@ sphinx-autobuild = "^2024.0"
 
 [tool.poetry]
 name = "safecor"
-version = "1.2.0"
+version = "1.4.1"
 description = "Safecor python package"
 authors = ["Tristan ISRAËL <tristan.israel@alefbet.net>"]
 packages = [
