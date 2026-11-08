@@ -166,3 +166,9 @@ class ResponseFactory():
             "state": "accepted" if accepted else "refused",
             "reason": reason
         }
+
+    @staticmethod
+    def create_response_repository_path(path:str) -> dict:
+        return {
+            "path": path
+        }

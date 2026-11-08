@@ -303,7 +303,7 @@ class Dom0Controller():
         self.mqtt_client.publish(f"{Topics.DISCOVER_COMPONENTS}/response", payload)
 
     def __handle_repository_path(self):
-        payload = {"path": Constants.DOMU_REPOSITORY_PATH}
+        payload = ResponseFactory.create_response_repository_path(Constants.DOMU_REPOSITORY_PATH)
         self.mqtt_client.publish(f"{Topics.REPOSITORY_PATH}/response", payload)
 
     def __handle_ping(self, payload):
