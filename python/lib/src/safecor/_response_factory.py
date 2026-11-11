@@ -166,3 +166,30 @@ class ResponseFactory():
             "state": "accepted" if accepted else "refused",
             "reason": reason
         }
+
+    @staticmethod
+    def create_my_config(topology: Topology) -> dict:
+        """ Serializes the topology into a JSON-serializable dict for the my_config response. """
+        domains = []
+        for d in topology.domains:
+            domains.append({
+                "name": d.name,
+                "domain_type": d.domain_type.value,
+                "direct_mount": d.direct_mount
+            })
+        return {
+            "product_name": topology.product_name,
+            "use_usb": topology.use_usb,
+            "repository_disabled": topology.repository_disabled,
+            "domains": domains,
+            "screen": {
+                "width": topology.screen.width,
+                "height": topology.screen.height,
+                "rotation": topology.screen.rotation,
+                "enabled": topology.screen.enabled,
+                "default_focus": topology.screen.default_focus
+            },
+            "languages": topology.languages,
+            "default_language": topology.default_language,
+            "pci_blacklist": topology.pci.blacklist
+        }

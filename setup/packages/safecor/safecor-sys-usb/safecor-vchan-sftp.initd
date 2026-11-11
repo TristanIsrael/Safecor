@@ -1,0 +1,98 @@
+#!/sbin/openrc-run
+
+name="safecor-vchan-sftp"
+command_background="yes"
+pidfile="/var/run/safecor/vchan-sftp.pid"
+user="root"
+group="safecor"
+logfile="/var/log/safecor/vchan-sftp.log"
+
+depend() {
+    after bootlocal
+}
+
+start() {
+    ebegin "Loading Xen vchan modules"
+    modprobe xen_gntdev
+    modprobe xen_gntalloc
+    modprobe xen_evtchn
+    eend 0
+
+    ebegin "Preparing runtime directory"
+    mkdir -p /var/run/safecor
+    eend 0
+
+    # Read topology to find domains with direct_mount enabled
+    # The topology is available as a JSON file at /etc/safecor/topology.json
+    TOPOLOGY_FILE="/etc/safecor/topology.json"
+    if [ ! -f "$TOPOLOGY_FILE" ]; then
+        eerror "Topology file not found: $TOPOLOGY_FILE"
+        return 1
+    fi
+
+    ebegin "Starting vchan SFTP channels"
+
+    # Extract domain names that have direct_mount from topology
+    # Using python3 to parse JSON (available on the system)
+    domains=$(python3 -c "
+import json, sys
+with open('$TOPOLOGY_FILE') as f:
+    topo = json.load(f)
+business = topo.get('business', {})
+for d in business.get('domains', []):
+    if 'direct_mount' in d:
+        print(d['name'])
+")
+
+    if [ -z "$domains" ]; then
+        einfo "No domains with direct_mount found in topology"
+        eend 0
+        return 0
+    fi
+
+    for domain_name in $domains; do
+        # Wait for the domid to appear in xenstore (domain may not be started yet)
+        domid=""
+        for i in $(seq 1 30); do
+            domid=$(xenstore-read /local/domain/system/domids/$domain_name 2>/dev/null)
+            if [ -n "$domid" ]; then
+                break
+            fi
+            sleep 2
+        done
+
+        if [ -z "$domid" ]; then
+            ewarn "No domid found for domain $domain_name, skipping"
+            continue
+        fi
+
+        vchan_sock="/var/run/safecor/vchan-${domain_name}.sock"
+        vchan_path="/local/domain/${domid}/data/vchan/sftp"
+
+        # Start vchan-socket-proxy in server mode
+        einfo "Starting vchan channel for $domain_name (domid $domid)"
+        start-stop-daemon --start --background --make-pidfile \
+            --pidfile "/var/run/safecor/vchan-${domain_name}.pid" \
+            --exec /usr/bin/vchan-socket-proxy \
+            -- -m server "$domid" "$vchan_path" "$vchan_sock" \
+            >> "$logfile" 2>&1
+
+        # Start socat to bridge the unix socket to the chrooted sftp-server
+        start-stop-daemon --start --background --make-pidfile \
+            --pidfile "/var/run/safecor/socat-${domain_name}.pid" \
+            --exec /usr/bin/socat \
+            -- UNIX-LISTEN:$vchan_sock,fork EXEC:"chroot /media /usr/lib/ssh/sftp-server" \
+            >> "$logfile" 2>&1
+    done
+
+    eend 0
+}
+
+stop() {
+    ebegin "Stopping vchan SFTP channels"
+    rm -f /var/run/safecor/vchan-*.pid /var/run/safecor/socat-*.pid
+    pkill -f "vchan-socket-proxy.*-m server" 2>/dev/null
+    pkill -f "socat.*UNIX-LISTEN:/var/run/safecor/vchan-" 2>/dev/null
+    rm -f /var/run/safecor/vchan-*.sock
+    eend 0
+}

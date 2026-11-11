@@ -14,6 +14,7 @@ class Topics():
     SYS_USB = f"{SYSTEM}/sys-usb"
     SETTINGS = f"{SYSTEM}/settings"
     GUI = f"{SYSTEM}/gui"
+    TOPOLOGY = f"{SYSTEM}/topology"
 
     DEBUGGING = f"{SYSTEM}/debugging"
 
@@ -66,3 +67,6 @@ class Topics():
 
     # GUI
     SWITCH_GUI = f"{GUI}/switch"
+
+    # Topology
+    MY_CONFIG = f"{TOPOLOGY}/my_config"

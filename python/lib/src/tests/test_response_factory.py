@@ -1,5 +1,5 @@
 import unittest
-from safecor import ResponseFactory, ComponentState, BenchmarkId
+from safecor import ResponseFactory, ComponentState, BenchmarkId, Topology, Domain, DomainType
 
 
 class TestResponseFactory(unittest.TestCase):
@@ -121,6 +121,45 @@ class TestResponseFactory(unittest.TestCase):
             ResponseFactory.create_response_switch_gui(False, "not available"),
             {"state": "refused", "reason": "not available"}
         )
+
+    def test_create_my_config(self):
+        topo = Topology()
+        topo.product_name = "Test Product"
+        topo.use_usb = True
+        topo.repository_disabled = False
+        topo.languages = ["en", "fr"]
+        topo.default_language = "en"
+        topo.pci.blacklist = ["00:1f.2"]
+        topo.screen.width = 1920
+        topo.screen.height = 1080
+        topo.screen.rotation = 90
+        topo.screen.enabled = True
+        topo.screen.default_focus = "main"
+
+        d1 = Domain("main", DomainType.BUSINESS)
+        d1.direct_mount = {"mode": "rw"}
+        topo.add_domain(d1)
+
+        d2 = Domain("av", DomainType.BUSINESS)
+        topo.add_domain(d2)
+
+        payload = ResponseFactory.create_my_config(topo)
+
+        self.assertEqual(payload["product_name"], "Test Product")
+        self.assertTrue(payload["use_usb"])
+        self.assertFalse(payload["repository_disabled"])
+        self.assertEqual(payload["languages"], ["en", "fr"])
+        self.assertEqual(payload["default_language"], "en")
+        self.assertEqual(payload["pci_blacklist"], ["00:1f.2"])
+        self.assertEqual(payload["screen"]["width"], 1920)
+        self.assertEqual(payload["screen"]["height"], 1080)
+        self.assertEqual(payload["screen"]["rotation"], 90)
+        self.assertTrue(payload["screen"]["enabled"])
+        self.assertEqual(payload["screen"]["default_focus"], "main")
+        self.assertEqual(len(payload["domains"]), 2)
+        self.assertEqual(payload["domains"][0]["name"], "main")
+        self.assertEqual(payload["domains"][0]["direct_mount"], {"mode": "rw"})
+        self.assertIsNone(payload["domains"][1]["direct_mount"])
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 > **Status**: Draft (first edition)
 >
-> **Last updated**: 2026-11-01
+> **Last updated**: 2026-11-11
 >
 > **Audience**: developers and product integrators; **primary use**: the master list from
 > which the functions to be emulated in the operator console are selected.
@@ -146,6 +146,31 @@ are the **inputs** the operator console will let a human define.
 | T5 | Memory / freq / load | `psutil` | resources | ✅ (fake `psutil`) |
 | T6 | Boot time / uptime | `psutil.boot_time` | elapsed | ✅ (fake `psutil`) |
 
+## 10a. Topology query (provided by Dom0)
+
+Runtime topology access over MQTT, used by DomUs to discover their own configuration
+(e.g., whether they have a `direct_mount` entry).
+
+| # | Function | API method | Topic | Shape | Key payload fields | Provided by | Emulator |
+|---|----------|-----------|-------|-------|--------------------|-------------|----------|
+| TP1 | Get my config | `request_my_config()` | `system/topology/my_config` | req/resp | req: —; resp: `product_name`, `use_usb`, `repository_disabled`, `domains[]` (name, domain_type, direct_mount), `screen{}`, `languages[]`, `default_language`, `pci_blacklist[]` | Dom0 | ❌ |
+
+**System library methods** (not MQTT, used by DomU applications and `DirectMountManager`):
+
+| # | Method | Notes |
+|---|--------|-------|
+| TP2 | `System.get_current_domid()` | Returns the current domain's Xen domid (cached, non-blocking) |
+| TP3 | `System.get_domain_domid(name)` | Single non-blocking xenstore read for another domain's domid |
+| TP4 | `System.is_usb_mountpoint_ready()` | True if `/media/usb` is mounted (non-blocking) |
+| TP5 | `System.on_usb_mountpoint_ready(callback)` | Event-driven notification when the mount becomes ready |
+
+## 11. Non-functional requirements (API)
+
+| # | NFR | Scope | Rationale |
+|---|-----|-------|-----------|
+| NFR-1 | Functions called from MQTT callbacks must be **non-blocking**. | All `safecor` library API methods invoked in the MQTT event loop (callbacks, message handlers). | A blocking call (sleep, polling, I/O with timeout) in a callback stalls all other message processing. Long-running or retry logic must be delegated to the caller (e.g., a dedicated thread/task like `DirectMountManager`). |
+| NFR-2 | Functions called from MQTT callbacks must have **error handling** (no unhandled exceptions). | All `safecor` library API methods invoked in the MQTT event loop. | An unhandled exception in a callback can crash the MQTT handler or leave the system in an inconsistent state. All public API methods must catch and log exceptions, returning a safe default or raising a typed error. |
+
 ---
 
 ## 11. Summary — what the emulator covers today
@@ -162,6 +187,7 @@ are the **inputs** the operator console will let a human define.
 | Debugging & benchmark | D1 | D2 | D3 (benchmark) | — |
 | Input | I1 | — | — | — |
 | Topology & environment | T1-T6 | — | — | — |
+| Topology query (Dom0) | — | — | TP1 (my_config) | — |
 
 > **Language settings caveat**: the whole L-group is at risk because of the code bug
 > [`doc-sync-issues.md`](doc-sync-issues.md) B1 / issue #217 — the language **list** request is

@@ -137,6 +137,42 @@ class TestTopology(unittest.TestCase):
         topo.screen.default_focus = "explicit"
         self.assertEqual(topo.default_focus(), "explicit")
 
+    def test_domain_direct_mount_default(self):
+        domain = Domain("test", DomainType.BUSINESS)
+        self.assertIsNone(domain.direct_mount)
+
+    def test_domain_direct_mount_rw(self):
+        domain = Domain("test", DomainType.BUSINESS)
+        domain.direct_mount = {"mode": "rw"}
+        self.assertEqual(domain.direct_mount, {"mode": "rw"})
+
+    def test_domain_direct_mount_ro(self):
+        domain = Domain("test", DomainType.BUSINESS)
+        domain.direct_mount = {"mode": "ro"}
+        self.assertEqual(domain.direct_mount, {"mode": "ro"})
+
+    def test_topology_repository_disabled_default(self):
+        topo = Topology()
+        self.assertFalse(topo.repository_disabled)
+
+    def test_topology_repository_disabled_deep_copy(self):
+        topo = Topology()
+        topo.repository_disabled = True
+        topo2 = Topology(topo)
+        self.assertTrue(topo2.repository_disabled)
+        topo2.repository_disabled = False
+        self.assertTrue(topo.repository_disabled)
+
+    def test_domain_direct_mount_deep_copy(self):
+        topo = Topology()
+        d = Domain("test", DomainType.BUSINESS)
+        d.direct_mount = {"mode": "ro"}
+        topo.add_domain(d)
+        topo2 = Topology(topo)
+        self.assertEqual(topo2.domain("test").direct_mount, {"mode": "ro"})
+        topo2.domain("test").direct_mount = None
+        self.assertEqual(topo.domain("test").direct_mount, {"mode": "ro"})
+
 
 if __name__ == "__main__":
     unittest.main()

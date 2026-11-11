@@ -7,7 +7,7 @@ pkgdesc="Safecor - USB proxy virtual machine"
 url="https://www.alefbet.net/"
 arch="noarch"
 license="MIT"
-depends="safecor-lib eudev socat xe-guest-utilities fuse-archive fuse3 doas coreutils ntfs-3g"
+depends="safecor-lib eudev socat xe-guest-utilities fuse-archive fuse3 doas coreutils ntfs-3g xen openssh-sftp-server"
 makedepends="python3-dev py3-build py3-installer git"
 builddir="$srcdir/$pkgname-$pkgver"
 checkdepends=""
@@ -16,18 +16,19 @@ subpackages=""
 replaces="mdev-conf alpine-baselayout-data fuse-common"
 options="!check"  # no tests provided
 source="modules
-safecor-sys-usb-controller.initd
-notify-disk-added.py
-notify-disk-removed.py
-mdev-usb-storage.sh
-99-usbdisks.rules
-99-usbserial.rules
-safecor-sys-usb-controller.py
-create-tty-tunnel.sh
-hardening.sh
-fuse.conf
-doas-svc-sys-usb-controller.conf
-"
+ safecor-sys-usb-controller.initd
+ notify-disk-added.py
+ notify-disk-removed.py
+ mdev-usb-storage.sh
+ 99-usbdisks.rules
+ 99-usbserial.rules
+ safecor-sys-usb-controller.py
+ create-tty-tunnel.sh
+ hardening.sh
+ fuse.conf
+ doas-svc-sys-usb-controller.conf
+ safecor-vchan-sftp.initd
+ "
 
 CONFDIR="/etc/safecor"
 ROOTDIR="/usr/lib/safecor"
@@ -52,6 +53,9 @@ package() {
     # Security
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
     install -D -m644 "$srcdir"/doas-svc-sys-usb-controller.conf "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf
+
+    # Direct mount (vchan SFTP)
+    install -D -m755 "$srcdir"/safecor-vchan-sftp.initd "$pkgdir"/etc/init.d/safecor-vchan-sftp
 }
 
 sha512sums="

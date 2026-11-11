@@ -51,6 +51,13 @@ Safecor is a software architecture for building security products (kiosk/embedde
 - Docs: Sphinx (autodoc + RTD theme), published on GitHub Pages; CI via GitHub Actions (`build-all.yml`, `documentation.yml`).
 - License: proprietary and restrictive (no fork/copy/reuse without written permission).
 
+## Documentation
+
+The following documents **must** be read during design, planning and coding:
+- `docs/features` - The list of features and NFR
+- `docs/architecture.md` - The architecture of the product
+- The Safecor Wiki project available locally in the folder `safecor.wiki` or on Github.
+
 ## Installation packages
 
 - Safecor components are packaged into Alpine Linux packages (APK).

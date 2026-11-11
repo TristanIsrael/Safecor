@@ -433,3 +433,67 @@ class TestSystem(unittest.TestCase):
         System().set_setting("a_setting", "a value")
         self.assertEqual(System().get_setting("a_setting"), "a value")
         self.assertEqual(System().get_settings(), { "a_setting": "a value"})
+
+    def test_get_domain_domid_found(self):
+        mock_result = unittest.mock.Mock()
+        mock_result.returncode = 0
+        mock_result.stdout = "12\n"
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            domid = System().get_domain_domid("sys-usb")
+            self.assertEqual(domid, 12)
+            mock_run.assert_called_once()
+
+    def test_get_domain_domid_not_found(self):
+        mock_result = unittest.mock.Mock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        with patch("subprocess.run", return_value=mock_result):
+            domid = System().get_domain_domid("nonexistent")
+            self.assertIsNone(domid)
+
+    def test_get_domain_domid_exception(self):
+        with patch("subprocess.run", side_effect=OSError("test")):
+            domid = System().get_domain_domid("error")
+            self.assertIsNone(domid)
+
+    def test_is_usb_mountpoint_ready_true(self):
+        mount_content = "rootfs /proc proc rw 0 0\nusbfs /media/usb usbfs rw 0 0\n"
+        with patch("builtins.open", return_value=unittest.mock.mock_open(read_data=mount_content)()):
+            self.assertTrue(System().is_usb_mountpoint_ready())
+
+    def test_is_usb_mountpoint_ready_false(self):
+        mount_content = "rootfs /proc proc rw 0 0\n"
+        with patch("builtins.open", return_value=unittest.mock.mock_open(read_data=mount_content)()):
+            self.assertFalse(System().is_usb_mountpoint_ready())
+
+    def test_is_usb_mountpoint_ready_os_error(self):
+        with patch("builtins.open", side_effect=OSError("test")):
+            self.assertFalse(System().is_usb_mountpoint_ready())
+
+    def test_on_usb_mountpoint_ready_stores_callback(self):
+        System._System__mount_watchers = []
+        System().on_usb_mountpoint_ready(lambda: None)
+        watchers = System._System__mount_watchers
+        self.assertEqual(len(watchers), 1)
+        # Cleanup
+        System._System__mount_watchers = []
+
+    def test_get_current_domid_caches(self):
+        # Reset cache
+        System._System__current_domid = None
+        mock_result = unittest.mock.Mock()
+        mock_result.returncode = 0
+        mock_result.stdout = "5\n"
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            domid = System().get_current_domid()
+            self.assertEqual(domid, 5)
+            # Second call should not invoke subprocess again
+            domid2 = System().get_current_domid()
+            self.assertEqual(domid2, 5)
+            self.assertEqual(mock_run.call_count, 1)
+        # Cleanup
+        System._System__current_domid = None
+
+
+if __name__ == "__main__":
+    unittest.main()

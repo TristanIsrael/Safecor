@@ -61,6 +61,7 @@ from ._api import Api
 from ._debugging import Debugging
 from ._api_helper import ApiHelper
 from ._sys_usb_controller import SysUsbController
+from ._direct_mount_manager import DirectMountManager
 
 __all__ = [
     "__version__",
@@ -87,6 +88,7 @@ __all__ = [
     "ComponentsHelper",
     "Debugging", "ApiHelper",
     "SysUsbController",
+    "DirectMountManager",
 ]
 
 logging.getLogger(__name__).addHandler(NullHandler())

@@ -1,0 +1,26 @@
+#!/sbin/openrc-run
+
+name="direct-mount"
+pidfile="/var/run/safecor-direct-mount.pid"
+
+depend() {
+    after network
+}
+
+start() {
+    ebegin "Setting up direct USB mount"
+    modprobe fuse 2>/dev/null
+    start-stop-daemon --start --background --make-pidfile \
+        --pidfile "$pidfile" \
+        --exec /usr/bin/python3 \
+        -- /usr/lib/safecor/scripts/start-direct-mount.py
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping direct USB mount"
+    start-stop-daemon --stop --pidfile "$pidfile" --signal TERM
+    sleep 2
+    fusermount -u /media/usb 2>/dev/null
+    eend 0
+}

@@ -25,6 +25,7 @@ class TestDom0Controller(unittest.TestCase):
         self.filehelper = _dom0.FileHelper
         self.system = _dom0.System
         self.topology = _dom0.topology
+        self.topology.repository_disabled = False
         self.subprocess = _dom0.subprocess
         self.psutil = _dom0.psutil
 
@@ -286,7 +287,13 @@ class TestDom0Controller(unittest.TestCase):
         self.system.return_value.parse_kernel_command_line_settings.return_value = {}
         self.topology.default_language = "en"
         self.ctrl._Dom0Controller__on_mqtt_connected()
-        self.mqtt.subscribe.assert_called_with(f"{Topics.REPOSITORY_PATH}/request")
+        self.mqtt.subscribe.assert_any_call(f"{Topics.REPOSITORY_PATH}/request")
+
+    def test_on_mqtt_connected_subscribes_my_config(self):
+        self.system.return_value.parse_kernel_command_line_settings.return_value = {}
+        self.topology.default_language = "en"
+        self.ctrl._Dom0Controller__on_mqtt_connected()
+        self.mqtt.subscribe.assert_any_call(f"{Topics.MY_CONFIG}/request")
 
 
 if __name__ == "__main__":

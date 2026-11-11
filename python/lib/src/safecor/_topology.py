@@ -24,6 +24,7 @@ class Domain:
     temp_disk_size = 0
     swap_size = 0
     has_gui = False
+    direct_mount = None  # dict with "mode" key ("ro" or "rw"), or None if not enabled
     
     def __init__(self, domain_name:str, domain_type:DomainType):
         self.name = domain_name
@@ -61,6 +62,7 @@ class Topology:
     pci: Pci
     languages = []
     default_language = "en"
+    repository_disabled = False
 
     def __init__(self, other=None):
         """ Create a new Topology from scratch or as a deep copy if other is not None """
@@ -71,6 +73,7 @@ class Topology:
             self.pci = Pci()
             self.__colors = {}
             self.__initialized = False
+            self.repository_disabled = False
         else:
             self.domains = copy.deepcopy(other.domains)
             self.product_name = copy.deepcopy(other.product_name)
@@ -81,6 +84,7 @@ class Topology:
             self.pci = copy.deepcopy(other.pci)
             self.languages = copy.deepcopy(other.languages)
             self.default_language = copy.deepcopy(other.default_language)
+            self.repository_disabled = copy.deepcopy(other.repository_disabled)
 
     def initialized(self) -> bool:
         """ Returns whether the object is initialized """

@@ -57,6 +57,10 @@ class Dom0Controller():
         """
         self.mqtt_client = mqtt_client
 
+        # Ensure topology is loaded (self-sufficient, no external dependency)
+        if not topology.initialized():
+            System.get_topology()
+
         # Handle Mqtt messages
         self.mqtt_client.on_connected = self.__on_mqtt_connected
         self.mqtt_client.on_message = self.__on_mqtt_message
@@ -101,6 +105,7 @@ class Dom0Controller():
         self.mqtt_client.subscribe(f"{Topics.SETTINGS}/+/request")
         self.mqtt_client.subscribe(f"{Topics.SWITCH_GUI}/request")
         self.mqtt_client.subscribe(f"{Topics.REPOSITORY_PATH}/request")
+        self.mqtt_client.subscribe(f"{Topics.MY_CONFIG}/request")
 
         # Handle the kernel's or configuration command line settings
         self.__handle_settings()
@@ -143,6 +148,8 @@ class Dom0Controller():
                 self.__handle_switch_gui(payload)
             elif topic == f"{Topics.REPOSITORY_PATH}/request":
                 self.__handle_repository_path()
+            elif topic == f"{Topics.MY_CONFIG}/request":
+                self.__handle_my_config()
         except Exception:
             Logger.print("An exception occured while handling the message")
 
@@ -150,7 +157,11 @@ class Dom0Controller():
 
     def __handle_list_files(self, payload:dict) -> None:
         if not self.__is_storage_request(payload):
-            return 
+            return
+
+        if topology.repository_disabled:
+            Logger().warn("Repository is disabled, rejecting list_files request")
+            return
 
         # Récupère la liste des fichiers                    
         fichiers = FileHelper.get_files_list(Constants.STR_REPOSITORY, True)
@@ -163,7 +174,11 @@ class Dom0Controller():
     def __handle_file_fingerprint(self, payload:dict) -> None:
         if not self.__is_storage_request(payload):
             return
-                    
+
+        if topology.repository_disabled:
+            Logger().warn("Repository is disabled, rejecting file_fingerprint request")
+            return
+
         filepath = payload.get("filepath")
         disk = payload.get("disk")
 
@@ -278,6 +293,10 @@ class Dom0Controller():
 
         if disk != Constants.STR_REPOSITORY:
             # This file is not stored in the repository so we ignore it
+            return
+
+        if topology.repository_disabled:
+            Logger().warn("Repository is disabled, rejecting delete_file request")
             return
 
         filepath = payload["filepath"]
@@ -409,3 +428,18 @@ class Dom0Controller():
 
         # Then we show the one asked
         XcbController().show_gui(new_gui)
+
+    def __handle_my_config(self):
+        """ Handle the my_config request: return the full topology to the requesting domain.
+
+        The topology is read from the module-level `topology` object which was loaded
+        during Dom0Controller initialization (lazy init in __init__).
+
+        NFR-1: Non-blocking (topology is already in memory).
+        NFR-2: Error handling via try/except.
+        """
+        try:
+            payload = ResponseFactory.create_my_config(topology)
+            self.mqtt_client.publish(f"{Topics.MY_CONFIG}/response", payload)
+        except Exception as e:
+            Logger().error(f"Failed to handle my_config request: {e}")

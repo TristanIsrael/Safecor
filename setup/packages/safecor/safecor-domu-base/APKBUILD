@@ -7,7 +7,7 @@ pkgdesc="Safecor - Base package for business domain"
 url="https://www.alefbet.net/"
 arch="noarch"
 license="MIT"
-depends="shadow"
+depends="shadow sshfs fuse3 xen"
 makedepends=""
 builddir="$srcdir/$pkgname-$pkgver"
 checkdepends=""
@@ -20,4 +20,9 @@ source=""
 package() {
     mkdir -p "$pkgdir"/usr/lib/safecor/etc
     echo "$pkgname" >> "$pkgdir"/usr/lib/safecor/etc/installed
+    mkdir -p "$pkgdir"/usr/lib/safecor/scripts
+    mkdir -p "$pkgdir"/etc/init.d
+    install -m 755 scripts/setup-direct-mount.sh "$pkgdir"/usr/lib/safecor/scripts/
+    install -m 755 scripts/start-direct-mount.py "$pkgdir"/usr/lib/safecor/scripts/
+    install -m 755 init/direct-mount.initd "$pkgdir"/etc/init.d/
 }

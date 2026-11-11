@@ -5,6 +5,8 @@ import platform
 import os
 import json
 import threading
+import time
+from typing import Optional, Callable
 try:
     import psutil
 except ImportError:
@@ -37,6 +39,9 @@ class System(metaclass=SingletonMeta):
     __cpu_count = None
     __cpu_assignments = None
     __settings = {}
+    __current_domid = None
+    __mount_watchers = []
+    __mount_watcher_thread = None
 
     def get_screen_width(self) -> int:
         """ Returns the system main screen's resolution width 
@@ -248,6 +253,7 @@ class System(metaclass=SingletonMeta):
         _topology.screen.height = screen[1] if screen is not None else 0
         _topology.uuid = System().get_system_uuid()        
         _topology.pci.blacklist = topo.get("system", {}).get("pci", {}).get("blacklist", [])
+        _topology.repository_disabled = topo.get("system", {}).get("repository_disabled", False)
 
         # Domains information
         domains = topo.get("domains", {})
@@ -261,6 +267,7 @@ class System(metaclass=SingletonMeta):
             domain.temp_disk_size = domain_desc.get("temp_disk_size", 0)
             domain.swap_size = domain_desc.get("swap_size", 0)
             domain.has_gui = domain_desc.get("has_gui", False)
+            domain.direct_mount = domain_desc.get("direct_mount", None)
 
             _topology.add_domain(domain)
 
@@ -364,12 +371,15 @@ class System(metaclass=SingletonMeta):
         screen_enabled = screen.get("enabled", False)
         default_focus = screen.get("default_focus", "")
         screen_rotation = screen.get("rotation", 0)
+        repository = topo_data.get("repository", {})
+        repository_disabled = repository.get("disabled", False)
                 
         topo_struct["system"] = {
             "use_usb": use_usb,
             "screen_enabled": screen_enabled,
             "screen_rotation": screen_rotation,
             "default_focus": default_focus,
+            "repository_disabled": repository_disabled,
             "pci": {
                 "blacklist": pci_blacklist
             }
@@ -414,7 +424,8 @@ class System(metaclass=SingletonMeta):
                 "vcpu_groups": vcpu_groups,
                 "temp_disk_size": domain.get("temp_disk_size", 0),
                 "swap_size": domain.get("swap_size", 0),
-                "has_gui": domain.get("has_gui", False)
+                "has_gui": domain.get("has_gui", False),
+                "direct_mount": domain.get("direct_mount", None)
             }
 
         topo_struct["domains"] = topo_domains
@@ -870,3 +881,114 @@ class System(metaclass=SingletonMeta):
             return result
 
         return {}
+
+    def get_current_domid(self) -> int:
+        """ Return the Xen domain ID of the current domain.
+
+        Non-blocking (NFR-1 compliant). The domid is read from xenstore
+        at first call, then cached.
+
+        Returns:
+            The integer domid of this domain, or 0 if unavailable.
+        """
+        if System.__current_domid is None:
+            System.__current_domid = self.__read_own_domid()
+        return System.__current_domid
+
+    def get_domain_domid(self, domain_name: str) -> Optional[int]:
+        """ Return the Xen domain ID of the named domain, or None if not yet available.
+
+        Performs a single non-blocking read from xenstore:
+            /local/domain/system/domids/<domain_name>
+
+        Does NOT poll or sleep (NFR-1: non-blocking for MQTT callback context).
+        The caller is responsible for retrying if None is returned.
+
+        Args:
+            domain_name: The domain name (e.g., "sys-usb").
+
+        Returns:
+            The integer domid, or None if the entry is not yet present in xenstore.
+        """
+        try:
+            result = subprocess.run(
+                ["xenstore-read", f"/local/domain/system/domids/{domain_name}"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return int(result.stdout.strip())
+        except (subprocess.SubprocessError, ValueError, OSError):
+            pass
+        return None
+
+    def is_usb_mountpoint_ready(self) -> bool:
+        """ Return True if the USB mount point (Constants.USB_MOUNT_POINT) is available.
+
+        Non-blocking filesystem check (NFR-1 compliant). Usable from any context,
+        including product applications that cannot access DirectMountManager
+        (which runs in a separate process managed by openrc).
+
+        Returns:
+            True if /media/usb is mounted and accessible, False otherwise.
+        """
+        try:
+            mount_point = Constants.USB_MOUNT_POINT
+            with open("/proc/mounts", "r") as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) >= 2 and parts[1] == mount_point:
+                        return True
+        except OSError:
+            pass
+        return False
+
+    def on_usb_mountpoint_ready(self, callback: Callable[[], None]) -> None:
+        """ Register a callback to be invoked when the USB mount point becomes ready.
+
+        Event-driven notification: the caller registers a callback and does not need
+        to poll. Internally, a background watcher thread in System monitors the mount
+        point and invokes the callback when it becomes available.
+
+        The callback is invoked in the watcher thread (not the MQTT event loop),
+        so it must be thread-safe.
+
+        Args:
+            callback: A callable with no arguments, invoked once when the mount point
+                      transitions from unready to ready.
+
+        Note:
+            The callback is invoked at most once per mount cycle (i.e., if the mount
+            is unmounted and remounted, a new registration is needed for the next
+            notification).
+        """
+        System.__mount_watchers.append(callback)
+        if System.__mount_watcher_thread is None or not System.__mount_watcher_thread.is_alive():
+            System.__mount_watcher_thread = threading.Thread(
+                target=self.__mount_watcher_worker, daemon=True
+            )
+            System.__mount_watcher_thread.start()
+
+    def __read_own_domid(self) -> int:
+        """ Read the current domain's domid from xenstore or /proc. """
+        try:
+            result = subprocess.run(
+                ["xenstore-read", "/local/domain/0/domid"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return int(result.stdout.strip())
+        except (subprocess.SubprocessError, ValueError, OSError):
+            pass
+        return 0
+
+    def __mount_watcher_worker(self) -> None:
+        """ Background thread that polls is_usb_mountpoint_ready() and fires callbacks. """
+        while not self.is_usb_mountpoint_ready():
+            time.sleep(2)
+        watchers = System.__mount_watchers[:]
+        System.__mount_watchers = []
+        for cb in watchers:
+            try:
+                cb()
+            except Exception:
+                pass

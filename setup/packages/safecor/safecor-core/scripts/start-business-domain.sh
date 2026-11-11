@@ -56,6 +56,15 @@ else
     DISPLAY=:0 /usr/sbin/xl create -f /etc/safecor/xen/$1.conf
     sleep 1
 
+    # Write the domid to xenstore for other domains to discover
+    domid=$(xl info "$1" | grep -w ID | awk '{print $3}')
+    if [ -n "$domid" ]; then
+        xenstore-write /local/domain/system/domids/$1 "$domid"
+        logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "Domain $1 domid $domid written to xenstore"
+    else
+        logger -s -t "Safecor/$SCRIPT_NAME" -p user.err "Failed to get domid for $1"
+    fi
+
     # Verify whether the Domain has focus
     FOCUS_DOMAIN=$(xenstore-read /local/domain/system/input-focus)
 
@@ -74,3 +83,13 @@ fi
 
 umask 007 # With this mask, the sockets will be created with the mode 770
 /usr/sbin/xl create -f /etc/safecor/xen/$1.conf
+sleep 1
+
+# Write the domid to xenstore for other domains to discover
+domid=$(xl info "$1" | grep -w ID | awk '{print $3}')
+if [ -n "$domid" ]; then
+    xenstore-write /local/domain/system/domids/$1 "$domid"
+    logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "Domain $1 domid $domid written to xenstore"
+else
+    logger -s -t "Safecor/$SCRIPT_NAME" -p user.err "Failed to get domid for $1"
+fi

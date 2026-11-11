@@ -78,7 +78,7 @@ class DomainsFactory:
                     domain,
                     boot_iso_location= f"bootiso-{domain.name}.iso",
                     share_packages= True,
-                    share_storage= True,
+                    share_storage= not topology.repository_disabled,
                     share_system= False,
                 )
 
