@@ -5,26 +5,29 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src"))
+)
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Safecor'
-copyright = '2025-2026, Tristan Israël'
-author = 'Tristan Israël'
-release = '1.2.0'
+project = "Safecor"
+copyright = "2025-2026, Tristan Israël"
+author = "Tristan Israël"
+release = "1.2.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     # Google/Numpy style docstrings
-    'sphinx.ext.napoleon',
+    "sphinx.ext.napoleon",
     # Link to the code source
-    'sphinx.ext.viewcode',
+    "sphinx.ext.viewcode",
     # Native Markdown support
     "myst_parser",
 ]
@@ -41,7 +44,7 @@ napoleon_include_init_with_doc = True
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'pydata_sphinx_theme'
+html_theme = "pydata_sphinx_theme"
 html_theme_options = {
     "navigation_depth": 4,
     "collapse_navigation": False,
@@ -49,8 +52,8 @@ html_theme_options = {
 
 # Source suffixes: .rst and .md natively via myst_parser
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".md": "markdown",
 }
 
 # -- Options for inheritance -----------------------------------
@@ -63,6 +66,6 @@ autodoc_default_options = {
 python_use_unqualified_type_names = True
 
 # Constants
-rst_epilog = f"""
+rst_epilog = """
 .. |URL_DOC_PROTOCOL| replace:: https://github.com/TristanIsrael/Safecor/wiki/Protocol
 """

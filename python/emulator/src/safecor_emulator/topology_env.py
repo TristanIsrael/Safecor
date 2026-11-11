@@ -1,4 +1,4 @@
-""" Load and interpret a product ``topology.json`` for the emulated environment
+"""Load and interpret a product ``topology.json`` for the emulated environment
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -9,7 +9,7 @@ Safecor Licence — see python/lib/LICENCE.md
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 #: DMI value used to guarantee that **no** configuration identifier matches,
 #: so the standard topology values are applied (the "Aucune (standard)" choice).
@@ -44,31 +44,31 @@ class Environment:
 
     product_name: str = ""
     splash_bgcolor: str = "#000000"
-    languages: List[str] = field(default_factory=list)
+    languages: list[str] = field(default_factory=list)
     default_language: str = "en"
     use_usb: bool = False
     screen: Screen = field(default_factory=Screen)
-    business_domains: List[BusinessDomain] = field(default_factory=list)
-    configuration_names: List[str] = field(default_factory=list)
+    business_domains: list[BusinessDomain] = field(default_factory=list)
+    configuration_names: list[str] = field(default_factory=list)
     # Raw topology data (file structure), kept for DMI resolution.
-    data: Dict[str, Any] = field(default_factory=dict, repr=False)
+    data: dict[str, Any] = field(default_factory=dict, repr=False)
 
-    def business_domain_names(self) -> List[str]:
+    def business_domain_names(self) -> list[str]:
         """The names of the business Domains (in declaration order)."""
         return [d.name for d in self.business_domains]
 
 
-def load_topology_data(path: Union[str, Path]) -> Dict[str, Any]:
+def load_topology_data(path: str | Path) -> dict[str, Any]:
     """Read a product ``topology.json`` as a raw dict (file structure)."""
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def build_environment(path: Union[str, Path]) -> Environment:
+def build_environment(path: str | Path) -> Environment:
     """Parse a ``topology.json`` file into an :class:`Environment`."""
     return build_environment_from_data(load_topology_data(path))
 
 
-def build_environment_from_data(data: Dict[str, Any]) -> Environment:
+def build_environment_from_data(data: dict[str, Any]) -> Environment:
     """Build an :class:`Environment` from raw topology data (file structure)."""
     product = data.get("product", {})
     usb = data.get("usb", {})
@@ -104,7 +104,7 @@ def build_environment_from_data(data: Dict[str, Any]) -> Environment:
     )
 
 
-def _configurations(env_or_data) -> List[tuple]:
+def _configurations(env_or_data) -> list[tuple]:
     """The list of ``(name, identifier)`` for every configuration."""
     data = env_or_data.data if isinstance(env_or_data, Environment) else env_or_data
     return [
@@ -113,7 +113,7 @@ def _configurations(env_or_data) -> List[tuple]:
     ]
 
 
-def configuration_dmi(env_or_data, configuration: Union[str, None]) -> Dict[str, str]:
+def configuration_dmi(env_or_data, configuration: str | None) -> dict[str, str]:
     """Return the DMI key -> value mapping that makes the chosen configuration match.
 
     ``apply_configuration`` compares the system DMI values
@@ -128,7 +128,7 @@ def configuration_dmi(env_or_data, configuration: Union[str, None]) -> Dict[str,
         empty for the standard configuration (no configuration matches).
     :return: a dict of DMI key -> value to feed the fakes.
     """
-    dmi: Dict[str, str] = {}
+    dmi: dict[str, str] = {}
     configs = _configurations(env_or_data)
     for _, identifier in configs:
         for key in identifier:
@@ -142,7 +142,7 @@ def configuration_dmi(env_or_data, configuration: Union[str, None]) -> Dict[str,
 
 
 def apply_configuration_settings(
-    env: Environment, configuration: Optional[str]
+    env: Environment, configuration: str | None
 ) -> None:
     """Apply a configuration's ``settings`` overrides onto ``env`` (in place).
 
@@ -160,7 +160,7 @@ def apply_configuration_settings(
     env.screen.default_focus = base_screen.get("default_focus", "")
     env.use_usb = bool(env.data.get("usb", {}).get("use", False))
 
-    settings: Dict[str, Any] = {}
+    settings: dict[str, Any] = {}
     if configuration:
         for conf in env.data.get("configurations", []):
             if conf.get("name", "") == configuration:

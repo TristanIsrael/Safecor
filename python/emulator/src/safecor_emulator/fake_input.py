@@ -1,4 +1,4 @@
-""" Fake input device for the emulator
+"""Fake input device for the emulator
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -7,10 +7,8 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import os
-from typing import List, Tuple, Union
 
 import msgpack
-
 from safecor import InputType
 
 # --- Linux input event constants (input-event-codes.h) ---------------------
@@ -29,15 +27,59 @@ BTN_MIDDLE = 0x112
 BTN_RIGHT = 0x111
 
 _KEY_CODES = {
-    "esc": 1, "escape": 1,
-    "1": 2, "2": 3, "3": 4, "4": 5, "5": 6, "6": 7, "7": 8, "8": 9, "9": 10, "0": 11,
-    "a": 30, "b": 48, "c": 46, "d": 32, "e": 18, "f": 33, "g": 34, "h": 35, "i": 23,
-    "j": 36, "k": 37, "l": 38, "m": 50, "n": 49, "o": 24, "p": 25, "q": 16, "r": 19,
-    "s": 31, "t": 20, "u": 22, "v": 47, "w": 17, "x": 45, "y": 21, "z": 44,
-    "enter": 28, "return": 28, "tab": 15, "backspace": 14, "space": 57,
-    "shift": 42, "ctrl": 29, "alt": 56,
-    "up": 103, "left": 105, "right": 106, "down": 108,
-    "delete": 111, "home": 102, "end": 107,
+    "esc": 1,
+    "escape": 1,
+    "1": 2,
+    "2": 3,
+    "3": 4,
+    "4": 5,
+    "5": 6,
+    "6": 7,
+    "7": 8,
+    "8": 9,
+    "9": 10,
+    "0": 11,
+    "a": 30,
+    "b": 48,
+    "c": 46,
+    "d": 32,
+    "e": 18,
+    "f": 33,
+    "g": 34,
+    "h": 35,
+    "i": 23,
+    "j": 36,
+    "k": 37,
+    "l": 38,
+    "m": 50,
+    "n": 49,
+    "o": 24,
+    "p": 25,
+    "q": 16,
+    "r": 19,
+    "s": 31,
+    "t": 20,
+    "u": 22,
+    "v": 47,
+    "w": 17,
+    "x": 45,
+    "y": 21,
+    "z": 44,
+    "enter": 28,
+    "return": 28,
+    "tab": 15,
+    "backspace": 14,
+    "space": 57,
+    "shift": 42,
+    "ctrl": 29,
+    "alt": 56,
+    "up": 103,
+    "left": 105,
+    "right": 106,
+    "down": 108,
+    "delete": 111,
+    "home": 102,
+    "end": 107,
 }
 
 _BUTTONS = {"left": BTN_LEFT, "middle": BTN_MIDDLE, "right": BTN_RIGHT}
@@ -60,13 +102,13 @@ class FakeInputDevice:
         """Path of the file holding the serialized input events."""
         return self._path
 
-    def _write(self, event: List[int]):
+    def _write(self, event: list[int]):
         data = msgpack.packb(event) + b"\n"
         with open(self._path, "ab") as f:
             f.write(data)
 
     @staticmethod
-    def _resolve_key(key: Union[str, int]) -> int:
+    def _resolve_key(key: str | int) -> int:
         if isinstance(key, int):
             return key
         code = _KEY_CODES.get(str(key).lower())
@@ -75,19 +117,21 @@ class FakeInputDevice:
         return code
 
     # --- keyboard ----------------------------------------------------------
-    def inject_key(self, key: Union[str, int], pressed: bool = True):
+    def inject_key(self, key: str | int, pressed: bool = True):
         """Emit a key press (``pressed=True``) or release (``pressed=False``)."""
-        self._write([InputType.KEYBOARD, EV_KEY, self._resolve_key(key), 1 if pressed else 0])
+        self._write(
+            [InputType.KEYBOARD, EV_KEY, self._resolve_key(key), 1 if pressed else 0]
+        )
 
-    def press_key(self, key: Union[str, int]):
+    def press_key(self, key: str | int):
         """Emit a key press."""
         self.inject_key(key, pressed=True)
 
-    def release_key(self, key: Union[str, int]):
+    def release_key(self, key: str | int):
         """Emit a key release."""
         self.inject_key(key, pressed=False)
 
-    def click(self, key: Union[str, int]):
+    def click(self, key: str | int):
         """Emit a full key click (press + release)."""
         self.press_key(key)
         self.release_key(key)
@@ -99,7 +143,7 @@ class FakeInputDevice:
         self._write([InputType.MOUSE, EV_REL, REL_Y, dy])
         self._write([InputType.MOUSE, EV_SYN, 0, 0])
 
-    def mouse_button(self, button: Union[str, int], pressed: bool = True):
+    def mouse_button(self, button: str | int, pressed: bool = True):
         """Emit a mouse button press/release followed by a sync event."""
         code = button if isinstance(button, int) else _BUTTONS.get(str(button).lower())
         if code is None:
@@ -107,7 +151,7 @@ class FakeInputDevice:
         self._write([InputType.MOUSE, EV_KEY, code, 1 if pressed else 0])
         self._write([InputType.MOUSE, EV_SYN, 0, 0])
 
-    def mouse_click(self, button: Union[str, int] = "left"):
+    def mouse_click(self, button: str | int = "left"):
         """Emit a full mouse click (press + release)."""
         self.mouse_button(button, pressed=True)
         self.mouse_button(button, pressed=False)
@@ -118,13 +162,13 @@ class FakeInputDevice:
         self._write([InputType.MOUSE, EV_SYN, 0, 0])
 
     # --- generic / inspection ---------------------------------------------
-    def write_raw(self, event: List[int]):
+    def write_raw(self, event: list[int]):
         """Write an arbitrary 4-tuple ``[input_type, type, code, value]``."""
         self._write(list(event))
 
-    def read_events(self) -> List[List[int]]:
+    def read_events(self) -> list[list[int]]:
         """Read back the serialized events (useful for tests and inspection)."""
-        events: List[List[int]] = []
+        events: list[list[int]] = []
         if not os.path.exists(self._path):
             return events
         with open(self._path, "rb") as f:

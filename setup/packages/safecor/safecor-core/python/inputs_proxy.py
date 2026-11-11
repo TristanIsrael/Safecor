@@ -1,4 +1,4 @@
-""" Proxies input events (keyboard, mouse, touch) from sys-usb to virtual input devices in Dom0.
+"""Proxies input events (keyboard, mouse, touch) from sys-usb to virtual input devices in Dom0.
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -6,47 +6,48 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-import threading
 import socket
+import threading
+
 import msgpack
-import atexit
-from evdev import InputDevice, ecodes, UInput
-from safecor import SysLogger, InputType, XenStore, System, XsDomain, XsKey
+from evdev import InputDevice
+from safecor import InputType, SysLogger, System, XenStore, XsDomain, XsKey
+
 
 class InputsProxy:
-    """ The Inputs-proxy monitors the inputs socket of sys-usb and serializes the events on the 
-        virtual devices created before.
+    """The Inputs-proxy monitors the inputs socket of sys-usb and serializes the events on the
+    virtual devices created before.
 
-        Data are read from a unique Unix Domain Socket (PV channel) from the sys-usb Domain. All 
-        the inputs are serialized in this channel. They are deserialized by this proxy and copied
-        in different virtual input devices (uinput) attached to a Domains's QEMU instance.
+    Data are read from a unique Unix Domain Socket (PV channel) from the sys-usb Domain. All
+    the inputs are serialized in this channel. They are deserialized by this proxy and copied
+    in different virtual input devices (uinput) attached to a Domains's QEMU instance.
 
-        The proxy manages different virtual inputs and copies the real physical input only to the
-        virtual devices attached to the Domain that has the focus.
+    The proxy manages different virtual inputs and copies the real physical input only to the
+    virtual devices attached to the Domain that has the focus.
     """
-    
+
     __virtual_mouses = {}
     __virtual_keyboards = {}
     __virtual_touches = {}
-    __virtual_mouse = None # The current virtual mouse
-    __virtual_keyboard = None # The current virtual keyboard
-    __virtual_touch = None # The current virtual touch
+    __virtual_mouse = None  # The current virtual mouse
+    __virtual_keyboard = None  # The current virtual keyboard
+    __virtual_touch = None  # The current virtual touch
     __xenstore = XenStore()
     __can_run = False
     __is_running = False
     __thread = None
-    INPUTS_SOCKET="/var/run/safecor/sys-usb-input.sock"
+    INPUTS_SOCKET = "/var/run/safecor/sys-usb-input.sock"
 
     def start(self):
-        """ Starts the Inputs-proxy """
+        """Starts the Inputs-proxy"""
 
         if self.__is_running:
             return
-        
+
         self.__can_run = True
 
         SysLogger("Inputs-proxy").info("The Inputs-proxy is going to start")
-        self.__thread = threading.Thread(target= self.events_proxy_worker, daemon=True)
+        self.__thread = threading.Thread(target=self.events_proxy_worker, daemon=True)
         self.__thread.start()
 
         # Find the default GUI
@@ -54,23 +55,30 @@ class InputsProxy:
         if default_focus != "":
             self.__on_focus_changed(default_focus)
         else:
-            SysLogger("Inputs-proxy").warn("No Domain has the default focus. There is a risk that no inputs are used")
+            SysLogger("Inputs-proxy").warn(
+                "No Domain has the default focus. There is a risk that no inputs are used"
+            )
 
         # Monitor the focused domain from the XenStore
-        self.__xenstore.monitor(XsDomain.System.value, XsKey.InputFocus.value, "inputs-focus", self.__on_focus_changed)
+        self.__xenstore.monitor(
+            XsDomain.System.value,
+            XsKey.InputFocus.value,
+            "inputs-focus",
+            self.__on_focus_changed,
+        )
 
     def __del__(self):
         "Destructor: stops the input proxy when the object is garbage collected."
         self.stop()
 
     def stop(self):
-        """ Stops the Inputs-proxy """
+        """Stops the Inputs-proxy"""
 
         self.__can_run = False
         self.__xenstore.stop()
 
     def events_proxy_worker(self):
-        """ Starts the Inputs-proxy """
+        """Starts the Inputs-proxy"""
 
         SysLogger("Input proxy").info("Start input proxy")
         buffer = bytearray()
@@ -90,19 +98,19 @@ class InputsProxy:
 
                 if not raw_data:
                     SysLogger("Input proxy").error("Connection with inputs socket lost")
-                    break # We get out of this loop to recreate the connection
+                    break  # We get out of this loop to recreate the connection
 
                 buffer.extend(raw_data)
 
-                while b'\n' in buffer:
+                while b"\n" in buffer:
                     # Find the firt occurence of the delimiter '\n'
-                    delim_pos = buffer.find(b'\n')
+                    delim_pos = buffer.find(b"\n")
 
                     # Extract the complete frame until the delimiter
                     frame = buffer[:delim_pos]
 
                     # Remove the frame from the buffer
-                    buffer = buffer[delim_pos + 1:]
+                    buffer = buffer[delim_pos + 1 :]
 
                     try:
                         # Deserialize the frame
@@ -116,7 +124,10 @@ class InputsProxy:
                             device = self.__virtual_mouse
                         elif device_type == InputType.KEYBOARD:
                             device = self.__virtual_keyboard
-                        elif device_type == InputType.TOUCH and self.__virtual_touch is not None:
+                        elif (
+                            device_type == InputType.TOUCH
+                            and self.__virtual_touch is not None
+                        ):
                             device = self.__virtual_touch
                         else:
                             device = None
@@ -129,23 +140,30 @@ class InputsProxy:
 
                     except Exception as e:
                         SysLogger("Input proxy").error(f"Error in the frame: {e}")
-                        
+
             self.__is_running = False
 
-    def set_virtual_devices_for_domain(self, domain_name:str, virtual_mouse:InputDevice, virtual_keyboard:InputDevice, virtual_touch:InputDevice):
-        """ Associate a Domain name and its virtual devices """
-        
+    def set_virtual_devices_for_domain(
+        self,
+        domain_name: str,
+        virtual_mouse: InputDevice,
+        virtual_keyboard: InputDevice,
+        virtual_touch: InputDevice,
+    ):
+        """Associate a Domain name and its virtual devices"""
+
         print(f"Set virtual mouse of {domain_name} to {virtual_mouse}")
 
         self.__virtual_mouses[domain_name] = virtual_mouse
         self.__virtual_keyboards[domain_name] = virtual_keyboard
         self.__virtual_touches[domain_name] = virtual_touch
 
-    def __on_focus_changed(self, domain_name:str):
-        """ Called by the class XenStore when the focus has changed from one Domain to another
-        """
+    def __on_focus_changed(self, domain_name: str):
+        """Called by the class XenStore when the focus has changed from one Domain to another"""
 
-        SysLogger("Input proxy").debug(f"The focus has changed to the domain {domain_name}")
+        SysLogger("Input proxy").debug(
+            f"The focus has changed to the domain {domain_name}"
+        )
 
         # We get the virtual devices for this domain and update the virtual devices
         vm, vk, vt = self.__get_inputs_for_domain(domain_name)
@@ -153,14 +171,15 @@ class InputsProxy:
         self.__virtual_keyboard = vk
         self.__virtual_touch = vt
 
-    def __get_inputs_for_domain(self, domain_name:str) -> tuple[InputDevice, InputDevice, InputDevice]:
-        """ Returns the virtual inputs associated to a Domain (mouse, keyboard, touch) """
+    def __get_inputs_for_domain(
+        self, domain_name: str
+    ) -> tuple[InputDevice, InputDevice, InputDevice]:
+        """Returns the virtual inputs associated to a Domain (mouse, keyboard, touch)"""
 
         virtual_mouse = self.__virtual_mouses.get(domain_name, None)
-        virtual_keyboard= self.__virtual_keyboards.get(domain_name, None)
+        virtual_keyboard = self.__virtual_keyboards.get(domain_name, None)
         virtual_touch = self.__virtual_touches.get(domain_name, None)
 
         print(f"virtual mouse of {domain_name} is {virtual_mouse}")
 
         return virtual_mouse, virtual_keyboard, virtual_touch
-    

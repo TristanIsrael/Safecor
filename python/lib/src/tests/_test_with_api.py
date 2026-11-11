@@ -1,20 +1,21 @@
-import unittest
-import psutil
-import time
 import subprocess
 import threading
-import os
-import logging
-from safecor import MqttFactory, Logger
+import time
+import unittest
+
+import psutil
+
+from safecor import MqttFactory
+
 
 class TestWithAPI(unittest.TestCase):
-    """ This class helps handling the Safecor API in the unit tests """
+    """This class helps handling the Safecor API in the unit tests"""
 
     @classmethod
     def is_mosquitto_running(cls):
-        """ Returns true if the MQTT broker mosquitto is currently running """
-        for proc in psutil.process_iter(['name']):
-            if proc.info['name'] == "mosquitto":
+        """Returns true if the MQTT broker mosquitto is currently running"""
+        for proc in psutil.process_iter(["name"]):
+            if proc.info["name"] == "mosquitto":
                 return True
         return False
 
@@ -28,7 +29,7 @@ class TestWithAPI(unittest.TestCase):
             if not cls.is_mosquitto_running():
                 raise RuntimeError("Mosquitto could not be started")
         else:
-            cls.mosquitto_proc = None        
+            cls.mosquitto_proc = None
 
         # Start Safecor MQTT client
         cls.setup_lock = threading.Event()
@@ -50,24 +51,24 @@ class TestWithAPI(unittest.TestCase):
             cls.mqtt_client.stop()
             del cls.mqtt_client
 
-        #if os.path.exists("/tmp/safecor.log"):
+        # if os.path.exists("/tmp/safecor.log"):
         #    os.remove("/tmp/safecor.log")
 
     @classmethod
     def on_mqtt_connected(cls):
-        """ Triggered when the connexion to the broker has been established 
-        
+        """Triggered when the connexion to the broker has been established
+
         It sets the :class:`Logger` instance up and releases the lock created in :func:`setupClass`.
         """
 
-        print("Connected to Safecor API")        
+        print("Connected to Safecor API")
         cls.setup_lock.set()
 
     @classmethod
-    def on_message(cls, topic:str, payload:dict):
-        """ Triggered when a message is received. The message is appended to ``cls.messages`` list. """
-        cls.messages.append( { "topic": topic, "payload": payload} )
-        #print(cls.messages)
+    def on_message(cls, topic: str, payload: dict):
+        """Triggered when a message is received. The message is appended to ``cls.messages`` list."""
+        cls.messages.append({"topic": topic, "payload": payload})
+        # print(cls.messages)
 
     @classmethod
     def clear_messages(cls):

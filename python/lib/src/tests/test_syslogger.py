@@ -1,12 +1,11 @@
 import unittest
 import unittest.mock as mock
 
-from safecor import SysLogger
 import safecor._syslogger as _syslogger
+from safecor import SysLogger
 
 
 class TestSysLogger(unittest.TestCase):
-
     def setUp(self):
         patcher = mock.patch.object(_syslogger, "syslog")
         self.mock_syslog = patcher.start()
@@ -20,7 +19,9 @@ class TestSysLogger(unittest.TestCase):
 
     def test_critical(self):
         self.logger.critical("a critical message")
-        self.mock_syslog.syslog.assert_called_with(self.mock_syslog.LOG_EMERG, "a critical message")
+        self.mock_syslog.syslog.assert_called_with(
+            self.mock_syslog.LOG_EMERG, "a critical message"
+        )
 
     def test_error(self):
         self.logger.error("an error")
@@ -28,11 +29,15 @@ class TestSysLogger(unittest.TestCase):
 
     def test_warning(self):
         self.logger.warning("a warning")
-        self.mock_syslog.syslog.assert_called_with(self.mock_syslog.LOG_WARNING, "a warning")
+        self.mock_syslog.syslog.assert_called_with(
+            self.mock_syslog.LOG_WARNING, "a warning"
+        )
 
     def test_warn_synonym(self):
         self.logger.warn("a warning via warn")
-        self.mock_syslog.syslog.assert_called_with(self.mock_syslog.LOG_WARNING, "a warning via warn")
+        self.mock_syslog.syslog.assert_called_with(
+            self.mock_syslog.LOG_WARNING, "a warning via warn"
+        )
 
     def test_info(self):
         self.logger.info("an info")
@@ -40,7 +45,9 @@ class TestSysLogger(unittest.TestCase):
 
     def test_debug(self):
         self.logger.debug("a debug")
-        self.mock_syslog.syslog.assert_called_with(self.mock_syslog.LOG_DEBUG, "a debug")
+        self.mock_syslog.syslog.assert_called_with(
+            self.mock_syslog.LOG_DEBUG, "a debug"
+        )
 
 
 if __name__ == "__main__":

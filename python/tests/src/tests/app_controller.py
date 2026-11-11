@@ -1,33 +1,36 @@
 import os
-from PySide6.QtCore import QObject, Property, Slot, Signal, QTimer
-from tests_listmodel import TestsListModel
-from messages_listmodel import MessagesListModel
-from lib import AbstractTest
+
 from enums import MessageLevel
+from lib import AbstractTest
+from messages_listmodel import MessagesListModel
+from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 from safecor import Api, MqttFactory
 from tests_helper import TestsHelper
+from tests_listmodel import TestsListModel
+
 DEVMODE = os.environ.get("DEVMODE")
 if DEVMODE:
     from mocks.DevModeHelper import DevModeHelper
+
     DevModeHelper.set_qt_plugins_path()
 
-class AppController(QObject):
 
+class AppController(QObject):
     __ready = False
     __running = False
     __tests_list = TestsHelper.get_tests_list()
     __current_test_index = 0
-    __user_text = ""    
+    __user_text = ""
 
-    def __init__(self, parent:QObject):
+    def __init__(self, parent: QObject):
         super().__init__(parent)
-        
-        self.__messages_model = MessagesListModel(self)        
+
+        self.__messages_model = MessagesListModel(self)
         self.__tests_listmodel = TestsListModel(self.__tests_list, self)
         self.__tests_listmodel.addMessage.connect(self.__messages_model.add_message)
         self.__messages_model.add_message(self.tr("Safecor tests app has started"))
 
-        Api().add_ready_callback(self.__on_api_ready)        
+        Api().add_ready_callback(self.__on_api_ready)
 
         if DEVMODE:
             self.__mqtt_client = DevModeHelper.create_mqtt_client("Tests")
@@ -36,14 +39,15 @@ class AppController(QObject):
 
         Api().start(domain_identifier="tests", mqtt_client=self.__mqtt_client)
 
-
     def __on_api_ready(self):
         self.__messages_model.add_message(self.tr("Safecor API is ready"))
         Api().notify_gui_ready()
         self.__ready = True
         self.readyChanged.emit()
-        self.__messages_model.add_message(self.tr("Tests app is ready. Please click the start button."), MessageLevel.User)
-
+        self.__messages_model.add_message(
+            self.tr("Tests app is ready. Please click the start button."),
+            MessageLevel.User,
+        )
 
     @Slot()
     def start_stop(self):
@@ -51,7 +55,7 @@ class AppController(QObject):
             self.__messages_model.add_message(self.tr("Start the whole test plan"))
             self.__running = True
             self.runningChanged.emit()
-            
+
             self.__run_next_test()
         else:
             self.__messages_model.add_message(self.tr("Stop the whole test plan"))
@@ -78,9 +82,9 @@ class AppController(QObject):
     def __run_next_test(self):
         if self.__current_test_index >= len(self.__tests_list):
             return
-                
+
         test = self.__tests_list[self.__current_test_index]
-        self.__current_test_index = self.__current_test_index+1
+        self.__current_test_index = self.__current_test_index + 1
 
         if not test["is_test"]:
             QTimer.singleShot(1, self.__run_next_test)
@@ -93,12 +97,14 @@ class AppController(QObject):
         self.__messages_model.add_message(self.tr("Run next test"))
         test_name = test["name"]
         test_class_name = test["class_name"]
-        test_class:AbstractTest = test["class"]
+        test_class: AbstractTest = test["class"]
         self.__messages_model.add_message(self.tr(f"Starting test {test_name}"))
-            
+
         self.__current_test = test_class(self)
         if self.__current_test is None:
-            self.__messages_model.add_message(self.tr(f"Could not start test {test_name}: Could not instanciate"))
+            self.__messages_model.add_message(
+                self.tr(f"Could not start test {test_name}: Could not instanciate")
+            )
             QTimer.singleShot(0, self.__run_next_test)
             return
 
@@ -118,28 +124,38 @@ class AppController(QObject):
         sender = self.sender()
 
         if sender is None:
-            self.__messages_model.add_message(self.tr("Error when receiving progress signal: no sender"))
+            self.__messages_model.add_message(
+                self.tr("Error when receiving progress signal: no sender")
+            )
             return
         else:
             test = self.__get_test(sender.name)
             if test is None:
-                self.__messages_model.add_message(self.tr(f"Error: the finished test has no name"))
-                return  
-            
+                self.__messages_model.add_message(
+                    self.tr("Error: the finished test has no name")
+                )
+                return
+
             test["progress"] = sender.progress
 
     def __on_test_finished(self):
         sender = self.sender()
 
         if sender is None:
-            self.__messages_model.add_message(self.tr("Error when receiving finished signal: no sender"))
+            self.__messages_model.add_message(
+                self.tr("Error when receiving finished signal: no sender")
+            )
             return
         else:
-            self.__messages_model.add_message(self.tr(f"The test {sender.name} has finished"))
+            self.__messages_model.add_message(
+                self.tr(f"The test {sender.name} has finished")
+            )
             test = self.__get_test(sender.name)
 
             if test is None:
-                self.__messages_model.add_message(self.tr(f"Error: the finished test has no name"))
+                self.__messages_model.add_message(
+                    self.tr("Error: the finished test has no name")
+                )
                 return
 
             # Set the test finished
@@ -149,25 +165,25 @@ class AppController(QObject):
                 self.nbTestsSucceededChanged.emit()
             else:
                 self.nbTestsFailedChanged.emit()
-            
+
             self.__tests_listmodel.on_data_changed()
 
         # Destroy the object
-        #sender.deleteLater()
+        # sender.deleteLater()
 
         self.__run_next_test()
 
-    def __get_test(self, test_name:str) -> dict:
+    def __get_test(self, test_name: str) -> dict:
         for test in self.__tests_list:
             if test.get("name") == test_name:
-                return test 
-        
+                return test
+
         return None
-    
+
     def __get_user_text(self) -> str:
         return self.__user_text
-    
-    def __set_user_text(self, text:str):
+
+    def __set_user_text(self, text: str):
         self.__user_text = text
         self.userTextChanged.emit(self.__user_text)
 
@@ -191,36 +207,50 @@ class AppController(QObject):
     ###############
     ### Properties
     ###
-    @Property(QObject, constant= True)
+    @Property(QObject, constant=True)
     def testsListModel(self) -> QObject:
         return self.__tests_listmodel
 
-    @Property(QObject, constant= True)
+    @Property(QObject, constant=True)
     def messagesModel(self) -> QObject:
         return self.__messages_model
 
-    @Property(int, notify= nbCapacitiesTotalChanged)
+    @Property(int, notify=nbCapacitiesTotalChanged)
     def nbCapacitiesTotal(self) -> int:
         return self.__tests_listmodel.get_nb_capacities_total()
-    
-    @Property(int, notify= nbTestsTotalChanged)
+
+    @Property(int, notify=nbTestsTotalChanged)
     def nbTestsTotal(self) -> int:
         return self.__tests_listmodel.get_nb_tests_total()
 
-    @Property(bool, notify= readyChanged)
+    @Property(bool, notify=readyChanged)
     def ready(self) -> bool:
         return self.__ready
-    
-    @Property(bool, notify= runningChanged)
+
+    @Property(bool, notify=runningChanged)
     def running(self) -> bool:
         return self.__running
-    
-    @Property(int, notify= nbTestsFailedChanged)
-    def nbTestsFailed(self) -> int:
-        return sum(1 for d in self.__tests_list if d.get("finished", False) == True and d.get("success", False) == False)
-    
-    @Property(int, notify= nbTestsSucceededChanged)
-    def nbTestsSucceeded(self) -> int:
-        return sum(1 for d in self.__tests_list if d.get("finished", False) == True and d.get("success", False) == True)
 
-    userText = Property(str, fget= __get_user_text, fset= __set_user_text, freset= __reset_user_text, notify=userTextChanged)
+    @Property(int, notify=nbTestsFailedChanged)
+    def nbTestsFailed(self) -> int:
+        return sum(
+            1
+            for d in self.__tests_list
+            if d.get("finished", False) == True and d.get("success", False) == False
+        )
+
+    @Property(int, notify=nbTestsSucceededChanged)
+    def nbTestsSucceeded(self) -> int:
+        return sum(
+            1
+            for d in self.__tests_list
+            if d.get("finished", False) == True and d.get("success", False) == True
+        )
+
+    userText = Property(
+        str,
+        fget=__get_user_text,
+        fset=__set_user_text,
+        freset=__reset_user_text,
+        notify=userTextChanged,
+    )

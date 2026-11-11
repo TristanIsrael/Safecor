@@ -1,4 +1,4 @@
-""" Configuration file handling
+"""Configuration file handling
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -7,11 +7,13 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import os
-from . import Topology, SysLogger
 
-class Configuration():
-    """ This class encapsulates the data of a configuration 
-    
+from . import SysLogger, Topology
+
+
+class Configuration:
+    """This class encapsulates the data of a configuration
+
     A configuration is made of:
     - a name (field `name`)
     - an identifier for the hardware (field `identifier`)
@@ -26,18 +28,18 @@ class Configuration():
     languages = []
     default_language = "en"
 
-    def __init__(self, name:str, identifier:dict, settings:dict):
+    def __init__(self, name: str, identifier: dict, settings: dict):
         self.name = name
         self.identifier = identifier
         self.settings = settings
 
-class ConfigurationHelper():
-    """ This class handles different sets of parameters defined for hardware configurations.
-    """
+
+class ConfigurationHelper:
+    """This class handles different sets of parameters defined for hardware configurations."""
 
     @staticmethod
-    def apply_configuration(topology:Topology) -> Topology:
-        """ Returns the configuration for the running system.
+    def apply_configuration(topology: Topology) -> Topology:
+        """Returns the configuration for the running system.
 
         The configuration returned will be composed of the keys from topology.json:
         - the global configuration (all keys except "configuration")
@@ -52,14 +54,14 @@ class ConfigurationHelper():
         - vpcu
         """
 
-        #configs = topology_struct.get("configurations", [])
+        # configs = topology_struct.get("configurations", [])
 
         # Get the defaul topology
-        #topology = ConfigurationHelper.__parse_topology(topology_struct)
+        # topology = ConfigurationHelper.__parse_topology(topology_struct)
 
         # Now we look at a configuration to apply and override some of
         # the settings
-        #topo_confs = topology_struct.get("configurations", [])
+        # topo_confs = topology_struct.get("configurations", [])
         topo_confs = topology.configurations
 
         configurations = ConfigurationHelper.__read_configurations(topo_confs)
@@ -79,7 +81,9 @@ class ConfigurationHelper():
                 filename = f"/sys/class/dmi/id/{key}"
 
                 if not os.path.exists(filename):
-                    SysLogger("Configuration helper").warn(f"The sysfs file {filename} does not exist")
+                    SysLogger("Configuration helper").warn(
+                        f"The sysfs file {filename} does not exist"
+                    )
                     # So we ignore this key
                     continue
 
@@ -94,12 +98,12 @@ class ConfigurationHelper():
             if all(settings.values()):
                 ConfigurationHelper.__merge_configuration(topology, conf.settings)
                 break
-            
+
         # Finally we return the topology with the configuration applied
         return topology
 
     @staticmethod
-    def __read_configurations(topo:list[dict]) -> list[Configuration]:
+    def __read_configurations(topo: list[dict]) -> list[Configuration]:
         confs = []
 
         for conf_name in topo:
@@ -107,7 +111,7 @@ class ConfigurationHelper():
             conf = Configuration(
                 conf_name,
                 topo_conf.get("identifier", {}),
-                topo_conf.get("settings", {})
+                topo_conf.get("settings", {}),
             )
 
             confs.append(conf)
@@ -115,7 +119,7 @@ class ConfigurationHelper():
         return confs
 
     @staticmethod
-    def __merge_configuration(topo:Topology, conf:dict):
+    def __merge_configuration(topo: Topology, conf: dict):
 
         # USB section
         usb = conf.get("usb", None)
@@ -132,7 +136,7 @@ class ConfigurationHelper():
                 topo.screen.rotation = screen.get("rotation")
             if screen.get("default_focus", None) is not None:
                 topo.screen.default_focus = screen.get("default_focus")
-            
+
         # PCI section
         pci = conf.get("pci", None)
         if pci is not None:
@@ -141,8 +145,8 @@ class ConfigurationHelper():
                 topo.pci.blacklist = blacklist
 
     @staticmethod
-    def __read_dmi_file(filename:str) -> str:
-        with open(file=filename, mode='r',encoding="utf-8") as data:
+    def __read_dmi_file(filename: str) -> str:
+        with open(file=filename, mode="r", encoding="utf-8") as data:
             return data.readline().strip()
-        
+
         return None

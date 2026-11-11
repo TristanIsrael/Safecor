@@ -31,7 +31,6 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from .activate import apply_dmi, install_fakes, uninstall_fakes
 from .broker import MosquittoBroker, broker_is_reachable
@@ -71,15 +70,15 @@ class Emulator:
 
     def __init__(
         self,
-        profile: Optional[SystemProfile] = None,
-        source_disks: Optional[Dict[str, str]] = None,
-        storage_path: Optional[str] = None,
+        profile: SystemProfile | None = None,
+        source_disks: dict[str, str] | None = None,
+        storage_path: str | None = None,
         broker_port: int = 1883,
         host: str = "localhost",
         reuse_broker: bool = True,
         start_timeout: float = 10.0,
-        topology_path: Optional[str] = None,
-        configuration: Optional[str] = None,
+        topology_path: str | None = None,
+        configuration: str | None = None,
     ):
         self.profile = profile if profile is not None else default_profile()
         self.source_disks = dict(source_disks or {})
@@ -90,18 +89,18 @@ class Emulator:
         self.start_timeout = start_timeout
         self.topology_path = topology_path
         self.configuration = configuration
-        self._environment: Optional[Environment] = None
+        self._environment: Environment | None = None
         if topology_path is not None:
             self._environment = build_environment_from_data(
                 json.loads(Path(topology_path).read_text(encoding="utf-8"))
             )
 
         self._own_broker = False
-        self._broker: Optional[MosquittoBroker] = None
-        self._dom0: Optional[MockDom0Controller] = None
-        self._sys_usb: Optional[MockSysUsbController] = None
-        self._dom0_lock: Optional[threading.Event] = None
-        self._sys_usb_lock: Optional[threading.Event] = None
+        self._broker: MosquittoBroker | None = None
+        self._dom0: MockDom0Controller | None = None
+        self._sys_usb: MockSysUsbController | None = None
+        self._dom0_lock: threading.Event | None = None
+        self._sys_usb_lock: threading.Event | None = None
         self._event_bus = EventBus()
         self._started = False
 
@@ -134,12 +133,12 @@ class Emulator:
         return self.input.path
 
     @property
-    def environment(self) -> Optional[Environment]:
+    def environment(self) -> Environment | None:
         """The :class:`Environment` derived from the topology (or ``None``)."""
         return self._environment
 
     @property
-    def configuration_names(self) -> List[str]:
+    def configuration_names(self) -> list[str]:
         """The ``configurations`` names declared in the topology (for the console)."""
         if self._environment is None:
             return []
@@ -236,7 +235,7 @@ class Emulator:
         return self._dom0.request_switch_gui(domain)
 
     # --- configuration switch (runtime) ---------------------------------------
-    def select_configuration(self, name: Optional[str] = None):
+    def select_configuration(self, name: str | None = None):
         """Select a hardware configuration at runtime (``None`` = standard).
 
         Re-serves the DMI fakes so that the next ``System.get_topology`` (after
@@ -322,7 +321,7 @@ class Emulator:
             f"{Topics.PING}/request", f"{Topics.PING}/response", payload
         )
 
-    def discover_components(self) -> List[Dict[str, str]]:
+    def discover_components(self) -> list[dict[str, str]]:
         """Query the peers for their components and return a flat list.
 
         Publishes a ``DISCOVER_COMPONENTS`` request and collects all responses
@@ -367,7 +366,7 @@ class Emulator:
             except Exception:
                 pass
 
-        components: List[Dict[str, str]] = []
+        components: list[dict[str, str]] = []
         for response in responses:
             if isinstance(response, dict):
                 for comp in response.get("components", []):

@@ -1,9 +1,10 @@
-from safecor import LibvirtHelper, Domain, DomainType
 import os
 import unittest
 
-class TestLibvirtHelper(unittest.TestCase):
+from safecor import DomainType, LibvirtHelper
 
+
+class TestLibvirtHelper(unittest.TestCase):
     def setUp(self):
         os.environ["MOCK_LIBVIRT"] = "1"
 
@@ -22,13 +23,14 @@ class TestLibvirtHelper(unittest.TestCase):
         self.assertEqual(dom.domain_type, DomainType.BUSINESS)
         self.assertEqual(dom.memory, 2048)
         self.assertEqual(dom.vcpus, 2)
-        self.assertEqual(dom.cpu_affinity, [0,1,2,3,4,5,6,7])
+        self.assertEqual(dom.cpu_affinity, [0, 1, 2, 3, 4, 5, 6, 7])
 
     def test_get_cpu_count(self):
         self.assertEqual(LibvirtHelper.get_cpu_count(), 16)
 
     def test_reboot_domain(self):
         self.skipTest("Not implemented")
+
 
 if __name__ == "__main__":
     unittest.main()

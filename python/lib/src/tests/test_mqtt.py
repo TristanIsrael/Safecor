@@ -1,8 +1,10 @@
-from safecor import MqttClient, ConnectionType, Topics, ResponseFactory
-import unittest, time, threading
+import time
+import unittest
+
+from safecor import ConnectionType, MqttClient, ResponseFactory, Topics
+
 
 class TestMqttClient(unittest.TestCase):
-
     __recv_strings = []
     nb_connections = 0
     finished = False
@@ -58,18 +60,20 @@ class TestMqttClient(unittest.TestCase):
         self.finished = False
         self.client2.subscribe(f"{Topics.LIST_FILES}/request")
         self.client1.subscribe(f"{Topics.LIST_FILES}/response")
-        self.client1.publish(f"{Topics.LIST_FILES}/request", { "disk": "disk 1" })
+        self.client1.publish(f"{Topics.LIST_FILES}/request", {"disk": "disk 1"})
         time.sleep(1)
         self.assertTrue(self.finished)
 
     def __increment_connexions(self):
         self.nb_connections += 1
 
-    def __on_message(self, topic:str, payload:dict):
+    def __on_message(self, topic: str, payload: dict):
         print(topic)
         if self._testMethodName == "test_list_disks":
             if topic == f"{Topics.LIST_DISKS}/request":
-                response = ResponseFactory.create_response_disks_list([ "disk 1", "disk 2" ])
+                response = ResponseFactory.create_response_disks_list(
+                    ["disk 1", "disk 2"]
+                )
                 self.client2.publish(f"{Topics.LIST_DISKS}/response", response)
             elif topic == f"{Topics.LIST_DISKS}/response":
                 disks = payload.get("disks")
@@ -82,9 +86,14 @@ class TestMqttClient(unittest.TestCase):
             if topic == f"{Topics.LIST_FILES}/request":
                 self.assertEqual(payload.get("disk"), "disk 1")
                 files = [
-                    { "path": "/", "name": "file 1.txt", "size": 123, "type": "file" },
-                    { "path": "/", "name": "file 2.exe", "size": 18882726, "type": "file" },
-                    { "path": "/", "name": "תיק", "type": "folder" }
+                    {"path": "/", "name": "file 1.txt", "size": 123, "type": "file"},
+                    {
+                        "path": "/",
+                        "name": "file 2.exe",
+                        "size": 18882726,
+                        "type": "file",
+                    },
+                    {"path": "/", "name": "תיק", "type": "folder"},
                 ]
                 response = ResponseFactory.create_response_list_files("disk 1", files)
                 self.client2.publish(f"{Topics.LIST_FILES}/response", response)
@@ -110,23 +119,21 @@ class TestMqttClient(unittest.TestCase):
         elif self._testMethodName == "test_utf8":
             self.__recv_strings.append(payload["string"])
 
-                
     def test_utf8(self):
         test_strings = [
             "1. A string without special chars",
             "2. Accents et symboles : éàèùâêîôû ç ñ ä ö ü ß € £ ¥ © ® ™",
             "3. 日本語テスト：システムガイド保守マニュアル version1.0",
-            "4. בדיקת יוניקוד: מערכת-מדריך-תחזוקה גרסה 1.0"
-        ]        
+            "4. בדיקת יוניקוד: מערכת-מדריך-תחזוקה גרסה 1.0",
+        ]
 
         for s in test_strings:
-            self.client2.publish("test/utf8", { "string": s })
+            self.client2.publish("test/utf8", {"string": s})
 
         time.sleep(0.5)
 
         self.assertEqual(self.__recv_strings, test_strings)
         print(self.__recv_strings)
-
 
     def tearDown(self):
         self.client1.stop()
@@ -134,5 +141,6 @@ class TestMqttClient(unittest.TestCase):
         self.client2.stop()
         del self.client2
 
-if __name__ == "__main__":    
+
+if __name__ == "__main__":
     unittest.main()

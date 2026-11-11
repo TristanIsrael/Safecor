@@ -1,14 +1,13 @@
-import unittest
 import json
 import types
+import unittest
 import unittest.mock as mock
 
-from safecor import MqttClient, ConnectionType
 import safecor._mqtt_client as _mqtt_client
+from safecor import ConnectionType, MqttClient
 
 
 class TestMqttClient(unittest.TestCase):
-
     def setUp(self):
         # Avoid real syslog calls if a warn/error path is exercised
         patcher = mock.patch.object(_mqtt_client, "SysLogger")
@@ -17,7 +16,9 @@ class TestMqttClient(unittest.TestCase):
         self.client = MqttClient("client_id")
 
     def _fake_msg(self, payload, topic="some/topic"):
-        return types.SimpleNamespace(topic=topic, payload=json.dumps(payload).encode("utf-8"))
+        return types.SimpleNamespace(
+            topic=topic, payload=json.dumps(payload).encode("utf-8")
+        )
 
     # --- construction ----------------------------------------------------
 
@@ -34,14 +35,23 @@ class TestMqttClient(unittest.TestCase):
 
     def test_get_transport_type(self):
         get = self.client._MqttClient__get_transport_type
-        self.assertEqual(MqttClient("i", ConnectionType.TCP_DEBUG)._MqttClient__get_transport_type(), "tcp")
-        self.assertEqual(MqttClient("i", ConnectionType.UNIX_SOCKET)._MqttClient__get_transport_type(), "unix")
+        self.assertEqual(
+            MqttClient("i", ConnectionType.TCP_DEBUG)._MqttClient__get_transport_type(),
+            "tcp",
+        )
+        self.assertEqual(
+            MqttClient(
+                "i", ConnectionType.UNIX_SOCKET
+            )._MqttClient__get_transport_type(),
+            "unix",
+        )
         self.assertEqual(get(), "unix")
 
     # --- callback registration -------------------------------------------
 
     def test_message_callback_registration(self):
-        cb = lambda t, p: None
+        def cb(t, p):
+            pass
         self.client.add_message_callback(cb)
         self.assertIn(cb, self.client._MqttClient__message_callbacks)
         # reset clears them
@@ -49,14 +59,16 @@ class TestMqttClient(unittest.TestCase):
         self.assertEqual(self.client._MqttClient__message_callbacks, [])
 
     def test_del_message_callback(self):
-        cb = lambda t, p: None
+        def cb(t, p):
+            pass
         self.client.add_message_callback(cb)
         self.assertIn(cb, self.client._MqttClient__message_callbacks)
         self.client.del_message_callback(cb)
         self.assertNotIn(cb, self.client._MqttClient__message_callbacks)
 
     def test_connected_callback_registration(self):
-        cb = lambda: None
+        def cb():
+            pass
         self.client.add_connected_callback(cb)
         self.assertIn(cb, self.client._MqttClient__connected_callbacks)
 
@@ -64,8 +76,12 @@ class TestMqttClient(unittest.TestCase):
 
     def test_on_message_dispatches(self):
         received = []
-        self.client.on_message = lambda topic, payload: received.append(("on_message", topic, payload))
-        self.client.add_message_callback(lambda topic, payload: received.append(("cb", topic, payload)))
+        self.client.on_message = lambda topic, payload: received.append(
+            ("on_message", topic, payload)
+        )
+        self.client.add_message_callback(
+            lambda topic, payload: received.append(("cb", topic, payload))
+        )
 
         payload = {"hello": "world"}
         self.client._MqttClient__on_message(None, None, self._fake_msg(payload, "t/x"))
@@ -146,7 +162,9 @@ class TestMqttClient(unittest.TestCase):
     def test_publish(self):
         self.client.mqtt_client = mock.MagicMock()
         self.client.publish("some/topic", {"a": 1})
-        self.client.mqtt_client.publish.assert_called_with(topic="some/topic", payload='{"a": 1}')
+        self.client.mqtt_client.publish.assert_called_with(
+            topic="some/topic", payload='{"a": 1}'
+        )
 
     def test_subscribe(self):
         self.client.mqtt_client = mock.MagicMock()

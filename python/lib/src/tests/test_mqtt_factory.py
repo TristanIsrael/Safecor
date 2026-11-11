@@ -1,9 +1,9 @@
 import unittest
-from safecor import MqttFactory, MqttClient, ConnectionType, Constants
+
+from safecor import ConnectionType, Constants, MqttClient, MqttFactory
 
 
 class TestMqttFactory(unittest.TestCase):
-
     def test_create_mqtt_client_domu(self):
         client = MqttFactory.create_mqtt_client_domu("sys-usb")
         self.assertIsInstance(client, MqttClient)

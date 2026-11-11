@@ -2,12 +2,11 @@ import types
 import unittest
 import unittest.mock as mock
 
-from safecor import Dom0Controller, Topics, Constants, Settings, ComponentState
 import safecor._dom0_controller as _dom0
+from safecor import ComponentState, Constants, Dom0Controller, Settings, Topics
 
 
 class TestDom0Controller(unittest.TestCase):
-
     def setUp(self):
         self._patchers = [
             mock.patch.object(_dom0, "Logger", mock.MagicMock()),
@@ -41,7 +40,8 @@ class TestDom0Controller(unittest.TestCase):
     def test_handle_ping(self):
         self.ctrl._Dom0Controller__handle_ping({"id": 1, "data": "d", "sent_at": 5})
         self.mqtt.publish.assert_called_once_with(
-            f"{Topics.PING}/response", {"id": 1, "source": "Dom0", "data": "d", "sent_at": 5}
+            f"{Topics.PING}/response",
+            {"id": 1, "source": "Dom0", "data": "d", "sent_at": 5},
         )
 
     # --- list files ------------------------------------------------------
@@ -49,9 +49,12 @@ class TestDom0Controller(unittest.TestCase):
     def test_handle_list_files_repository(self):
         self.filehelper.get_files_list.return_value = [{"name": "a"}]
         self.ctrl._Dom0Controller__handle_list_files({"disk": Constants.STR_REPOSITORY})
-        self.filehelper.get_files_list.assert_called_with(Constants.STR_REPOSITORY, True)
+        self.filehelper.get_files_list.assert_called_with(
+            Constants.STR_REPOSITORY, True
+        )
         self.mqtt.publish.assert_called_once_with(
-            f"{Topics.LIST_FILES}/response", {"disk": Constants.STR_REPOSITORY, "files": [{"name": "a"}]}
+            f"{Topics.LIST_FILES}/response",
+            {"disk": Constants.STR_REPOSITORY, "files": [{"name": "a"}]},
         )
 
     def test_handle_list_files_not_repository(self):
@@ -67,11 +70,17 @@ class TestDom0Controller(unittest.TestCase):
         )
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.FILE_FINGERPRINT}/response",
-            {"filepath": "/a.txt", "disk": Constants.STR_REPOSITORY, "fingerprint": "fp123"}
+            {
+                "filepath": "/a.txt",
+                "disk": Constants.STR_REPOSITORY,
+                "fingerprint": "fp123",
+            },
         )
 
     def test_handle_file_fingerprint_missing_args(self):
-        self.ctrl._Dom0Controller__handle_file_fingerprint({"disk": Constants.STR_REPOSITORY})
+        self.ctrl._Dom0Controller__handle_file_fingerprint(
+            {"disk": Constants.STR_REPOSITORY}
+        )
         self.mqtt.publish.assert_not_called()
 
     # --- shutdown --------------------------------------------------------
@@ -92,10 +101,12 @@ class TestDom0Controller(unittest.TestCase):
 
     def test_handle_restart_domain_forced_success(self):
         self.subprocess.run.return_value.returncode = 0
-        self.ctrl._Dom0Controller__handle_restart_domain({"domain_name": "sys-usb", "forced": True})
+        self.ctrl._Dom0Controller__handle_restart_domain(
+            {"domain_name": "sys-usb", "forced": True}
+        )
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.RESTART_DOMAIN}/response",
-            {"domain_name": "sys-usb", "state": "accepted", "reason": ""}
+            {"domain_name": "sys-usb", "state": "accepted", "reason": ""},
         )
 
     def test_handle_restart_domain_forced_failure(self):
@@ -104,10 +115,16 @@ class TestDom0Controller(unittest.TestCase):
         res.stdout = "out-err"
         res.stderr = "err-err"
         self.subprocess.run.return_value = res
-        self.ctrl._Dom0Controller__handle_restart_domain({"domain_name": "sys-usb", "forced": True})
+        self.ctrl._Dom0Controller__handle_restart_domain(
+            {"domain_name": "sys-usb", "forced": True}
+        )
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.RESTART_DOMAIN}/response",
-            {"domain_name": "sys-usb", "state": "refused", "reason": "out-err\nerr-err"}
+            {
+                "domain_name": "sys-usb",
+                "state": "refused",
+                "reason": "out-err\nerr-err",
+            },
         )
 
     def test_handle_restart_domain_missing_arg(self):
@@ -152,11 +169,14 @@ class TestDom0Controller(unittest.TestCase):
             {"disk": Constants.STR_REPOSITORY, "filepath": "/a.txt"}
         )
         self.mqtt.publish.assert_called_once_with(
-            Topics.DELETED_FILE, {"disk": Constants.STR_REPOSITORY, "filepath": "/a.txt"}
+            Topics.DELETED_FILE,
+            {"disk": Constants.STR_REPOSITORY, "filepath": "/a.txt"},
         )
 
     def test_handle_delete_file_wrong_disk(self):
-        self.ctrl._Dom0Controller__handle_delete_file({"disk": "other", "filepath": "/a.txt"})
+        self.ctrl._Dom0Controller__handle_delete_file(
+            {"disk": "other", "filepath": "/a.txt"}
+        )
         self.mqtt.publish.assert_not_called()
 
     def test_handle_delete_file_missing_args(self):
@@ -180,21 +200,25 @@ class TestDom0Controller(unittest.TestCase):
         self.ctrl._Dom0Controller__handle_repository_path()
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.REPOSITORY_PATH}/response",
-            {"path": Constants.DOMU_REPOSITORY_PATH}
+            {"path": Constants.DOMU_REPOSITORY_PATH},
         )
 
     # --- settings: languages --------------------------------------------
 
     def test_handle_settings_languages_list(self):
         self.topology.languages = ["en", "fr"]
-        self.ctrl._Dom0Controller__handle_system_settings(f"{Topics.LIST_LANGUAGES}/request", {})
+        self.ctrl._Dom0Controller__handle_system_settings(
+            f"{Topics.LIST_LANGUAGES}/request", {}
+        )
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.LIST_LANGUAGES}/response", {"languages": ["en", "fr"]}
         )
 
     def test_handle_settings_default_language(self):
         self.topology.default_language = "fr"
-        self.ctrl._Dom0Controller__handle_system_settings(f"{Topics.DEFAULT_LANGUAGE}/request", {})
+        self.ctrl._Dom0Controller__handle_system_settings(
+            f"{Topics.DEFAULT_LANGUAGE}/request", {}
+        )
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.DEFAULT_LANGUAGE}/response", {"language": "fr"}
         )
@@ -206,20 +230,26 @@ class TestDom0Controller(unittest.TestCase):
         )
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.CURRENT_LANGUAGE}/response",
-            {"key": Settings.CURRENT_LANGUAGE, "value": "en"}
+            {"key": Settings.CURRENT_LANGUAGE, "value": "en"},
         )
 
     def test_handle_settings_current_language_missing_key(self):
-        self.ctrl._Dom0Controller__handle_system_settings(f"{Topics.CURRENT_LANGUAGE}/get", {})
+        self.ctrl._Dom0Controller__handle_system_settings(
+            f"{Topics.CURRENT_LANGUAGE}/get", {}
+        )
         self.mqtt.publish.assert_not_called()
 
     def test_handle_settings_set_language(self):
-        self.system.return_value.get_setting.return_value = "fr"  # different from requested "en"
+        self.system.return_value.get_setting.return_value = (
+            "fr"  # different from requested "en"
+        )
         self.ctrl._Dom0Controller__handle_system_settings(
             f"{Topics.SET_LANGUAGE}/request",
-            {"key": Settings.CURRENT_LANGUAGE, "value": "en"}
+            {"key": Settings.CURRENT_LANGUAGE, "value": "en"},
         )
-        self.system.return_value.set_setting.assert_called_with(Settings.CURRENT_LANGUAGE, "en")
+        self.system.return_value.set_setting.assert_called_with(
+            Settings.CURRENT_LANGUAGE, "en"
+        )
         # Two publishes: the setting response + the change notification
         self.assertEqual(self.mqtt.publish.call_count, 2)
 
@@ -227,7 +257,7 @@ class TestDom0Controller(unittest.TestCase):
         self.system.return_value.get_setting.return_value = "en"  # same as requested
         self.ctrl._Dom0Controller__handle_system_settings(
             f"{Topics.SET_LANGUAGE}/request",
-            {"key": Settings.CURRENT_LANGUAGE, "value": "en"}
+            {"key": Settings.CURRENT_LANGUAGE, "value": "en"},
         )
         # Value did not change -> no response published
         self.mqtt.publish.assert_not_called()
@@ -239,13 +269,17 @@ class TestDom0Controller(unittest.TestCase):
         self.mqtt.publish.assert_not_called()
 
     def test_handle_switch_gui_not_found(self):
-        with mock.patch.object(_dom0, "XcbController", create=True, new=mock.MagicMock()) as xcb:
+        with mock.patch.object(
+            _dom0, "XcbController", create=True, new=mock.MagicMock()
+        ) as xcb:
             xcb.return_value.get_gui_list.return_value = {"other": 123}
             self.ctrl._Dom0Controller__handle_switch_gui({"domain": "sys-usb"})
         xcb.return_value.show_gui.assert_not_called()
 
     def test_handle_switch_gui_success(self):
-        with mock.patch.object(_dom0, "XcbController", create=True, new=mock.MagicMock()) as xcb:
+        with mock.patch.object(
+            _dom0, "XcbController", create=True, new=mock.MagicMock()
+        ) as xcb:
             xcb.return_value.get_gui_list.return_value = {"sys-usb": 42}
             xcb.return_value.get_current_gui.return_value = ("old", 7)
             self.ctrl._Dom0Controller__handle_switch_gui({"domain": "sys-usb"})
@@ -266,7 +300,7 @@ class TestDom0Controller(unittest.TestCase):
         )
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.REPOSITORY_PATH}/response",
-            {"path": Constants.DOMU_REPOSITORY_PATH}
+            {"path": Constants.DOMU_REPOSITORY_PATH},
         )
 
     def test_message_worker_unknown_topic(self):

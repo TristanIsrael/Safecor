@@ -1,4 +1,4 @@
-""" UI internationalization for the operator console
+"""UI internationalization for the operator console
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -9,7 +9,6 @@ Safecor Licence — see python/lib/LICENCE.md
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtCore import QTranslator
 
@@ -28,7 +27,7 @@ def translation_file(language: str) -> Path:
     return I18N_DIR / f"{language}.qm"
 
 
-def _find_lrelease() -> Optional[Path]:
+def _find_lrelease() -> Path | None:
     """Locate the ``lrelease`` compiler (on PATH or bundled with PySide6)."""
     on_path = shutil.which("lrelease")
     if on_path:
@@ -78,7 +77,7 @@ def has_translation(language: str) -> bool:
     return translation_file(language).is_file()
 
 
-def load_translator(language: str) -> Optional[QTranslator]:
+def load_translator(language: str) -> QTranslator | None:
     """Create a :class:`QTranslator` loaded with the ``language`` catalog.
 
     :param language: a code from :data:`SUPPORTED_UI_LANGUAGES`.

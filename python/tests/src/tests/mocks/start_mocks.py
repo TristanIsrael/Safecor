@@ -1,7 +1,8 @@
-from safecor_emulator import MockSysUsbController
+import threading
+
 from DevModeHelper import DevModeHelper
 from MockDom0Controller import MockDom0Controller
-import threading
+from safecor_emulator import MockSysUsbController
 
 if __name__ == "__main__":
     print("Starting mocks...")
@@ -17,9 +18,11 @@ if __name__ == "__main__":
 
     print("... Starting Mock sys-usb controller")
     mock = MockSysUsbController(lock_sys_usb)
-    mock.start({"root": DevModeHelper.get_mocked_source_disk_path()},
-               DevModeHelper.get_storage_path(),
-               DevModeHelper.get_mocked_destination_disk_path())
+    mock.start(
+        {"root": DevModeHelper.get_mocked_source_disk_path()},
+        DevModeHelper.get_storage_path(),
+        DevModeHelper.get_mocked_destination_disk_path(),
+    )
     lock_sys_usb.wait()
 
     print("Mocks started")

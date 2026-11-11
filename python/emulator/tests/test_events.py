@@ -3,7 +3,6 @@
 import threading
 
 import pytest
-
 from safecor_emulator.events import (
     STREAMS,
     Event,

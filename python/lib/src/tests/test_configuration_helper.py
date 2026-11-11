@@ -1,15 +1,15 @@
 import unittest
-import os
 import unittest.mock as mock
 
-from safecor import Configuration, ConfigurationHelper, Topology
 import safecor._configuration_helper as _configuration_helper
+from safecor import Configuration, ConfigurationHelper, Topology
 
 
 class TestConfiguration(unittest.TestCase):
-
     def test_configuration_fields(self):
-        conf = Configuration("myconf", {"sys_vendor": "ALEFBET"}, {"usb": {"use": True}})
+        conf = Configuration(
+            "myconf", {"sys_vendor": "ALEFBET"}, {"usb": {"use": True}}
+        )
         self.assertEqual(conf.name, "myconf")
         self.assertEqual(conf.identifier, {"sys_vendor": "ALEFBET"})
         self.assertEqual(conf.settings, {"usb": {"use": True}})
@@ -23,7 +23,6 @@ class TestConfiguration(unittest.TestCase):
 
 
 class TestConfigurationHelper(unittest.TestCase):
-
     def _topo(self):
         topo = Topology()
         topo.use_usb = False
@@ -53,8 +52,12 @@ class TestConfigurationHelper(unittest.TestCase):
             }
         }
 
-        with mock.patch.object(_configuration_helper.os.path, "exists", return_value=True), \
-             mock.patch("builtins.open", mock.mock_open(read_data="ALEFBET\n")):
+        with (
+            mock.patch.object(
+                _configuration_helper.os.path, "exists", return_value=True
+            ),
+            mock.patch("builtins.open", mock.mock_open(read_data="ALEFBET\n")),
+        ):
             result = ConfigurationHelper.apply_configuration(topo)
 
         self.assertIs(result, topo)
@@ -72,8 +75,12 @@ class TestConfigurationHelper(unittest.TestCase):
             }
         }
 
-        with mock.patch.object(_configuration_helper.os.path, "exists", return_value=True), \
-             mock.patch("builtins.open", mock.mock_open(read_data="ALEFBET\n")):
+        with (
+            mock.patch.object(
+                _configuration_helper.os.path, "exists", return_value=True
+            ),
+            mock.patch("builtins.open", mock.mock_open(read_data="ALEFBET\n")),
+        ):
             ConfigurationHelper.apply_configuration(topo)
 
         self.assertFalse(topo.use_usb)
@@ -87,8 +94,12 @@ class TestConfigurationHelper(unittest.TestCase):
             }
         }
 
-        with mock.patch.object(_configuration_helper.os.path, "exists", return_value=False), \
-             mock.patch.object(_configuration_helper, "SysLogger", mock.MagicMock()):
+        with (
+            mock.patch.object(
+                _configuration_helper.os.path, "exists", return_value=False
+            ),
+            mock.patch.object(_configuration_helper, "SysLogger", mock.MagicMock()),
+        ):
             ConfigurationHelper.apply_configuration(topo)
 
         # The missing key prevents a match, so nothing is merged
@@ -109,8 +120,12 @@ class TestConfigurationHelper(unittest.TestCase):
                 return mock.mock_open(read_data="ALEFBET\n")()
             return mock.mock_open(read_data="WRONG\n")()
 
-        with mock.patch.object(_configuration_helper.os.path, "exists", return_value=True), \
-             mock.patch("builtins.open", side_effect=fake_open):
+        with (
+            mock.patch.object(
+                _configuration_helper.os.path, "exists", return_value=True
+            ),
+            mock.patch("builtins.open", side_effect=fake_open),
+        ):
             ConfigurationHelper.apply_configuration(topo)
 
         self.assertFalse(topo.use_usb)
@@ -128,8 +143,12 @@ class TestConfigurationHelper(unittest.TestCase):
             },
         }
 
-        with mock.patch.object(_configuration_helper.os.path, "exists", return_value=True), \
-             mock.patch("builtins.open", mock.mock_open(read_data="ALEFBET\n")):
+        with (
+            mock.patch.object(
+                _configuration_helper.os.path, "exists", return_value=True
+            ),
+            mock.patch("builtins.open", mock.mock_open(read_data="ALEFBET\n")),
+        ):
             ConfigurationHelper.apply_configuration(topo)
 
         # confA matches first and the loop breaks, so confB is not applied

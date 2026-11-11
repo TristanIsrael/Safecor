@@ -1,9 +1,9 @@
-from lib import AbstractTest
 from enums import MessageLevel
-from safecor import Api, Topics, ApiHelper, DiskState
+from lib import AbstractTest
+from safecor import Api, ApiHelper, DiskState, Topics
+
 
 class TestGetStoragesList(AbstractTest):
-
     name = "Storage notifications"
     description = ""
     parallelizable = True
@@ -11,25 +11,26 @@ class TestGetStoragesList(AbstractTest):
     __step = 0
 
     def start(self) -> None:
-        """ Called when the test is started """
+        """Called when the test is started"""
         self._set_progress(0)
- 
+
         Api().add_message_callback(self.__on_message)
         Api().add_subscription_callback(self.__on_ready)
-        Api().subscribe(Topics.DISK_STATE)        
+        Api().subscribe(Topics.DISK_STATE)
 
-    def __on_ready(self, mid:str):
+    def __on_ready(self, mid: str):
         # Ask the user to connect one storage
         self._send_message(self.tr("Please connect a storage now."), MessageLevel.User)
-        self._send_message(self.tr("Waiting for a storage..."), MessageLevel.Information)
+        self._send_message(
+            self.tr("Waiting for a storage..."), MessageLevel.Information
+        )
         self._set_waiting(True)
         self.__step = 1
 
     def stop(self) -> None:
-        """ Called when the test must be stopped """
-        pass
+        """Called when the test must be stopped"""
 
-    def __on_message(self, topic:str, payload:dict):
+    def __on_message(self, topic: str, payload: dict):
         if topic == Topics.DISK_STATE:
             self.__payload = payload
 
@@ -39,29 +40,48 @@ class TestGetStoragesList(AbstractTest):
     def __step2(self):
         # Verify the storage data
         if len(self.__payload) == {}:
-            self._send_message(self.tr("Error: received a disk state notification but the disks list is empty"), MessageLevel.Error)
+            self._send_message(
+                self.tr(
+                    "Error: received a disk state notification but the disks list is empty"
+                ),
+                MessageLevel.Error,
+            )
             self._set_finished(False)
             return
         elif self.__payload.get("disk", "") == "":
-            self._send_message(self.tr("Error: received an empty disk name"), MessageLevel.Error)            
+            self._send_message(
+                self.tr("Error: received an empty disk name"), MessageLevel.Error
+            )
             self._set_finished(False)
             return
-        else:                                
+        else:
             if self.__payload.get("state", "") != "connected":
-                self._send_message(self.tr("Error: the disk state is incorrect"), MessageLevel.Error)
+                self._send_message(
+                    self.tr("Error: the disk state is incorrect"), MessageLevel.Error
+                )
                 self._set_finished(False)
-                return 
-            
+                return
+
             # Use the API
             disk_name = ApiHelper.get_disk_name(self.__payload)
             disk_state = ApiHelper.get_disk_state(self.__payload)
             disk_connected = ApiHelper.is_disk_connected(self.__payload)
 
-            if disk_name == "" or disk_state != DiskState.CONNECTED or not disk_connected or self.__payload.get("disk", "") != disk_name:
-                self._send_message(self.tr("Error: the disk information return by ApiHelper is incorrect"), MessageLevel.Error)
+            if (
+                disk_name == ""
+                or disk_state != DiskState.CONNECTED
+                or not disk_connected
+                or self.__payload.get("disk", "") != disk_name
+            ):
+                self._send_message(
+                    self.tr(
+                        "Error: the disk information return by ApiHelper is incorrect"
+                    ),
+                    MessageLevel.Error,
+                )
                 self._set_finished(False)
                 return
-            
+
         # The test is successful
         self._send_message(self.tr("The test succeeded"), MessageLevel.Information)
         self._set_finished(True)

@@ -1,4 +1,4 @@
-""" Mock peer domains provided by the emulator
+"""Mock peer domains provided by the emulator
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md

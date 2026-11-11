@@ -1,4 +1,4 @@
-""" System state and topology management.
+"""System state and topology management.
 
 Provides the System singleton (screen, UUID, CPU, memory, settings, domain
 identification) and the module-level topology global.
@@ -9,34 +9,46 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-import subprocess
-import platform
-import os
 import json
+import os
+import platform
+import subprocess
 import threading
 import time
-from typing import Optional, Callable
+from typing import Callable, Optional
+
 try:
     import psutil
 except ImportError:
     pass
 import shutil
-from . import SingletonMeta, __version__, Constants, Topology, DomainType, ConfigurationHelper, Domain
+
+from . import (
+    ConfigurationHelper,
+    Constants,
+    Domain,
+    DomainType,
+    SingletonMeta,
+    Topology,
+    __version__,
+)
+
 try:
     from . import LibvirtHelper
 except ImportError:
     print("Not using Libvirt")
 try:
-    from inotify_simple import INotify, flags 
+    from inotify_simple import INotify, flags
 except Exception:
     print("The inotify library is not available on this system")
 
 topology = Topology()
 
+
 class System(metaclass=SingletonMeta):
-    """ The System class provides functions for querying or modifying the system's state. 
-    
-        Some of the functions belong to the main system (Dom0) and some other belong to the virtual machines (DomU)
+    """The System class provides functions for querying or modifying the system's state.
+
+    Some of the functions belong to the main system (Dom0) and some other belong to the virtual machines (DomU)
     """
 
     __DEFAULT_SCREEN_SIZE = "1100,750"
@@ -53,92 +65,102 @@ class System(metaclass=SingletonMeta):
     __mount_watcher_thread = None
 
     def get_screen_width(self) -> int:
-        """ Returns the system main screen's resolution width 
+        """Returns the system main screen's resolution width
 
         This function must be ran in a DomU.
         """
 
         if self.__width > -1:
             return self.__width
-        
+
         screen_size = self._get_screen_size()
 
         if "," in screen_size:
             rotation = self.get_screen_rotation()
             if rotation == 0 or rotation == 180:
-                self.__width = int(screen_size.split(',')[0])
+                self.__width = int(screen_size.split(",")[0])
             else:
-                self.__width = int(screen_size.split(',')[1])
+                self.__width = int(screen_size.split(",")[1])
 
             return self.__width
-        
+
         return 1024
-    
+
     def get_screen_height(self):
-        """ Returns the system main screen's resolution height 
-            
+        """Returns the system main screen's resolution height
+
         This function must be ran in a DomU.
         """
 
         if self.__height > -1:
             return self.__height
-        
+
         screen_size = self._get_screen_size()
 
-        if "," in screen_size:            
+        if "," in screen_size:
             rotation = self.get_screen_rotation()
             if rotation == 0 or rotation == 180:
-                self.__height = int(screen_size.split(',')[1])
-            else: 
-                self.__height = int(screen_size.split(',')[0])
+                self.__height = int(screen_size.split(",")[1])
+            else:
+                self.__height = int(screen_size.split(",")[0])
 
             return self.__height
-        
+
         return 768
 
     def get_screen_rotation(self) -> int:
-        """ Returns the Domain's screen rotation angle 
-        
-            The rotation angle is defined in the topology file in the setting ``gui.screen.rotation``.
+        """Returns the Domain's screen rotation angle
 
-            This function must be ran in a DomU.
+        The rotation angle is defined in the topology file in the setting ``gui.screen.rotation``.
 
-            Possible values are: 0, 90, 180, 270.
+        This function must be ran in a DomU.
+
+        Possible values are: 0, 90, 180, 270.
         """
 
         if self.__rotation > -1:
             return self.__rotation
-        
+
         try:
-            res = subprocess.run(["xenstore-read", "/local/domain/system/screen_rotation"], capture_output=True, text=True, check=False)
+            res = subprocess.run(
+                ["xenstore-read", "/local/domain/system/screen_rotation"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             if res.returncode == 0:
                 return int(res.stdout)
         except Exception:
             return 0
-        
+
         return 0
 
     def _get_screen_size(self) -> str:
-        """ Returns the Domain's screen size as a string.
+        """Returns the Domain's screen size as a string.
 
-            This function must be ran in a DomU.
-         
-            A typical value is: "1280x1024"
+        This function must be ran in a DomU.
+
+        A typical value is: "1280x1024"
         """
 
         try:
-            res = subprocess.run(["xenstore-read", "/local/domain/system/screen_size"], capture_output=True, text=True, check=False)
+            res = subprocess.run(
+                ["xenstore-read", "/local/domain/system/screen_size"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             if res.returncode == 0:
                 return res.stdout
         except Exception:
             return self.__DEFAULT_SCREEN_SIZE
-        
+
         return self.__DEFAULT_SCREEN_SIZE
-    
+
     def get_system_uuid(self):
-        """ Returns the system's UUID 
-        
-            The UUID is queried from the Linux kernel's ``/sys/class/dmi/id/product_uuid``
+        """Returns the system's UUID
+
+        The UUID is queried from the Linux kernel's ``/sys/class/dmi/id/product_uuid``
         """
 
         system = platform.system().lower()
@@ -146,46 +168,52 @@ class System(metaclass=SingletonMeta):
         # If we have it in cache...
         if self.__system_uuid != "":
             return self.__system_uuid
-        
-        if system == 'linux':
+
+        if system == "linux":
             try:
-                with open('/sys/class/dmi/id/product_uuid', 'r') as f:
+                with open("/sys/class/dmi/id/product_uuid", "r") as f:
                     self.__system_uuid = f.read().strip()
             except FileNotFoundError:
                 return ""  # UUID is not available on this machine
             except PermissionError:
                 return ""  # UUID reading is not autorized
-        
-        elif system == 'windows':
+
+        elif system == "windows":
             try:
-                output = subprocess.check_output('wmic csproduct get uuid', shell=True)
-                lines = output.decode().split('\n')
-                uuid = [line.strip() for line in lines if line.strip() and "UUID" not in line]
+                output = subprocess.check_output("wmic csproduct get uuid", shell=True)
+                lines = output.decode().split("\n")
+                uuid = [
+                    line.strip()
+                    for line in lines
+                    if line.strip() and "UUID" not in line
+                ]
                 self.__system_uuid = uuid[0] if uuid else ""
             except subprocess.CalledProcessError:
                 return ""  # Erreur lors de l'exécution de wmic
-        
-        elif system == 'darwin':  # macOS
+
+        elif system == "darwin":  # macOS
             try:
-                output = subprocess.check_output('ioreg -rd1 -c IOPlatformExpertDevice', shell=True)
-                for line in output.decode().split('\n'):
-                    if 'IOPlatformUUID' in line:
+                output = subprocess.check_output(
+                    "ioreg -rd1 -c IOPlatformExpertDevice", shell=True
+                )
+                for line in output.decode().split("\n"):
+                    if "IOPlatformUUID" in line:
                         self.__system_uuid = line.split('"')[-2]
                 return ""
             except subprocess.CalledProcessError:
                 return ""  # Erreur lors de l'exécution de ioreg
-        
+
         return self.__system_uuid
 
     def get_platform_cpu_count(self) -> int:
-        """ Returns the CPU count of the machine 
-        
-            The CPU count includes all cores.
+        """Returns the CPU count of the machine
+
+        The CPU count includes all cores.
         """
 
         if self.__cpu_count is not None:
             return self.__cpu_count
-        
+
         try:
             self.__cpu_count = LibvirtHelper.get_cpu_count()
         except Exception:
@@ -196,38 +224,38 @@ class System(metaclass=SingletonMeta):
 
     @staticmethod
     def debug_activated():
-        """ Returns whether the debugging has been activated 
-        
-            This function must be ran in the Dom0.
+        """Returns whether the debugging has been activated
+
+        This function must be ran in the Dom0.
         """
 
         try:
             fd = os.open("/proc/cmdline", os.O_RDONLY)
             data = os.read(fd, 4096)
-            return b'debug=on' in data.lower()
+            return b"debug=on" in data.lower()
         except Exception:
             return False
-        
+
     @staticmethod
     def domain_name():
-        """ Returns the Domain's name 
-        
-            This function must be ran in a DomU.
+        """Returns the Domain's name
+
+        This function must be ran in a DomU.
         """
         return platform.node()
 
     @staticmethod
     def reset_topology():
-        """ Resets the current topology """
+        """Resets the current topology"""
 
         global topology
         topology = Topology()
 
     @staticmethod
-    def get_topology(override_topology_file:str = "") -> Topology:
-        """ Returns a ``Topology`` object initialized with the contents of the topology file
-        
-            This function must be ran in the Dom0.
+    def get_topology(override_topology_file: str = "") -> Topology:
+        """Returns a ``Topology`` object initialized with the contents of the topology file
+
+        This function must be ran in the Dom0.
         """
 
         global topology
@@ -243,14 +271,18 @@ class System(metaclass=SingletonMeta):
         return topology
 
     @staticmethod
-    def __parse_topology(topo:dict) -> Topology:
+    def __parse_topology(topo: dict) -> Topology:
         _topology = Topology()
 
         # Product information
         _topology.product_name = topo.get("product", {}).get("name", "Unknown")
-        _topology.add_color("splash_bgcolor", topo.get("product", {}).get("splash_bgcolor", "#000000"))
+        _topology.add_color(
+            "splash_bgcolor", topo.get("product", {}).get("splash_bgcolor", "#000000")
+        )
         _topology.languages = topo.get("product", {}).get("languages", [])
-        _topology.default_language = topo.get("product", {}).get("default_language", "en")
+        _topology.default_language = topo.get("product", {}).get(
+            "default_language", "en"
+        )
 
         # System information
         _topology.use_usb = topo.get("system", {}).get("use_usb", False)
@@ -260,9 +292,13 @@ class System(metaclass=SingletonMeta):
         _topology.screen.default_focus = topo.get("system", {}).get("default_focus", "")
         _topology.screen.width = screen[0] if screen is not None else 0
         _topology.screen.height = screen[1] if screen is not None else 0
-        _topology.uuid = System().get_system_uuid()        
-        _topology.pci.blacklist = topo.get("system", {}).get("pci", {}).get("blacklist", [])
-        _topology.repository_disabled = topo.get("system", {}).get("repository_disabled", False)
+        _topology.uuid = System().get_system_uuid()
+        _topology.pci.blacklist = (
+            topo.get("system", {}).get("pci", {}).get("blacklist", [])
+        )
+        _topology.repository_disabled = topo.get("system", {}).get(
+            "repository_disabled", False
+        )
 
         # Domains information
         domains = topo.get("domains", {})
@@ -271,7 +307,9 @@ class System(metaclass=SingletonMeta):
             domain.vcpu_group = domain_desc.get("vcpu_group", "")
             domain.memory = domain_desc.get("memory", 0)
             domain.vcpus = domain_desc.get("vcpus", "")
-            domain.cpu_affinity = domain_desc.get("cpus", []) #System.parse_range(domain.vcpus)
+            domain.cpu_affinity = domain_desc.get(
+                "cpus", []
+            )  # System.parse_range(domain.vcpus)
             domain.package = domain_desc.get("package", "")
             domain.temp_disk_size = domain_desc.get("temp_disk_size", 0)
             domain.swap_size = domain_desc.get("swap_size", 0)
@@ -287,15 +325,15 @@ class System(metaclass=SingletonMeta):
 
     @staticmethod
     def parse_range(value: str) -> tuple[int, ...]:
-        """ Converts an int range represented as a string into a tuple of all values between min and max
-        
-            Examples:
-                >>> parse_range("1-2") 
-                    (1,2)
-                >>> parse_range("3-8") 
-                    (3,4,5,6,7,8)
+        """Converts an int range represented as a string into a tuple of all values between min and max
 
-            The left value must be lower that the right value.
+        Examples:
+            >>> parse_range("1-2")
+                (1,2)
+            >>> parse_range("3-8")
+                (3,4,5,6,7,8)
+
+        The left value must be lower that the right value.
         """
 
         if value == "":
@@ -309,17 +347,17 @@ class System(metaclass=SingletonMeta):
         return (int(value),)
 
     @staticmethod
-    def get_topology_struct(override_topology_file:str = "") -> dict:
-        """ Returns the topology of the current system
+    def get_topology_struct(override_topology_file: str = "") -> dict:
+        """Returns the topology of the current system
 
         The topology structure is different from the configuration file topology.json because the file will
         evolve from its original format and it must be dissociated from the internal structure to avoid
         future compatibility problems.
 
         The topology is defined in the file `topology.json`. This function returns a data structure
-        representing the topology as a dict. Instead of returning the JSON data as the function 
-        :func:`read_topology_file` does, it returns a structure representing the objects: 
-        
+        representing the topology as a dict. Instead of returning the JSON data as the function
+        :func:`read_topology_file` does, it returns a structure representing the objects:
+
         ::
 
             {
@@ -354,17 +392,17 @@ class System(metaclass=SingletonMeta):
 
         All the keys are guaranteed to exist with a default value if necessary.
         """
-        
+
         topo_data = System.get_topology_data(override_topology_file)
         if topo_data is None:
             print("No topology data available. Aborting.")
             return {}
-        
+
         topo_struct = System.__analyse_topology_struct(topo_data)
         return topo_struct
-        
+
     @staticmethod
-    def __analyse_topology_struct(topo_data:dict) -> dict:
+    def __analyse_topology_struct(topo_data: dict) -> dict:
         topo_struct = {}
 
         usb = topo_data.get("usb", {})
@@ -382,16 +420,14 @@ class System(metaclass=SingletonMeta):
         screen_rotation = screen.get("rotation", 0)
         repository = topo_data.get("repository", {})
         repository_disabled = repository.get("disabled", False)
-                
+
         topo_struct["system"] = {
             "use_usb": use_usb,
             "screen_enabled": screen_enabled,
             "screen_rotation": screen_rotation,
             "default_focus": default_focus,
             "repository_disabled": repository_disabled,
-            "pci": {
-                "blacklist": pci_blacklist
-            }
+            "pci": {"blacklist": pci_blacklist},
         }
 
         vcpu_groups = vcpu.get("groups", {})
@@ -406,23 +442,25 @@ class System(metaclass=SingletonMeta):
             "vcpus": System.compute_vcpus_for_group("sys-usb", vcpu_groups),
             "cpus": System().compute_cpus_for_group("sys-usb", vcpu_groups),
             "vcpu_groups": vcpu_groups,
-            "has_gui": False
+            "has_gui": False,
         }
 
         # sys-gui domain
-        #topo_domains["sys-gui"] = {
+        # topo_domains["sys-gui"] = {
         #    "name": "sys-gui",
         #    "type": DomainType.CORE,
         #    "memory": gui.get("memory"),
         #    "vcpus": System.compute_vcpus_for_group("sys-gui", vcpu_groups),
-        #    "cpus": System().compute_cpus_for_group("sys-gui", vcpu_groups),  
-        #    "vcpu_groups": vcpu_groups          
-        #}
-        
+        #    "cpus": System().compute_cpus_for_group("sys-gui", vcpu_groups),
+        #    "vcpu_groups": vcpu_groups
+        # }
+
         for domain in business_domains:
             # Business domains
             domain_name = domain.get("name", "unknown")
-            group_name = domain.get("vcpu_group", domain_name) # If there is no group we will create a default configuration
+            group_name = domain.get(
+                "vcpu_group", domain_name
+            )  # If there is no group we will create a default configuration
             topo_domains[domain_name] = {
                 "name": domain.get("name", "unknown"),
                 "type": DomainType.BUSINESS,
@@ -434,7 +472,7 @@ class System(metaclass=SingletonMeta):
                 "temp_disk_size": domain.get("temp_disk_size", 0),
                 "swap_size": domain.get("swap_size", 0),
                 "has_gui": domain.get("has_gui", False),
-                "direct_mount": domain.get("direct_mount", None)
+                "direct_mount": domain.get("direct_mount", None),
             }
 
         topo_struct["domains"] = topo_domains
@@ -458,24 +496,27 @@ class System(metaclass=SingletonMeta):
 
             topo_configurations[conf_name] = {
                 "identifier": conf_identifier,
-                "settings": conf_settings
+                "settings": conf_settings,
             }
-        
+
         topo_struct["configurations"] = topo_configurations
 
         return topo_struct
 
-
     @staticmethod
-    def read_topology_file(override_topology_file:str = "") -> str:
-        """ Reads the topology file describing the product 
-        
-            This function must be ran in the Dom0.
+    def read_topology_file(override_topology_file: str = "") -> str:
+        """Reads the topology file describing the product
+
+        This function must be ran in the Dom0.
         """
 
-        filepath = '/etc/safecor/topology.json' if override_topology_file == "" else override_topology_file
+        filepath = (
+            "/etc/safecor/topology.json"
+            if override_topology_file == ""
+            else override_topology_file
+        )
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 topo = f.read()
                 f.close()
                 return topo
@@ -485,10 +526,10 @@ class System(metaclass=SingletonMeta):
             return ""
 
     @staticmethod
-    def get_topology_data(override_topology_file:str = "") -> dict:
-        """ Interprets the topology file data as a JSON object 
-        
-            This function must be ran in the Dom0.
+    def get_topology_data(override_topology_file: str = "") -> dict:
+        """Interprets the topology file data as a JSON object
+
+        This function must be ran in the Dom0.
         """
 
         try:
@@ -499,11 +540,10 @@ class System(metaclass=SingletonMeta):
             print("An error occured while decoding JSON file")
             print(str(e))
             return {}
-        
 
     @staticmethod
-    def compute_vcpus_for_group(group_name:str, groups:dict) -> int:
-        """ Computes the number of vCPUs which will be pinned to each Domain of a group.
+    def compute_vcpus_for_group(group_name: str, groups: dict) -> int:
+        """Computes the number of vCPUs which will be pinned to each Domain of a group.
 
         The number of vCPUs depends on the value of the parameter ``vcpu.groups`` defined in the file ``topology.json``.
 
@@ -512,7 +552,7 @@ class System(metaclass=SingletonMeta):
         vcpus = 1
         platform_cpus = System().get_platform_cpu_count()
         dom0_vcpus = 2 if platform_cpus > 4 else 1
-        sys_usb_vcpus = 0 #Dom0 and sys-usb share the same vcpus
+        sys_usb_vcpus = 0  # Dom0 and sys-usb share the same vcpus
 
         if group_name == "sys-usb":
             return dom0_vcpus
@@ -521,41 +561,43 @@ class System(metaclass=SingletonMeta):
 
         # If there is no group defined we force the cpu count
         if len(groups) == 0:
-            #print(f"There is no group for {group_name}")
-            #print(platform_cpus, reserved_vcpus)
+            # print(f"There is no group for {group_name}")
+            # print(platform_cpus, reserved_vcpus)
             return platform_cpus - reserved_vcpus
 
         if group_name in groups:
             vcpu_rate = groups.get(group_name, None)
 
             # Override cpu rate for sys-gui if not provided
-            vcpu_rate = 0.2 if vcpu_rate is None and group_name == "sys-gui" else vcpu_rate
+            vcpu_rate = (
+                0.2 if vcpu_rate is None and group_name == "sys-gui" else vcpu_rate
+            )
 
             if vcpu_rate is not None:
-                vcpus = int(round(vcpu_rate*(platform_cpus-reserved_vcpus), 0))
+                vcpus = int(round(vcpu_rate * (platform_cpus - reserved_vcpus), 0))
                 return max(vcpus, 1)
         else:
             # If there is no group defined we consider using 100% of the remaining cores
-            #print(f"default case for {group_name}:{platform_cpus - reserved_vcpus}")
+            # print(f"default case for {group_name}:{platform_cpus - reserved_vcpus}")
             return platform_cpus - reserved_vcpus
 
         return vcpus
 
-    def compute_cpus_for_group(self, group_name:str, groups:dict) -> list[int]:
-        """ Computes the CPUs (or cores) which will be pinned to the Domains of the group.
+    def compute_cpus_for_group(self, group_name: str, groups: dict) -> list[int]:
+        """Computes the CPUs (or cores) which will be pinned to the Domains of the group.
 
-        The first CPU is assigned to Dom0 and sys-usb Domain. 
-        
+        The first CPU is assigned to Dom0 and sys-usb Domain.
+
         If there are at least 4 CPUs the second CPU is also assigned to Dom0 and sys-usb.
-        
+
         The other CPUs are assigned to sys-gui and the other groups by trying to avoid overlapping.
 
         This function must be ran in the Dom0.
         """
-        
+
         cpu_count = System().get_platform_cpu_count()
 
-        if group_name not in groups and group_name not in [ "sys-usb", "Dom0" ]:
+        if group_name not in groups and group_name not in ["sys-usb", "Dom0"]:
             # If the group does not exist we return the default configuration
             return list(range(1 if cpu_count <= 4 else 2, cpu_count))
 
@@ -564,11 +606,7 @@ class System(metaclass=SingletonMeta):
             cpu_assignments = self.__cpu_assignments
         else:
             # Otherwise we calculate them before
-            cpu_assignments = {
-                "Dom0": [ 0 ],
-                "sys-usb": [ 0 ],
-                "sys-gui": [ 1 ]
-            }
+            cpu_assignments = {"Dom0": [0], "sys-usb": [0], "sys-gui": [1]}
 
             next_pin = 1
             if cpu_count > 4:
@@ -585,83 +623,80 @@ class System(metaclass=SingletonMeta):
 
             # Then the other groups
             for gname in groups.keys():
-                if gname in [ "sys-gui" ]:
-                    continue # We ignore sys-gui because we already worked on it
-                
+                if gname in ["sys-gui"]:
+                    continue  # We ignore sys-gui because we already worked on it
+
                 vcpus = System.compute_vcpus_for_group(gname, groups)
                 cpu_assignments[gname] = list(range(next_pin, next_pin + vcpus))
 
             self.__cpu_assignments = cpu_assignments
 
         # Finally we return the value
-        return cpu_assignments.get(group_name, [ 0 ])
+        return cpu_assignments.get(group_name, [0])
 
     @staticmethod
     def get_system_information() -> dict:
-        """ Returns a JSON struct containing the information on the system. 
+        """Returns a JSON struct containing the information on the system.
 
-            This function must be ran in the Dom0.
-        
-            A typical struct is::
+        This function must be ran in the Dom0.
 
-                {
-                "core": {
-                    "version": "1.1", 
-                    "debug_on": false
-                }, 
-                "system": {
-                    "os": {
-                        "name": "Linux", 
-                        "release": "6.12.20-0-lts", 
-                        "version": "#1-Alpine SMP PREEMPT_DYNAMIC 2025-03-24 08:09:11"
-                    }, 
-                    "machine": {
-                        "arch": "x86_64", 
-                        "processor": "", 
-                        "platform": "Linux-6.12.20-0-lts-x86_64-with", 
-                        "cpu": {
-                            "count": 12, 
-                            "freq_current": 1689.5960000000002, 
-                            "freq_min": 0.0, 
-                            "freq_max": 0.0, 
-                            "percent": 0.0
-                        }, 
-                        "memory": {
-                            "total": 405987328, 
-                            "available": 96657408, 
-                            "percent": 76.2, 
-                            "used": 256733184, 
-                            "free": 12472320
-                        }, 
-                        "load": {
-                            "1": 0.5244140625, 
-                            "5": 0.21875, 
-                            "15": 0.08154296875
-                        }
-                    }, 
-                    "boot_time": 1748036696.0, 
-                    "uuid": "11ec0800-4fb9-11ef-bd38-ad993f2e7700"
-                    "storage": {
-                        "total": 12345678,
-                        "used": 0,
-                        "free": 12345678,
-                        "files_count": 0
+        A typical struct is::
+
+            {
+            "core": {
+                "version": "1.1",
+                "debug_on": false
+            },
+            "system": {
+                "os": {
+                    "name": "Linux",
+                    "release": "6.12.20-0-lts",
+                    "version": "#1-Alpine SMP PREEMPT_DYNAMIC 2025-03-24 08:09:11"
+                },
+                "machine": {
+                    "arch": "x86_64",
+                    "processor": "",
+                    "platform": "Linux-6.12.20-0-lts-x86_64-with",
+                    "cpu": {
+                        "count": 12,
+                        "freq_current": 1689.5960000000002,
+                        "freq_min": 0.0,
+                        "freq_max": 0.0,
+                        "percent": 0.0
+                    },
+                    "memory": {
+                        "total": 405987328,
+                        "available": 96657408,
+                        "percent": 76.2,
+                        "used": 256733184,
+                        "free": 12472320
+                    },
+                    "load": {
+                        "1": 0.5244140625,
+                        "5": 0.21875,
+                        "15": 0.08154296875
                     }
+                },
+                "boot_time": 1748036696.0,
+                "uuid": "11ec0800-4fb9-11ef-bd38-ad993f2e7700"
+                "storage": {
+                    "total": 12345678,
+                    "used": 0,
+                    "free": 12345678,
+                    "files_count": 0
                 }
-                }
+            }
+            }
 
         """
 
         sysinfo = {
-            "core": {
-                "version": __version__,
-                "debug_on": System.debug_activated()
-            },
+            "core": {"version": __version__, "debug_on": System.debug_activated()},
             "system": {
-                "os" : {
+                "os": {
                     "name": platform.system(),
                     "release": platform.release(),
-                    "version": platform.version()
+                    "version": platform.version(),
                 },
                 "machine": {
                     "arch": platform.machine(),
@@ -672,39 +707,39 @@ class System(metaclass=SingletonMeta):
                         "freq_current": psutil.cpu_freq().current,
                         "freq_min": psutil.cpu_freq().min,
                         "freq_max": psutil.cpu_freq().max,
-                        "percent": psutil.cpu_percent()
+                        "percent": psutil.cpu_percent(),
                     },
                     "memory": {
                         "total": psutil.virtual_memory().total,
                         "available": psutil.virtual_memory().available,
                         "percent": psutil.virtual_memory().percent,
                         "used": psutil.virtual_memory().used,
-                        "free": psutil.virtual_memory().free
-                    }
+                        "free": psutil.virtual_memory().free,
+                    },
                 },
                 "storage": System.__get_storage_info(),
                 "boot_time": psutil.boot_time(),
                 "uuid": System().get_system_uuid(),
-                "cpu_allocation": System().get_cpu_allocation()
-            }
+                "cpu_allocation": System().get_cpu_allocation(),
+            },
         }
- 
+
         # Special case for Windows
         if hasattr(os, "getloadavg"):
             sysinfo["system"]["machine"]["load"] = {
                 "1": os.getloadavg()[0],
                 "5": os.getloadavg()[1],
-                "15": os.getloadavg()[2]
+                "15": os.getloadavg()[2],
             }
 
         return sysinfo
-    
+
     @staticmethod
     def __get_storage_info() -> dict:
-        """ Returns information about the storage 
+        """Returns information about the storage
 
         This function must be ran in the Dom0.
-        
+
         The fields are:
         - total - The total size of the storage in bytes
         - used - The used space of the storage in bytes
@@ -712,12 +747,7 @@ class System(metaclass=SingletonMeta):
         - files - The number of files in the storage
         """
 
-        info = {
-            "total": 0,
-            "used": 0,
-            "free": 0,
-            "files": 0
-        }
+        info = {"total": 0, "used": 0, "free": 0, "files": 0}
 
         storage_path = Constants.DOM0_REPOSITORY_PATH
         print(f"Looking for storage information into {storage_path}")
@@ -740,9 +770,9 @@ class System(metaclass=SingletonMeta):
         return info
 
     def get_cpu_allocation(self) -> dict:
-        """ Provides information about CPU allocation for all the Domains 
-        
-            This function must be ran in the Dom0.
+        """Provides information about CPU allocation for all the Domains
+
+        This function must be ran in the Dom0.
         """
 
         cpu_alloc = {}
@@ -756,13 +786,13 @@ class System(metaclass=SingletonMeta):
         return cpu_alloc
 
     @staticmethod
-    def cpu_affinity_to_string(cpu_affinity:list) -> str:
-        """ Converts the cpu affinity of the Domain definition to a string 
-        
-            Example::
+    def cpu_affinity_to_string(cpu_affinity: list) -> str:
+        """Converts the cpu affinity of the Domain definition to a string
 
-                >>> cpu_affinity_to_string([1,2,3,4])
-                '1-4'
+        Example::
+
+            >>> cpu_affinity_to_string([1,2,3,4])
+            '1-4'
 
         """
 
@@ -771,15 +801,15 @@ class System(metaclass=SingletonMeta):
         elif len(cpu_affinity) == 1:
             return str(cpu_affinity[0])
         return f"{cpu_affinity[0]}-{cpu_affinity[-1]}"
-    
+
     @staticmethod
-    def get_framebuffer_dimension(fbdev:int = 0) -> tuple[int, int]:
-        """ Returns the framebuffer dimensions as a tuple (width, height) 
-        
+    def get_framebuffer_dimension(fbdev: int = 0) -> tuple[int, int]:
+        """Returns the framebuffer dimensions as a tuple (width, height)
+
         By default, the framebuffer fb0 is queried. This can be overriden by setting the
         parameter fbdev
         """
-        
+
         try:
             with open(f"/sys/class/graphics/fb{fbdev}/virtual_size") as f:
                 data = f.read().strip()
@@ -788,10 +818,10 @@ class System(metaclass=SingletonMeta):
         except FileNotFoundError:
             return (1100, 750)
 
-    #@staticmethod
-    #def get_screen_rotation_from_topology(override_topology_file:str = "") -> int:
+    # @staticmethod
+    # def get_screen_rotation_from_topology(override_topology_file:str = "") -> int:
     #    """ Returns the screen rotation defined in the topology file
-    #    
+    #
     #    This function is necessary for treatments that occur before libvirt and xenstore
     #    are loaded. The function :func:`get_topology_struct` is one of those.
     #    """
@@ -804,9 +834,9 @@ class System(metaclass=SingletonMeta):
     #    return rotation
 
     @staticmethod
-    def get_splash_bgcolor_from_topology(override_topology_file:str = "") -> int:
-        """ Returns the background color for the plash defined in the topology file
-        
+    def get_splash_bgcolor_from_topology(override_topology_file: str = "") -> int:
+        """Returns the background color for the plash defined in the topology file
+
         This function is necessary for treatments that occur before libvirt and xenstore
         are loaded. The function :func:`get_topology_struct` is one of those.
         """
@@ -817,37 +847,52 @@ class System(metaclass=SingletonMeta):
 
         return color
 
-    def monitor_file(self, path:str, filename:str, fn_callback):
+    def monitor_file(self, path: str, filename: str, fn_callback):
         """
         Starts the monitoring of a single file or a whole directory.
-         
+
         When a file is created or removed, the callback function is called with the following parameters:
         - path:str - The directory path
-        - filename:str - The file name 
+        - filename:str - The file name
         - exists:bool - True if the file has been created, else False
 
         This function is uninterruptible.
-        
+
         :param path: The directory to monitor
         :type path: str
         :param filename: A file name to monitor, set to None if the whole directory should be monitored
         :type filename: str
         :param fn_callback: The callback function
         """
-        
+
         if fn_callback is None:
             print("Monitoring of file called without callback. Aborted.")
             return
-        
+
         # First we verify whether the file already exists
         if os.path.exists(f"{path}/{filename}"):
-            threading.Thread(target=fn_callback, args=(path, filename, True,)).start()
+            threading.Thread(
+                target=fn_callback,
+                args=(
+                    path,
+                    filename,
+                    True,
+                ),
+            ).start()
             return
 
-        thread = threading.Thread(target=self.__monitor_file_worker, daemon=True, args=(path, filename, fn_callback,))
+        thread = threading.Thread(
+            target=self.__monitor_file_worker,
+            daemon=True,
+            args=(
+                path,
+                filename,
+                fn_callback,
+            ),
+        )
         thread.start()
 
-    def __monitor_file_worker(self, path:str, filename:str, fn_callback):
+    def __monitor_file_worker(self, path: str, filename: str, fn_callback):
         i = INotify()
         i.add_watch(path, flags.CREATE | flags.DELETE)
 
@@ -856,26 +901,33 @@ class System(metaclass=SingletonMeta):
                 (_, mask, _path, _filename) = event
                 if filename is not None and filename != _filename:
                     continue
-                
+
                 present = flags.CREATE in flags.from_mask(mask)
-                threading.Thread(target=fn_callback, args=(path, _filename, present,)).start()
-            
+                threading.Thread(
+                    target=fn_callback,
+                    args=(
+                        path,
+                        _filename,
+                        present,
+                    ),
+                ).start()
+
     def get_settings(self) -> dict:
         return self.__settings
-    
-    def get_setting(self, key:str):
+
+    def get_setting(self, key: str):
         return self.__settings.get(key, "")
-    
-    def set_setting(self, key:str, value):
+
+    def set_setting(self, key: str, value):
         self.__settings[key] = value
 
     def parse_kernel_command_line_settings(self):
-        """ Returns the settings defined on the command line
+        """Returns the settings defined on the command line
 
         All the keys are turned to lowercase.
         """
 
-        valid_settings = [ "DEBUG", "debug", "DEFAULT_LANGUAGE", "default_language" ]
+        valid_settings = ["DEBUG", "debug", "DEFAULT_LANGUAGE", "default_language"]
 
         with open("/proc/cmdline", "r") as f:
             content = f.read().strip()
@@ -892,7 +944,7 @@ class System(metaclass=SingletonMeta):
         return {}
 
     def get_current_domid(self) -> int:
-        """ Return the Xen domain ID of the current domain.
+        """Return the Xen domain ID of the current domain.
 
         Non-blocking (NFR-1 compliant). The domid is read from xenstore
         at first call, then cached.
@@ -905,7 +957,7 @@ class System(metaclass=SingletonMeta):
         return System.__current_domid
 
     def get_domain_domid(self, domain_name: str) -> Optional[int]:
-        """ Return the Xen domain ID of the named domain, or None if not yet available.
+        """Return the Xen domain ID of the named domain, or None if not yet available.
 
         Performs a single non-blocking read from xenstore:
             /local/domain/system/domids/<domain_name>
@@ -922,7 +974,9 @@ class System(metaclass=SingletonMeta):
         try:
             result = subprocess.run(
                 ["xenstore-read", f"/local/domain/system/domids/{domain_name}"],
-                capture_output=True, text=True, timeout=5
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode == 0 and result.stdout.strip():
                 return int(result.stdout.strip())
@@ -931,7 +985,7 @@ class System(metaclass=SingletonMeta):
         return None
 
     def is_usb_mountpoint_ready(self) -> bool:
-        """ Return True if the USB mount point (Constants.USB_MOUNT_POINT) is available.
+        """Return True if the USB mount point (Constants.USB_MOUNT_POINT) is available.
 
         Non-blocking filesystem check (NFR-1 compliant). Usable from any context,
         including product applications that cannot access DirectMountManager
@@ -952,7 +1006,7 @@ class System(metaclass=SingletonMeta):
         return False
 
     def on_usb_mountpoint_ready(self, callback: Callable[[], None]) -> None:
-        """ Register a callback to be invoked when the USB mount point becomes ready.
+        """Register a callback to be invoked when the USB mount point becomes ready.
 
         Event-driven notification: the caller registers a callback and does not need
         to poll. Internally, a background watcher thread in System monitors the mount
@@ -981,11 +1035,13 @@ class System(metaclass=SingletonMeta):
             System.__mount_watcher_thread.start()
 
     def __read_own_domid(self) -> int:
-        """ Read the current domain's domid from xenstore or /proc. """
+        """Read the current domain's domid from xenstore or /proc."""
         try:
             result = subprocess.run(
                 ["xenstore-read", "/local/domain/0/domid"],
-                capture_output=True, text=True, timeout=5
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode == 0 and result.stdout.strip():
                 return int(result.stdout.strip())
@@ -994,7 +1050,7 @@ class System(metaclass=SingletonMeta):
         return 0
 
     def __mount_watcher_worker(self) -> None:
-        """ Background thread polling for mount readiness, fires callbacks. """
+        """Background thread polling for mount readiness, fires callbacks."""
         while not self.is_usb_mountpoint_ready():
             time.sleep(2)
         watchers = System.__mount_watchers[:]

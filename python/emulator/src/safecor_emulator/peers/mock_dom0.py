@@ -1,4 +1,4 @@
-""" Mock Dom0 controller
+"""Mock Dom0 controller
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -8,7 +8,6 @@ Safecor Licence — see python/lib/LICENCE.md
 
 from pathlib import Path
 from threading import Event
-from typing import List, Optional
 
 from safecor import (
     ConnectionType,
@@ -28,7 +27,7 @@ class MockDom0Controller:
         self,
         sync_lock: Event,
         client_id_suffix: str = "",
-        event_bus: Optional[EventBus] = None,
+        event_bus: EventBus | None = None,
     ):
         self.__sync_lock = sync_lock
         self.__mqtt_client = MqttClient(
@@ -38,11 +37,11 @@ class MockDom0Controller:
         self.__energy_level: float = 100.0
         self.__plugged: bool = True
         self.__default_language: str = "en"
-        self.__restarted_domains: List[str] = []
+        self.__restarted_domains: list[str] = []
         self.__event_bus = event_bus
 
     # --- event bus helpers ---------------------------------------------------
-    def __emit(self, stream: str, text: str, payload: Optional[dict] = None):
+    def __emit(self, stream: str, text: str, payload: dict | None = None):
         if self.__event_bus is not None:
             self.__event_bus.publish(stream, "Dom0", text, payload)
 
@@ -83,7 +82,7 @@ class MockDom0Controller:
         self.__default_language = value
 
     @property
-    def restarted_domains(self) -> List[str]:
+    def restarted_domains(self) -> list[str]:
         """List of domain names that have been restarted since boot."""
         return list(self.__restarted_domains)
 
@@ -209,7 +208,7 @@ class MockDom0Controller:
         self.__publish(f"{Topics.REPOSITORY_PATH}/response", payload)
 
     # --- workflow / GUI fakes (W2, W4, W5) ------------------------------------
-    def request_shutdown(self, payload: Optional[dict] = None) -> dict:
+    def request_shutdown(self, payload: dict | None = None) -> dict:
         """W2 fake: record a shutdown request and accept it (no real poweroff)."""
         payload = payload or {}
         self.__log("System shutdown requested (W2, emulated: no poweroff)")
@@ -217,7 +216,7 @@ class MockDom0Controller:
         self.__publish(f"{Topics.SHUTDOWN}/response", response)
         return response
 
-    def notify_gui_ready(self, payload: Optional[dict] = None) -> dict:
+    def notify_gui_ready(self, payload: dict | None = None) -> dict:
         """W4 fake: record the GUI-ready notification and accept it (no splash)."""
         payload = payload or {}
         self.__log("GUI ready (W4, emulated: no splash screen change)")
@@ -225,7 +224,7 @@ class MockDom0Controller:
         self.__publish(f"{Topics.GUI_READY}/response", response)
         return response
 
-    def request_switch_gui(self, domain: str, payload: Optional[dict] = None) -> dict:
+    def request_switch_gui(self, domain: str, payload: dict | None = None) -> dict:
         """W5 fake: record a GUI switch request and accept it (no real switch)."""
         payload = dict(payload or {})
         payload.setdefault("domain", domain)

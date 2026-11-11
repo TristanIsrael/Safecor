@@ -1,4 +1,4 @@
-""" Orchestrates Dom0 startup: creates MQTT tunnels, virtual input devices, and launches the core controller.
+"""Orchestrates Dom0 startup: creates MQTT tunnels, virtual input devices, and launches the core controller.
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -6,34 +6,35 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-import os
 import glob
+import os
 import subprocess
-import time
 import threading
+import time
+
 import evdev
-from evdev import InputDevice, ecodes, UInput, AbsInfo
-from safecor import (
-    MqttFactory, Logger, SysLogger, System,
-    XenStore, XsDomain, XsKey
-)
+from evdev import AbsInfo, InputDevice, UInput, ecodes
 from inputs_proxy import InputsProxy
+from safecor import Logger, MqttFactory, SysLogger, System, XenStore, XsDomain, XsKey
 
 mqtt_lock = threading.Event()
 mqtt = MqttFactory.create_mqtt_client_dom0("Orchestrator")
-MOUSE_NAME_PREFIX="Safecor virtual mouse"
-TOUCH_NAME_PREFIX="Safecor virtual touchscreen"
-KEYBOARD_NAME_PREFIX="Safecor virtual keyboard"
-INPUTS_SOCKET_PATH="/var/run/safecor"
-INPUTS_SOCKET_FILENAME="sys-usb-input.sock"
-VIRTUAL_MOUSE_PATH="/var/run/safecor/virtual_mouse"
-VIRTUAL_TOUCH_PATH="/var/run/safecor/virtual_touch"
-VIRTUAL_KEYBOARD_PATH="/var/run/safecor/virtual_keyboard"
+MOUSE_NAME_PREFIX = "Safecor virtual mouse"
+TOUCH_NAME_PREFIX = "Safecor virtual touchscreen"
+KEYBOARD_NAME_PREFIX = "Safecor virtual keyboard"
+INPUTS_SOCKET_PATH = "/var/run/safecor"
+INPUTS_SOCKET_FILENAME = "sys-usb-input.sock"
+VIRTUAL_MOUSE_PATH = "/var/run/safecor/virtual_mouse"
+VIRTUAL_TOUCH_PATH = "/var/run/safecor/virtual_touch"
+VIRTUAL_KEYBOARD_PATH = "/var/run/safecor/virtual_keyboard"
 inputs_proxy = InputsProxy()
 
-def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, InputDevice]:
-    """ Creates virtual devices for the mouse, keyboard and touch for a specific domain 
-    
+
+def create_virtual_devices(
+    domain_name: str,
+) -> tuple[InputDevice, InputDevice, InputDevice]:
+    """Creates virtual devices for the mouse, keyboard and touch for a specific domain
+
     These devices will be accessible via a symlink in /var/run/safecor with the name virtual_mouse_<domain name>
     """
 
@@ -46,17 +47,23 @@ def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, I
     else:
         virtual_device_filepath = f"{VIRTUAL_MOUSE_PATH}_{domain_name}"
 
-        if os.path.exists(virtual_device_filepath) or os.path.islink(virtual_device_filepath):
+        if os.path.exists(virtual_device_filepath) or os.path.islink(
+            virtual_device_filepath
+        ):
             try:
                 os.remove(virtual_device_filepath)
                 time.sleep(0.1)
             except Exception as e:
-                SysLogger("Orchestrator").error(f"Could not remove current virtual mouse device. {e}")
+                SysLogger("Orchestrator").error(
+                    f"Could not remove current virtual mouse device. {e}"
+                )
 
         try:
             os.symlink(mouse_path, virtual_device_filepath)
         except Exception as e:
-            SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual mouse device. {e}")
+            SysLogger("Orchestrator").error(
+                f"Could not create a symlink for the virtual mouse device. {e}"
+            )
 
     virtual_keyboard, device_name = create_virtual_keyboard(domain_name)
     # Create symlinks for the virtual inputs which act as a permalinks
@@ -66,25 +73,31 @@ def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, I
     else:
         virtual_device_filepath = f"{VIRTUAL_KEYBOARD_PATH}_{domain_name}"
 
-        if os.path.exists(virtual_device_filepath) or os.path.islink(virtual_device_filepath):
+        if os.path.exists(virtual_device_filepath) or os.path.islink(
+            virtual_device_filepath
+        ):
             try:
                 os.remove(virtual_device_filepath)
                 time.sleep(0.1)
             except Exception as e:
-                SysLogger("Orchestrator").error(f"Could not remove current virtual keyboard device. {e}")
+                SysLogger("Orchestrator").error(
+                    f"Could not remove current virtual keyboard device. {e}"
+                )
 
         try:
             os.symlink(keyboard_path, virtual_device_filepath)
         except Exception as e:
-            SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual keyboard device. {e}")
+            SysLogger("Orchestrator").error(
+                f"Could not create a symlink for the virtual keyboard device. {e}"
+            )
 
     # Find touch screen and keep capabilities
-    #touch_device = find_touchscreen()
-    #if touch_device is None:
+    # touch_device = find_touchscreen()
+    # if touch_device is None:
     #    SysLogger("Orchestrator").info("No touchscreen found on the system")
     #    virtual_touch = None
-    #else:
-        #print(touch_caps)
+    # else:
+    # print(touch_caps)
     virtual_touch, device_name = create_virtual_touch(domain_name)
     touch_path = get_device_path(device_name)
     if touch_path == "":
@@ -92,68 +105,83 @@ def create_virtual_devices(domain_name:str) -> tuple[InputDevice, InputDevice, I
     else:
         virtual_device_filepath = f"{VIRTUAL_TOUCH_PATH}_{domain_name}"
 
-        if os.path.exists(virtual_device_filepath) or os.path.islink(virtual_device_filepath):
+        if os.path.exists(virtual_device_filepath) or os.path.islink(
+            virtual_device_filepath
+        ):
             try:
                 os.remove(virtual_device_filepath)
                 time.sleep(0.1)
             except Exception as e:
-                SysLogger("Orchestrator").error(f"Could not remove current virtual touch device. {e}")
+                SysLogger("Orchestrator").error(
+                    f"Could not remove current virtual touch device. {e}"
+                )
 
         try:
             os.symlink(touch_path, virtual_device_filepath)
         except Exception as e:
-            SysLogger("Orchestrator").error(f"Could not create a symlink for the virtual touch device. {e}")
+            SysLogger("Orchestrator").error(
+                f"Could not create a symlink for the virtual touch device. {e}"
+            )
 
     return virtual_mouse, virtual_keyboard, virtual_touch
 
+
 def find_touchscreen() -> InputDevice:
-    """ Finds the input device for a touchscreen """
+    """Finds the input device for a touchscreen"""
 
     inputs = glob.glob("/dev/input/event*")
     for inputdev in inputs:
-        
         try:
             dev = InputDevice(inputdev)
             caps = dev.capabilities()
-            
+
             if ecodes.EV_ABS in caps:
                 # Filter to exclude non-capable devices
-                if not any(t[0] == ecodes.ABS_MT_POSITION_X for t in caps[ecodes.EV_ABS]):
+                if not any(
+                    t[0] == ecodes.ABS_MT_POSITION_X for t in caps[ecodes.EV_ABS]
+                ):
                     continue
-                
+
                 # We get all the capabilities
                 SysLogger("Orchestrator").info(f"Found a touchscreen: {dev.name}")
                 return dev
         except Exception as e:
-            SysLogger("Orchestrator").error(f"Error while searching a touch device. {e}")
+            SysLogger("Orchestrator").error(
+                f"Error while searching a touch device. {e}"
+            )
             continue
 
     return None
 
 
-def get_device_path(devname:str) -> str:
-    """ Returns a device path from Input """
+def get_device_path(devname: str) -> str:
+    """Returns a device path from Input"""
 
     for device_path in evdev.list_devices():
         device = evdev.InputDevice(device_path)
 
         if device.name == devname:
             return device.path
-        
+
     return ""
 
 
-def create_virtual_mouse(domain_name:str) -> tuple[InputDevice, str]:
-    """ Creates a new virtual mouse device for a specific domain
-    
-    The device created has the following capabilities: 
+def create_virtual_mouse(domain_name: str) -> tuple[InputDevice, str]:
+    """Creates a new virtual mouse device for a specific domain
+
+    The device created has the following capabilities:
         - EV_KEY: BTN_LEFT, BTN_RIGHT
         - EV_REL: REL_X, REL_Y, REL_WHEEL, REL_WHEEL_HI_RES
     """
 
     capabilities = {
         ecodes.EV_KEY: [ecodes.BTN_LEFT, ecodes.BTN_RIGHT],
-        ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y, ecodes.REL_WHEEL, ecodes.REL_WHEEL_HI_RES],
+        ecodes.EV_REL: [
+            ecodes.REL_X,
+            ecodes.REL_Y,
+            ecodes.REL_WHEEL,
+            ecodes.REL_WHEEL_HI_RES,
+        ],
     }
 
     device_name = f"{MOUSE_NAME_PREFIX} @ {domain_name}"
@@ -164,18 +192,181 @@ def create_virtual_mouse(domain_name:str) -> tuple[InputDevice, str]:
         return input, device_name
     except Exception as e:
         SysLogger("Orchestrator").error(f"Error while creating the virtual mouse: {e}")
-    
 
-def create_virtual_keyboard(domain_name:str) -> tuple[InputDevice, str]:
-    """ Creates a new virtual keyboard device 
-    
+
+def create_virtual_keyboard(domain_name: str) -> tuple[InputDevice, str]:
+    """Creates a new virtual keyboard device
+
     The keyboard created has the following capabilities:
         - EV_KEY: KEY_ESC, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_EQUAL, KEY_BACKSPACE, KEY_TAB, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I, KEY_O, KEY_P, KEY_LEFTBRACE, KEY_RIGHTBRACE, KEY_ENTER, KEY_LEFTCTRL, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_K, KEY_L, KEY_SEMICOLON, KEY_APOSTROPHE, KEY_GRAVE, KEY_LEFTSHIFT, KEY_BACKSLASH, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_N, KEY_M, KEY_COMMA, KEY_DOT, KEY_SLASH, KEY_RIGHTSHIFT, KEY_KPASTERISK, KEY_LEFTALT, KEY_SPACE, KEY_CAPSLOCK, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_NUMLOCK, KEY_SCROLLLOCK, KEY_KP7, KEY_KP8, KEY_KP9, KEY_KPMINUS, KEY_KP4, KEY_KP5, KEY_KP6, KEY_KPPLUS, KEY_KP1, KEY_KP2, KEY_KP3, KEY_KP0, KEY_KPDOT, KEY_ZENKAKUHANKAKU, KEY_102ND, KEY_F11, KEY_F12, KEY_RO, KEY_KATAKANA, KEY_HIRAGANA, KEY_HENKAN, KEY_KATAKANAHIRAGANA, KEY_MUHENKAN, KEY_KPJPCOMMA, KEY_KPENTER, KEY_RIGHTCTRL, KEY_KPSLASH, KEY_SYSRQ, KEY_RIGHTALT, KEY_HOME, KEY_UP, KEY_PAGEUP, KEY_LEFT, KEY_RIGHT, KEY_END, KEY_DOWN, KEY_PAGEDOWN, KEY_INSERT, KEY_DELETE, KEY_MUTE, KEY_VOLUMEDOWN, KEY_VOLUMEUP, KEY_POWER, KEY_KPEQUAL, KEY_PAUSE, KEY_KPCOMMA, KEY_HANGUEL, KEY_HANJA, KEY_YEN, KEY_LEFTMETA, KEY_RIGHTMETA, KEY_COMPOSE, KEY_STOP, KEY_AGAIN, KEY_PROPS, KEY_UNDO, KEY_FRONT, KEY_COPY, KEY_OPEN, KEY_PASTE, KEY_FIND, KEY_CUT, KEY_HELP, KEY_CALC, KEY_SLEEP, KEY_WWW, KEY_SCREENLOCK, KEY_BACK, KEY_FORWARD, KEY_EJECTCD, KEY_NEXTSONG, KEY_PLAYPAUSE, KEY_PREVIOUSSONG, KEY_STOPCD, KEY_REFRESH, KEY_EDIT, KEY_SCROLLUP, KEY_SCROLLDOWN, KEY_KPLEFTPAREN, KEY_KPRIGHTPAREN, KEY_F13, KEY_F14, KEY_F15, KEY_F16, KEY_F17, KEY_F18, KEY_F19, KEY_F20, KEY_F21, KEY_F22, KEY_F23, KEY_F24
     """
 
     capabilities = {
-        ecodes.EV_KEY: [ ecodes.KEY_ESC, ecodes.KEY_1, ecodes.KEY_2, ecodes.KEY_3, ecodes.KEY_4, ecodes.KEY_5, ecodes.KEY_6, ecodes.KEY_7, ecodes.KEY_8, ecodes.KEY_9, ecodes.KEY_0, ecodes.KEY_MINUS, ecodes.KEY_EQUAL, ecodes.KEY_BACKSPACE, ecodes.KEY_TAB, ecodes.KEY_Q, ecodes.KEY_W, ecodes.KEY_E, ecodes.KEY_R, ecodes.KEY_T, ecodes.KEY_Y, ecodes.KEY_U, ecodes.KEY_I, ecodes.KEY_O, ecodes.KEY_P, ecodes.KEY_LEFTBRACE, ecodes.KEY_RIGHTBRACE, ecodes.KEY_ENTER, ecodes.KEY_LEFTCTRL, ecodes.KEY_A, ecodes.KEY_S, ecodes.KEY_D, ecodes.KEY_F, ecodes.KEY_G, ecodes.KEY_H, ecodes.KEY_J, ecodes.KEY_K, ecodes.KEY_L, ecodes.KEY_SEMICOLON, ecodes.KEY_APOSTROPHE, ecodes.KEY_GRAVE, ecodes.KEY_LEFTSHIFT, ecodes.KEY_BACKSLASH, ecodes.KEY_Z, ecodes.KEY_X, ecodes.KEY_C, ecodes.KEY_V, ecodes.KEY_B, ecodes.KEY_N, ecodes.KEY_M, ecodes.KEY_COMMA, ecodes.KEY_DOT, ecodes.KEY_SLASH, ecodes.KEY_RIGHTSHIFT, ecodes.KEY_KPASTERISK, ecodes.KEY_LEFTALT, ecodes.KEY_SPACE, ecodes.KEY_CAPSLOCK, ecodes.KEY_F1, ecodes.KEY_F2, ecodes.KEY_F3, ecodes.KEY_F4, ecodes.KEY_F5, ecodes.KEY_F6, ecodes.KEY_F7, ecodes.KEY_F8, ecodes.KEY_F9, ecodes.KEY_F10, ecodes.KEY_NUMLOCK, ecodes.KEY_SCROLLLOCK, ecodes.KEY_KP7, ecodes.KEY_KP8, ecodes.KEY_KP9, ecodes.KEY_KPMINUS, ecodes.KEY_KP4, ecodes.KEY_KP5, ecodes.KEY_KP6, ecodes.KEY_KPPLUS, ecodes.KEY_KP1, ecodes.KEY_KP2, ecodes.KEY_KP3, ecodes.KEY_KP0, ecodes.KEY_KPDOT, ecodes.KEY_ZENKAKUHANKAKU, ecodes.KEY_102ND, ecodes.KEY_F11, ecodes.KEY_F12, ecodes.KEY_RO, ecodes.KEY_KATAKANA, ecodes.KEY_HIRAGANA, ecodes.KEY_HENKAN, ecodes.KEY_KATAKANAHIRAGANA, ecodes.KEY_MUHENKAN, ecodes.KEY_KPJPCOMMA, ecodes.KEY_KPENTER, ecodes.KEY_RIGHTCTRL, ecodes.KEY_KPSLASH, ecodes.KEY_SYSRQ, ecodes.KEY_RIGHTALT, ecodes.KEY_HOME, ecodes.KEY_UP, ecodes.KEY_PAGEUP, ecodes.KEY_LEFT, ecodes.KEY_RIGHT, ecodes.KEY_END, ecodes.KEY_DOWN, ecodes.KEY_PAGEDOWN, ecodes.KEY_INSERT, ecodes.KEY_DELETE, ecodes.KEY_MUTE, ecodes.KEY_VOLUMEDOWN, ecodes.KEY_VOLUMEUP, ecodes.KEY_POWER, ecodes.KEY_KPEQUAL, ecodes.KEY_PAUSE, ecodes.KEY_KPCOMMA, ecodes.KEY_HANGUEL, ecodes.KEY_HANJA, ecodes.KEY_YEN, ecodes.KEY_LEFTMETA, ecodes.KEY_RIGHTMETA, ecodes.KEY_COMPOSE, ecodes.KEY_STOP, ecodes.KEY_AGAIN, ecodes.KEY_PROPS, ecodes.KEY_UNDO, ecodes.KEY_FRONT, ecodes.KEY_COPY, ecodes.KEY_OPEN, ecodes.KEY_PASTE, ecodes.KEY_FIND, ecodes.KEY_CUT, ecodes.KEY_HELP, ecodes.KEY_CALC, ecodes.KEY_SLEEP, ecodes.KEY_WWW, ecodes.KEY_SCREENLOCK, ecodes.KEY_BACK, ecodes.KEY_FORWARD, ecodes.KEY_EJECTCD, ecodes.KEY_NEXTSONG, ecodes.KEY_PLAYPAUSE, ecodes.KEY_PREVIOUSSONG, ecodes.KEY_STOPCD, ecodes.KEY_REFRESH, ecodes.KEY_EDIT, ecodes.KEY_SCROLLUP, ecodes.KEY_SCROLLDOWN, ecodes.KEY_KPLEFTPAREN, ecodes.KEY_KPRIGHTPAREN, ecodes.KEY_F13, ecodes.KEY_F14, ecodes.KEY_F15, ecodes.KEY_F16, ecodes.KEY_F17, ecodes.KEY_F18, ecodes.KEY_F19, ecodes.KEY_F20, ecodes.KEY_F21, ecodes.KEY_F22, ecodes.KEY_F23, ecodes.KEY_F24 ],
-        ecodes.EV_MSC: [ ecodes.MSC_SCAN ],
+        ecodes.EV_KEY: [
+            ecodes.KEY_ESC,
+            ecodes.KEY_1,
+            ecodes.KEY_2,
+            ecodes.KEY_3,
+            ecodes.KEY_4,
+            ecodes.KEY_5,
+            ecodes.KEY_6,
+            ecodes.KEY_7,
+            ecodes.KEY_8,
+            ecodes.KEY_9,
+            ecodes.KEY_0,
+            ecodes.KEY_MINUS,
+            ecodes.KEY_EQUAL,
+            ecodes.KEY_BACKSPACE,
+            ecodes.KEY_TAB,
+            ecodes.KEY_Q,
+            ecodes.KEY_W,
+            ecodes.KEY_E,
+            ecodes.KEY_R,
+            ecodes.KEY_T,
+            ecodes.KEY_Y,
+            ecodes.KEY_U,
+            ecodes.KEY_I,
+            ecodes.KEY_O,
+            ecodes.KEY_P,
+            ecodes.KEY_LEFTBRACE,
+            ecodes.KEY_RIGHTBRACE,
+            ecodes.KEY_ENTER,
+            ecodes.KEY_LEFTCTRL,
+            ecodes.KEY_A,
+            ecodes.KEY_S,
+            ecodes.KEY_D,
+            ecodes.KEY_F,
+            ecodes.KEY_G,
+            ecodes.KEY_H,
+            ecodes.KEY_J,
+            ecodes.KEY_K,
+            ecodes.KEY_L,
+            ecodes.KEY_SEMICOLON,
+            ecodes.KEY_APOSTROPHE,
+            ecodes.KEY_GRAVE,
+            ecodes.KEY_LEFTSHIFT,
+            ecodes.KEY_BACKSLASH,
+            ecodes.KEY_Z,
+            ecodes.KEY_X,
+            ecodes.KEY_C,
+            ecodes.KEY_V,
+            ecodes.KEY_B,
+            ecodes.KEY_N,
+            ecodes.KEY_M,
+            ecodes.KEY_COMMA,
+            ecodes.KEY_DOT,
+            ecodes.KEY_SLASH,
+            ecodes.KEY_RIGHTSHIFT,
+            ecodes.KEY_KPASTERISK,
+            ecodes.KEY_LEFTALT,
+            ecodes.KEY_SPACE,
+            ecodes.KEY_CAPSLOCK,
+            ecodes.KEY_F1,
+            ecodes.KEY_F2,
+            ecodes.KEY_F3,
+            ecodes.KEY_F4,
+            ecodes.KEY_F5,
+            ecodes.KEY_F6,
+            ecodes.KEY_F7,
+            ecodes.KEY_F8,
+            ecodes.KEY_F9,
+            ecodes.KEY_F10,
+            ecodes.KEY_NUMLOCK,
+            ecodes.KEY_SCROLLLOCK,
+            ecodes.KEY_KP7,
+            ecodes.KEY_KP8,
+            ecodes.KEY_KP9,
+            ecodes.KEY_KPMINUS,
+            ecodes.KEY_KP4,
+            ecodes.KEY_KP5,
+            ecodes.KEY_KP6,
+            ecodes.KEY_KPPLUS,
+            ecodes.KEY_KP1,
+            ecodes.KEY_KP2,
+            ecodes.KEY_KP3,
+            ecodes.KEY_KP0,
+            ecodes.KEY_KPDOT,
+            ecodes.KEY_ZENKAKUHANKAKU,
+            ecodes.KEY_102ND,
+            ecodes.KEY_F11,
+            ecodes.KEY_F12,
+            ecodes.KEY_RO,
+            ecodes.KEY_KATAKANA,
+            ecodes.KEY_HIRAGANA,
+            ecodes.KEY_HENKAN,
+            ecodes.KEY_KATAKANAHIRAGANA,
+            ecodes.KEY_MUHENKAN,
+            ecodes.KEY_KPJPCOMMA,
+            ecodes.KEY_KPENTER,
+            ecodes.KEY_RIGHTCTRL,
+            ecodes.KEY_KPSLASH,
+            ecodes.KEY_SYSRQ,
+            ecodes.KEY_RIGHTALT,
+            ecodes.KEY_HOME,
+            ecodes.KEY_UP,
+            ecodes.KEY_PAGEUP,
+            ecodes.KEY_LEFT,
+            ecodes.KEY_RIGHT,
+            ecodes.KEY_END,
+            ecodes.KEY_DOWN,
+            ecodes.KEY_PAGEDOWN,
+            ecodes.KEY_INSERT,
+            ecodes.KEY_DELETE,
+            ecodes.KEY_MUTE,
+            ecodes.KEY_VOLUMEDOWN,
+            ecodes.KEY_VOLUMEUP,
+            ecodes.KEY_POWER,
+            ecodes.KEY_KPEQUAL,
+            ecodes.KEY_PAUSE,
+            ecodes.KEY_KPCOMMA,
+            ecodes.KEY_HANGUEL,
+            ecodes.KEY_HANJA,
+            ecodes.KEY_YEN,
+            ecodes.KEY_LEFTMETA,
+            ecodes.KEY_RIGHTMETA,
+            ecodes.KEY_COMPOSE,
+            ecodes.KEY_STOP,
+            ecodes.KEY_AGAIN,
+            ecodes.KEY_PROPS,
+            ecodes.KEY_UNDO,
+            ecodes.KEY_FRONT,
+            ecodes.KEY_COPY,
+            ecodes.KEY_OPEN,
+            ecodes.KEY_PASTE,
+            ecodes.KEY_FIND,
+            ecodes.KEY_CUT,
+            ecodes.KEY_HELP,
+            ecodes.KEY_CALC,
+            ecodes.KEY_SLEEP,
+            ecodes.KEY_WWW,
+            ecodes.KEY_SCREENLOCK,
+            ecodes.KEY_BACK,
+            ecodes.KEY_FORWARD,
+            ecodes.KEY_EJECTCD,
+            ecodes.KEY_NEXTSONG,
+            ecodes.KEY_PLAYPAUSE,
+            ecodes.KEY_PREVIOUSSONG,
+            ecodes.KEY_STOPCD,
+            ecodes.KEY_REFRESH,
+            ecodes.KEY_EDIT,
+            ecodes.KEY_SCROLLUP,
+            ecodes.KEY_SCROLLDOWN,
+            ecodes.KEY_KPLEFTPAREN,
+            ecodes.KEY_KPRIGHTPAREN,
+            ecodes.KEY_F13,
+            ecodes.KEY_F14,
+            ecodes.KEY_F15,
+            ecodes.KEY_F16,
+            ecodes.KEY_F17,
+            ecodes.KEY_F18,
+            ecodes.KEY_F19,
+            ecodes.KEY_F20,
+            ecodes.KEY_F21,
+            ecodes.KEY_F22,
+            ecodes.KEY_F23,
+            ecodes.KEY_F24,
+        ],
+        ecodes.EV_MSC: [ecodes.MSC_SCAN],
     }
 
     device_name = f"{KEYBOARD_NAME_PREFIX} @ {domain_name}"
@@ -185,12 +376,14 @@ def create_virtual_keyboard(domain_name:str) -> tuple[InputDevice, str]:
         SysLogger("Orchestrator").info(f"Created device {input.name}")
         return input, device_name
     except Exception as e:
-        SysLogger("Orchestrator").error(f"Error while creating the virtual keyboard: {e}")        
+        SysLogger("Orchestrator").error(
+            f"Error while creating the virtual keyboard: {e}"
+        )
 
 
-def create_virtual_touch(domain_name:str) -> tuple[InputDevice, str]:
-    """ Creates a new virtual touchscreen device 
-    
+def create_virtual_touch(domain_name: str) -> tuple[InputDevice, str]:
+    """Creates a new virtual touchscreen device
+
     The touch device created has the following capabilities:
         - EV_KEY: BTN_LEFT, BTN_RIGHT
         - EV_ABS: ABS_MT_POSITION_X, ABS_MT_POSITION_Y
@@ -198,15 +391,33 @@ def create_virtual_touch(domain_name:str) -> tuple[InputDevice, str]:
 
     # Default values
     default_caps = {
-        ecodes.EV_KEY: [ ecodes.BTN_TOUCH ],
+        ecodes.EV_KEY: [ecodes.BTN_TOUCH],
         ecodes.EV_ABS: [
-            (ecodes.ABS_X,              AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90)),
-            (ecodes.ABS_Y,              AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90)),
-            (ecodes.ABS_MT_SLOT,        AbsInfo(value=0, min=0, max=10, fuzz=0, flat=0, resolution=0)),
-            (ecodes.ABS_MT_POSITION_X,  AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90)),
-            (ecodes.ABS_MT_POSITION_Y,  AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90)),
-            (ecodes.ABS_MT_TRACKING_ID, AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=0))
-        ]
+            (
+                ecodes.ABS_X,
+                AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90),
+            ),
+            (
+                ecodes.ABS_Y,
+                AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90),
+            ),
+            (
+                ecodes.ABS_MT_SLOT,
+                AbsInfo(value=0, min=0, max=10, fuzz=0, flat=0, resolution=0),
+            ),
+            (
+                ecodes.ABS_MT_POSITION_X,
+                AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90),
+            ),
+            (
+                ecodes.ABS_MT_POSITION_Y,
+                AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=90),
+            ),
+            (
+                ecodes.ABS_MT_TRACKING_ID,
+                AbsInfo(value=0, min=0, max=100, fuzz=0, flat=0, resolution=0),
+            ),
+        ],
     }
 
     touch_caps = default_caps
@@ -218,8 +429,10 @@ def create_virtual_touch(domain_name:str) -> tuple[InputDevice, str]:
         SysLogger("Orchestrator").warn("No touch device found")
     else:
         touch_caps = {
-            ecodes.EV_KEY: [ ecodes.BTN_TOUCH ],
-            ecodes.EV_ABS: original_touch.capabilities().get(ecodes.EV_ABS, default_caps[ecodes.EV_ABS])
+            ecodes.EV_KEY: [ecodes.BTN_TOUCH],
+            ecodes.EV_ABS: original_touch.capabilities().get(
+                ecodes.EV_ABS, default_caps[ecodes.EV_ABS]
+            ),
         }
         original_touch.close()
 
@@ -230,21 +443,23 @@ def create_virtual_touch(domain_name:str) -> tuple[InputDevice, str]:
         SysLogger("Orchestrator").info(f"Created device {input.name}")
         return input, device_name
     except Exception as e:
-        SysLogger("Orchestrator").error(f"Error while creating the virtual touchscreen: {e}")
+        SysLogger("Orchestrator").error(
+            f"Error while creating the virtual touchscreen: {e}"
+        )
 
 
 def get_pci_usb_devices():
-    """ Gets the list of all PCI USB devices from the system """
+    """Gets the list of all PCI USB devices from the system"""
 
     devs = []
-    
+
     cmd = subprocess.run(["lspci"], capture_output=True)
     if cmd.returncode == 0:
-        spl = cmd.stdout.split(b'\n')
+        spl = cmd.stdout.split(b"\n")
 
         for dev in spl:
             if "USB" in dev.decode():
-                dev_id = dev.split(b' ')[0]
+                dev_id = dev.split(b" ")[0]
                 if dev_id not in devs:
                     devs.append(dev_id.decode())
 
@@ -252,38 +467,44 @@ def get_pci_usb_devices():
 
 
 def expose_pci_devices():
-    """ Passthrough the PCI devices to the sys-usb Domain """
+    """Passthrough the PCI devices to the sys-usb Domain"""
 
     topology = System.get_topology()
     pci_usb_devs = get_pci_usb_devices()
 
-    #print(blacklisted_devices)
-    #print(pci_usb_devs)
+    # print(blacklisted_devices)
+    # print(pci_usb_devs)
 
     whitelist = []
     for dev in pci_usb_devs:
         if topology.is_pci_bus_blacklisted(dev):
-            SysLogger("Orchestrator").info(f"Device {dev} is ignored because it is blacklisted")
-        else:            
+            SysLogger("Orchestrator").info(
+                f"Device {dev} is ignored because it is blacklisted"
+            )
+        else:
             Logger().debug(f"Expose device {dev}")
             cmd = ["/usr/bin/doas", "/usr/sbin/xl", "pci-assignable-add", dev]
 
             res = subprocess.run(cmd)
             if res.returncode == 0:
-                SysLogger("Orchestrator").info(f"Device {dev} has been passedthrough to sys-usb")
+                SysLogger("Orchestrator").info(
+                    f"Device {dev} has been passedthrough to sys-usb"
+                )
                 whitelist.append(dev)
             else:
-                SysLogger("Orchestrator").warn(f"There has been an error while exposing the device {dev} to Xen")
-    
+                SysLogger("Orchestrator").warn(
+                    f"There has been an error while exposing the device {dev} to Xen"
+                )
+
     # Append devices to sys-usb.conf
     if len(whitelist) > 0:
         patch_sys_usb_conf(whitelist)
 
 
-def patch_sys_usb_conf(usb_devs:list):
-    """ Adds the PCI passthrough option to the sys-usb XL configuration file """
+def patch_sys_usb_conf(usb_devs: list):
+    """Adds the PCI passthrough option to the sys-usb XL configuration file"""
 
-    with open("/etc/safecor/xen/sys-usb.conf", 'r') as file:
+    with open("/etc/safecor/xen/sys-usb.conf", "r") as file:
         lines = file.readlines()
     filtered_lines = [line for line in lines if "pci =" not in line]
 
@@ -295,9 +516,10 @@ def patch_sys_usb_conf(usb_devs:list):
     with open("/etc/safecor/xen/sys-usb.conf", "w") as file:
         file.writelines(filtered_lines)
 
+
 def can_create_domains() -> bool:
-    """ Verifies whether the automatic creation of the Domains is authorized 
-    
+    """Verifies whether the automatic creation of the Domains is authorized
+
     The automatic creation of the Domains can be disabled by adding `no_autostart` to the kernel command line.
     """
 
@@ -305,13 +527,16 @@ def can_create_domains() -> bool:
         cmdline = f.read()
 
     if "no_autostart" in cmdline.split() or "NO_AUTOSTART" in cmdline.split():
-        SysLogger("Orchesrator").info("The Domains autostart is disabled from the kernel command line")
+        SysLogger("Orchesrator").info(
+            "The Domains autostart is disabled from the kernel command line"
+        )
         return False
-    
+
     return True
 
-def create_temp_disk(domain_name:str, size_in_mb:int):
-    """ Create a temporary file for the /tmp in a Domain """
+
+def create_temp_disk(domain_name: str, size_in_mb: int):
+    """Create a temporary file for the /tmp in a Domain"""
 
     filename = f"{domain_name}-tmp.img"
     filepath = f"/usr/lib/safecor/tmp/{filename}"
@@ -320,26 +545,33 @@ def create_temp_disk(domain_name:str, size_in_mb:int):
     if os.path.exists(filename):
         os.remove(filename)
 
-    cmd = [ "/usr/bin/truncate", "-s" ,f"{size_in_mb*1024*1024}", filepath ]
+    cmd = ["/usr/bin/truncate", "-s", f"{size_in_mb * 1024 * 1024}", filepath]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode > 0:
-        SysLogger("Orchestrator").error(f"Cannot create the temporary diskfile for {domain_name}: {res.stderr}")
+        SysLogger("Orchestrator").error(
+            f"Cannot create the temporary diskfile for {domain_name}: {res.stderr}"
+        )
         return
-    
+
     # Modify the permissions
     # The created file should belong to svc-orchestrator:safecor
     os.chmod(filepath, 0o770)
-    
-    cmd = [ "mkfs.ext4", "-L", "TMPFILE", filepath ]
+
+    cmd = ["mkfs.ext4", "-L", "TMPFILE", filepath]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode > 0:
-        SysLogger("Orchestrator").error(f"Cannot format the temporary diskfile for {domain_name}: {res.stderr}")
+        SysLogger("Orchestrator").error(
+            f"Cannot format the temporary diskfile for {domain_name}: {res.stderr}"
+        )
         return
 
-    SysLogger("Orchestrator").debug(f"Temporary diskfile of size {size_in_mb} MB created for {domain_name}")
+    SysLogger("Orchestrator").debug(
+        f"Temporary diskfile of size {size_in_mb} MB created for {domain_name}"
+    )
 
-def create_swap_disk(domain_name:str, size_in_mb:int):
-    """ Create a temporary file for the swap in a Domain """
+
+def create_swap_disk(domain_name: str, size_in_mb: int):
+    """Create a temporary file for the swap in a Domain"""
 
     filename = f"{domain_name}-swap.img"
     filepath = f"/usr/lib/safecor/tmp/{filename}"
@@ -348,20 +580,29 @@ def create_swap_disk(domain_name:str, size_in_mb:int):
     if os.path.exists(filename):
         os.remove(filename)
 
-    cmd = [ "/usr/lib/safecor/bin/create-swapdisk.sh", filepath ,f"{size_in_mb*1024*1024}" ]
+    cmd = [
+        "/usr/lib/safecor/bin/create-swapdisk.sh",
+        filepath,
+        f"{size_in_mb * 1024 * 1024}",
+    ]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode > 0:
-        SysLogger("Orchestrator").error(f"Cannot create the temporary swap disk for {domain_name}: {res.stderr}")
+        SysLogger("Orchestrator").error(
+            f"Cannot create the temporary swap disk for {domain_name}: {res.stderr}"
+        )
         return
-    
+
     # Modify the permissions
     # The created file should belong to svc-orchestrator:safecor
     os.chmod(filepath, 0o770)
 
-    SysLogger("Orchestrator").debug(f"Temporary swap disk of size {size_in_mb} MB created for {domain_name}")
+    SysLogger("Orchestrator").debug(
+        f"Temporary swap disk of size {size_in_mb} MB created for {domain_name}"
+    )
+
 
 def start_business_domains():
-    """ Starts the business Domains"""
+    """Starts the business Domains"""
 
     topology = System.get_topology()
 
@@ -378,17 +619,22 @@ def start_business_domains():
         if domain.name == "":
             continue
 
-        # Create a temporary disk if needed        
+        # Create a temporary disk if needed
         if domain.temp_disk_size > 0:
-            SysLogger("Orchestrator").info(f"Create a temporary disk for {domain.name}")      
+            SysLogger("Orchestrator").info(f"Create a temporary disk for {domain.name}")
             create_temp_disk(domain.name, domain.temp_disk_size)
 
-        # Create a temporary swap if needed        
+        # Create a temporary swap if needed
         if domain.swap_size > 0:
-            SysLogger("Orchestrator").info(f"Create a swap disk for {domain.name}")      
+            SysLogger("Orchestrator").info(f"Create a swap disk for {domain.name}")
             create_swap_disk(domain.name, domain.swap_size)
 
-        cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-business-domain.sh", domain.name, "1" if domain.has_gui else "0"]
+        cmd = [
+            "/usr/bin/doas",
+            "/usr/lib/safecor/bin/start-business-domain.sh",
+            domain.name,
+            "1" if domain.has_gui else "0",
+        ]
         res = subprocess.run(cmd)
 
         if res.returncode == 0:
@@ -397,23 +643,28 @@ def start_business_domains():
             SysLogger("Orchestrator").critical(f"Domain {domain.name} did not start")
 
 
-def on_mqtt_message(topic:str, payload:dict):
+def on_mqtt_message(topic: str, payload: dict):
     "MQTT message callback (reserved for future use)."
     # Currently unused
-    pass
 
-def on_inputs_socket_file_changed(path:str, filename:str, exists:bool):
-    """ This function is a callback for the file monitor that monitors the inputs socket file """
+
+def on_inputs_socket_file_changed(path: str, filename: str, exists: bool):
+    """This function is a callback for the file monitor that monitors the inputs socket file"""
 
     if exists:
-        SysLogger("Orchestrator").info("The inputs socket file is ready. Start the input proxy")
+        SysLogger("Orchestrator").info(
+            "The inputs socket file is ready. Start the input proxy"
+        )
         inputs_proxy.start()
     else:
-        SysLogger("Orchestrator").info("The inputs socket file has disappeared. Stop the input proxy")
+        SysLogger("Orchestrator").info(
+            "The inputs socket file has disappeared. Stop the input proxy"
+        )
         inputs_proxy.stop()
 
+
 def on_mqtt_ready():
-    """ Callback for MQTT broker connection """
+    """Callback for MQTT broker connection"""
 
     SysLogger("Orchestrator").info("Starting Orchestrator")
 
@@ -425,12 +676,11 @@ def on_mqtt_ready():
 
     for domain in gui_domains:
         # We create new virtual devices
-        virtual_mouse, virtual_keyboard, virtual_touch = create_virtual_devices(domain.name)
+        virtual_mouse, virtual_keyboard, virtual_touch = create_virtual_devices(
+            domain.name
+        )
         inputs_proxy.set_virtual_devices_for_domain(
-            domain.name,
-            virtual_mouse,
-            virtual_keyboard,
-            virtual_touch
+            domain.name, virtual_mouse, virtual_keyboard, virtual_touch
         )
 
     # Attach PCI devices
@@ -442,23 +692,24 @@ def on_mqtt_ready():
         # and when sys-usb is rebooted, the events listener will stop and start
         # back after the reboor
         SysLogger("Orchestrator").info("Wait for the input socket to be ready")
-        System().monitor_file(INPUTS_SOCKET_PATH, INPUTS_SOCKET_FILENAME, on_inputs_socket_file_changed)
+        System().monitor_file(
+            INPUTS_SOCKET_PATH, INPUTS_SOCKET_FILENAME, on_inputs_socket_file_changed
+        )
 
         cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-sys-usb.sh"]
-        res = subprocess.run(cmd, check= True)
+        res = subprocess.run(cmd, check=True)
 
         if res.returncode == 0:
             SysLogger("Orchestrator").info("Started Domain sys-usb")
         else:
             SysLogger("Orchestrator").critical("Domain sys-usb did not start")
-        
+
         # Start all other domains
         start_business_domains()
-        
 
         # When the domain sys-usb is rebooted, the socket is list
         # so we need to loop
-        #while True:
+        # while True:
         #    # Wait for the inputs socket to be ready
         #    wait_for_file(INPUTS_SOCKET)
         #

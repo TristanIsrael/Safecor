@@ -6,7 +6,6 @@ produced by the instrumented peers.
 """
 
 import pytest
-
 from safecor_emulator import Emulator
 
 

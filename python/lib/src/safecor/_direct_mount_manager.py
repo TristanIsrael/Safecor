@@ -1,4 +1,4 @@
-""" Direct USB mount manager.
+"""Direct USB mount manager.
 
 Manages the direct USB mount from sys-usb via vchan+sshfs in a DomU.
 
@@ -22,7 +22,7 @@ DOMID_POLL_INTERVAL = 2
 
 
 class DirectMountManager:
-    """ Manages the direct USB mount from sys-usb via vchan+sshfs.
+    """Manages the direct USB mount from sys-usb via vchan+sshfs.
 
     This class runs in its own process (started by openrc). It handles the
     complete flow: querying the topology, discovering the sys-usb domid,
@@ -41,7 +41,7 @@ class DirectMountManager:
     __mount_mode = "rw"
 
     def start(self) -> bool:
-        """ Initiates the direct mount flow.
+        """Initiates the direct mount flow.
 
         Steps:
             1. Query my_config to check if this domain has direct_mount.
@@ -86,7 +86,7 @@ class DirectMountManager:
         return True
 
     def stop(self) -> None:
-        """ Unmounts and cleans up the direct mount. """
+        """Unmounts and cleans up the direct mount."""
         if self.__sshfs_process is not None:
             try:
                 self.__sshfs_process.terminate()
@@ -100,15 +100,15 @@ class DirectMountManager:
         Logger().info("DirectMountManager: unmounted")
 
     def is_mounted(self) -> bool:
-        """ Returns True if the direct mount is active. """
+        """Returns True if the direct mount is active."""
         return self.__mounted
 
     def get_mount_point(self) -> str:
-        """ Returns the mount point path. """
+        """Returns the mount point path."""
         return Constants.USB_MOUNT_POINT
 
     def run(self) -> None:
-        """ Entry point for running as a standalone process.
+        """Entry point for running as a standalone process.
 
         Blocks until a termination signal is received.
         """
@@ -123,13 +123,13 @@ class DirectMountManager:
             sys.exit(1)
 
     def __handle_signal(self, signum, frame):
-        """ Handle SIGTERM/SIGINT: stop the mount and exit. """
+        """Handle SIGTERM/SIGINT: stop the mount and exit."""
         Logger().info("DirectMountManager: received termination signal")
         self.stop()
         sys.exit(0)
 
     def __query_direct_mount_config(self):
-        """ Query my_config via MQTT to check if this domain has direct_mount.
+        """Query my_config via MQTT to check if this domain has direct_mount.
 
         Returns:
             The mount mode ("ro" or "rw"), or None if not enabled.
@@ -149,7 +149,7 @@ class DirectMountManager:
         return None
 
     def __wait_for_domid(self, domain_name: str):
-        """ Poll xenstore for the domain's domid with a timeout.
+        """Poll xenstore for the domain's domid with a timeout.
 
         Returns:
             The domid as int, or None if not found within timeout.
@@ -163,7 +163,7 @@ class DirectMountManager:
         return None
 
     def __generate_vchan_script(self, domid: int) -> bool:
-        """ Generate the vchan-socket-proxy client script. """
+        """Generate the vchan-socket-proxy client script."""
         try:
             os.makedirs(os.path.dirname(VCHAN_SFTP_SCRIPT_PATH), exist_ok=True)
             content = (
@@ -180,7 +180,7 @@ class DirectMountManager:
             return False
 
     def __mount(self) -> bool:
-        """ Mount the USB folder via sshfs over vchan. """
+        """Mount the USB folder via sshfs over vchan."""
         mount_point = Constants.USB_MOUNT_POINT
         os.makedirs(mount_point, exist_ok=True)
 
@@ -212,7 +212,7 @@ class DirectMountManager:
             return False
 
     def __unmount(self) -> None:
-        """ Unmount the sshfs mount point. """
+        """Unmount the sshfs mount point."""
         mount_point = Constants.USB_MOUNT_POINT
         try:
             subprocess.run(["fusermount", "-u", mount_point], timeout=10)

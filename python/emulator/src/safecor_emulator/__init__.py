@@ -1,4 +1,4 @@
-""" Safecor emulation and testing infrastructure
+"""Safecor emulation and testing infrastructure
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -30,26 +30,26 @@ from .topology_env import (
 __version__ = "0.1.0"
 
 __all__ = [
-    "SystemProfile",
-    "default_profile",
-    "load_profile",
-    "install_fakes",
-    "uninstall_fakes",
-    "apply_dmi",
-    "MosquittoBroker",
-    "broker_is_reachable",
-    "FakeInputDevice",
-    "Emulator",
-    "EventBus",
-    "Event",
-    "FileRecorder",
-    "STREAMS",
     "NO_CONFIGURATION",
-    "Environment",
+    "STREAMS",
     "BusinessDomain",
+    "Emulator",
+    "Environment",
+    "Event",
+    "EventBus",
+    "FakeInputDevice",
+    "FileRecorder",
+    "MosquittoBroker",
     "Screen",
-    "load_topology_data",
+    "SystemProfile",
+    "apply_dmi",
+    "broker_is_reachable",
     "build_environment",
     "build_environment_from_data",
     "configuration_dmi",
+    "default_profile",
+    "install_fakes",
+    "load_profile",
+    "load_topology_data",
+    "uninstall_fakes",
 ]

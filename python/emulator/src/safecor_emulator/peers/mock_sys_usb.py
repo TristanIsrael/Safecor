@@ -1,4 +1,4 @@
-""" Mock sys-usb controller
+"""Mock sys-usb controller
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -15,7 +15,6 @@ import zlib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Event
-from typing import Optional
 
 from safecor import (
     ConnectionType,
@@ -37,7 +36,7 @@ class MockSysUsbController:
         self,
         sync_lock: Event,
         client_id_suffix: str = "",
-        event_bus: Optional[EventBus] = None,
+        event_bus: EventBus | None = None,
     ):
         self.__thread_pool = ThreadPoolExecutor(max_workers=1)
         self.__sync_lock = sync_lock
@@ -48,7 +47,7 @@ class MockSysUsbController:
         self.__known_disk_ids: set = set()
 
     # --- event bus helpers ---------------------------------------------------
-    def __emit(self, stream: str, text: str, payload: Optional[dict] = None):
+    def __emit(self, stream: str, text: str, payload: dict | None = None):
         if self.__event_bus is not None:
             self.__event_bus.publish(stream, "SysUsb", text, payload)
 
@@ -60,9 +59,7 @@ class MockSysUsbController:
         self.__emit("platform_log", message)
         print(f"[SYS-USB] {message}")
 
-    def start(
-        self, source_disks_list: dict, storage_path: str
-    ):
+    def start(self, source_disks_list: dict, storage_path: str):
         """Start the MQTT client and expose the given local directories as disks.
 
         :param source_disks_list: mapping of disk id -> root directory (source of files).
@@ -195,7 +192,7 @@ class MockSysUsbController:
                 )
                 self.__publish(Topics.NEW_FILE, notif)
             except Exception as e:
-                self.__log(f"Error during copy: {str(e)}")
+                self.__log(f"Error during copy: {e!s}")
                 notif = NotificationFactory.create_notification_error(
                     disk, filepath, "The file could not be copied"
                 )
@@ -411,7 +408,7 @@ class MockSysUsbController:
             )
             self.__publish(Topics.DISK_STATE, notif)
         except Exception as e:
-            self.__log(f"ERROR when mounting file {archive_filepath}: {str(e)}")
+            self.__log(f"ERROR when mounting file {archive_filepath}: {e!s}")
 
     def __handle_unmount(self, payload: dict):
         if not MqttHelper.check_payload(payload, ["disk"]):
@@ -439,4 +436,4 @@ class MockSysUsbController:
             )
             self.__publish(Topics.DISK_STATE, notif)
         except Exception as e:
-            self.__log(f"ERROR when unmounting {disk}: {str(e)}")
+            self.__log(f"ERROR when unmounting {disk}: {e!s}")

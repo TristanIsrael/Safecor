@@ -1,4 +1,4 @@
-""" MQTT client module
+"""MQTT client module
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -6,53 +6,59 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-from enum import StrEnum
 import json
-import threading
 import select
+import threading
 import traceback
-from typing import Literal, Callable, Optional
+from enum import StrEnum
+from typing import Callable, Literal, Optional
+
 try:
     import serial
 except ImportError:
     pass
 import paho.mqtt.client as mqtt
-from paho.mqtt.reasoncodes import ReasonCode
-from paho.mqtt.properties import Properties
 from paho.mqtt.enums import CallbackAPIVersion, MQTTErrorCode
+from paho.mqtt.properties import Properties
+from paho.mqtt.reasoncodes import ReasonCode
+
 from . import SysLogger
 
 DEBUG = False
 TYPE_CHECKING = True
 
+
 class ConnectionType(StrEnum):
-    ''' @brief This enumeration identifies the type of connection used.
+    """@brief This enumeration identifies the type of connection used.
 
     UNIX_SOCKET: the broker is reached through a UNIX domain socket.
     SERIAL_PORT: the broker is reached through a serial port.
     TCP_DEBUG: the broker is reached over TCP on localhost (development only).
-    '''
+    """
+
     UNIX_SOCKET = "unix_socket"
     SERIAL_PORT = "serial_port"
     TCP_DEBUG = "tcp"
 
-class SerialSocket():
-    ''' @brief This class implements a serial socket.
+
+class SerialSocket:
+    """@brief This class implements a serial socket.
 
     The serial socket is used to communicate over a serial port.
-    '''
+    """
 
-    def __init__(self, path:str, baudrate:int):
+    def __init__(self, path: str, baudrate: int):
         """Opens the serial port and resets its input and output buffers.
 
         Args:
             path(str): The path of the serial port device.
             baudrate(int): The baudrate of the serial port.
         """
-        self.serial = serial.Serial(port=path, baudrate=baudrate, timeout=1.0, write_timeout=0)
+        self.serial = serial.Serial(
+            port=path, baudrate=baudrate, timeout=1.0, write_timeout=0
+        )
         self.serial.reset_input_buffer()
         self.serial.reset_output_buffer()
-
 
     def recv(self, buffer_size: int) -> bytes:
         """Reads up to buffer_size bytes from the serial port.
@@ -63,13 +69,13 @@ class SerialSocket():
         Returns:
             bytes: The bytes read, or an empty byte string if the port is not open.
         """
-        #print(f"Wants to read {buffer_size} bytes")
+        # print(f"Wants to read {buffer_size} bytes")
         if self.serial is not None and self.serial.is_open:
             data = self.serial.read(buffer_size)
-            #print(f"Read {len(data)} bytes")
+            # print(f"Read {len(data)} bytes")
             return data
 
-        return b''
+        return b""
 
     def in_waiting(self) -> int:
         """Returns the number of bytes available to read on the serial port."""
@@ -83,7 +89,7 @@ class SerialSocket():
         """
         if self.serial is not None:
             return self.serial.out_waiting
-        
+
         return 0
 
     def send(self, buffer: bytes) -> int:
@@ -96,10 +102,10 @@ class SerialSocket():
             int: The number of bytes written, or 0 if the port is not open.
         """
         if self.serial is not None and self.serial.is_open:
-            #print("send:{}".format(buffer))
+            # print("send:{}".format(buffer))
             sent = self.serial.write(buffer)
             return sent if sent is not None else 0
-        
+
         return 0
 
     def close(self) -> None:
@@ -125,14 +131,13 @@ class SerialSocket():
 
 
 class SerialMQTTClient(mqtt.Client):
-    ''' @brief This class allows the MQTT client to communicate over a serial port.
-    '''
+    """@brief This class allows the MQTT client to communicate over a serial port."""
 
     # Callback invoked when the network loop detects that the connection
     # was lost (no socket or a CONN_LOST error from the broker).
     on_connection_lost: Optional[Callable[[], None]] = None
 
-    def __init__(self, path:str, baudrate:int, *args, **kwargs):
+    def __init__(self, path: str, baudrate: int, *args, **kwargs):
         """Creates a paho client whose network layer runs over a serial port.
 
         Args:
@@ -141,12 +146,16 @@ class SerialMQTTClient(mqtt.Client):
             *args: Forwarded to the paho :class:`mqtt.Client` constructor.
             **kwargs: Forwarded to the paho :class:`mqtt.Client` constructor.
         """
-        super().__init__(callback_api_version=CallbackAPIVersion.VERSION2, *args, **kwargs)
+        super().__init__(
+            *args, callback_api_version=CallbackAPIVersion.VERSION2, **kwargs
+        )
         self.path = path
         self.baudrate = baudrate
         self._sock = None
 
-    def disconnect(self, reasoncode: ReasonCode | None = None, properties: Properties | None = None):
+    def disconnect(
+        self, reasoncode: ReasonCode | None = None, properties: Properties | None = None
+    ):
         """Sends the MQTT DISCONNECT packet and runs the network loop until closed."""
         self._send_disconnect(reasoncode, properties)
         self.__do_loop()
@@ -155,7 +164,7 @@ class SerialMQTTClient(mqtt.Client):
         """Disconnects from the broker and closes the serial socket."""
         self.disconnect()
         self._sock_close()
-        #if self.sock_ is not None:
+        # if self.sock_ is not None:
         #    self.sock_.close()
 
     def loop_start(self) -> MQTTErrorCode:
@@ -181,7 +190,7 @@ class SerialMQTTClient(mqtt.Client):
                 if self.on_connection_lost is not None:
                     self.on_connection_lost()
                 return
-            
+
             # if bytes are pending do not wait in select
             pending_bytes = self._sock.pending()
             if pending_bytes > 0:
@@ -211,7 +220,7 @@ class SerialMQTTClient(mqtt.Client):
 
                 break
 
-            #time.sleep(0.2)
+            # time.sleep(0.2)
 
     def loop_stop(self) -> MQTTErrorCode:
         """Stops the network loop thread and waits for it to terminate.
@@ -238,12 +247,15 @@ class SerialMQTTClient(mqtt.Client):
             self._sockpairR = self._sock
             return self._sock
         except Exception as e:
-            SysLogger("MQTT-client").warn("An error occured while opening the serial port")
+            SysLogger("MQTT-client").warn(
+                "An error occured while opening the serial port"
+            )
             SysLogger("MQTT-client").warn(str(e))
             return None
 
-class MqttClient():
-    '''This class is used to exchange MQTT messages within the system.
+
+class MqttClient:
+    """This class is used to exchange MQTT messages within the system.
 
     Class attributes:
 
@@ -259,11 +271,11 @@ class MqttClient():
     - ``on_log``: callback invoked with the paho log messages (debugging only).
     - ``connected`` (bool): True while the client is connected to the broker.
     - ``is_starting`` (bool): True while the client is trying to connect.
-    '''
+    """
 
-    connection_type:ConnectionType = ConnectionType.UNIX_SOCKET
-    connection_string:str = ""
-    identifier:str = "unknown"
+    connection_type: ConnectionType = ConnectionType.UNIX_SOCKET
+    connection_string: str = ""
+    identifier: str = "unknown"
     on_connected: Optional[Callable[[], None]] = None
     on_message: Optional[Callable[[str, dict], None]] = None
     on_subscribed: Optional[Callable[[], None]] = None
@@ -274,7 +286,13 @@ class MqttClient():
     is_starting = False
     __debugging = False
 
-    def __init__(self, identifier:str, connection_type:ConnectionType = ConnectionType.UNIX_SOCKET, connection_string:str = "", debugging = False):
+    def __init__(
+        self,
+        identifier: str,
+        connection_type: ConnectionType = ConnectionType.UNIX_SOCKET,
+        connection_string: str = "",
+        debugging=False,
+    ):
         """Creates a MQTT client.
 
         Args:
@@ -303,7 +321,7 @@ class MqttClient():
         """
         if self.is_starting or self.connected:
             return
-        
+
         self.is_starting = True
         SysLogger("MQTT-client").info(f"Starting MQTT client {self.identifier}")
 
@@ -312,7 +330,7 @@ class MqttClient():
                 callback_api_version=CallbackAPIVersion.VERSION2,
                 client_id=self.identifier,
                 transport=self.__get_transport_type(),
-                reconnect_on_failure=True
+                reconnect_on_failure=True,
             )
             self.mqtt_client.on_connect = self.__on_connected
             self.mqtt_client.on_message = self.__on_message
@@ -330,20 +348,24 @@ class MqttClient():
                     mqtt_host = self.connection_string
                     self.mqtt_client.connect(host=mqtt_host, port=1, keepalive=30)
                 else:
-                    SysLogger("MQTT-client").error(f"The connection type {self.connection_type} is not handled")
+                    SysLogger("MQTT-client").error(
+                        f"The connection type {self.connection_type} is not handled"
+                    )
                     return
             except Exception as e:
-                SysLogger("MQTT-client").warn(f"Could not connect to the MQTT broker on {mqtt_host}")
+                SysLogger("MQTT-client").warn(
+                    f"Could not connect to the MQTT broker on {mqtt_host}"
+                )
                 SysLogger("MQTT-client").warn(str(e))
                 return
-            
+
             self.mqtt_client.loop_start()
         elif self.connection_type == ConnectionType.SERIAL_PORT:
             self.mqtt_client = SerialMQTTClient(
                 client_id=self.identifier,
                 path=self.connection_string,
                 baudrate=115200,
-                reconnect_on_failure=True
+                reconnect_on_failure=True,
             )
             self.mqtt_client.on_connect = self.__on_connected
             self.mqtt_client.on_message = self.__on_message
@@ -359,8 +381,10 @@ class MqttClient():
 
             self.mqtt_client.loop_start()
         else:
-            SysLogger("MQTT-client").error(f"The connection type {self.connection_type} is not handled")
-            return        
+            SysLogger("MQTT-client").error(
+                f"The connection type {self.connection_type} is not handled"
+            )
+            return
 
     def add_connected_callback(self, callback):
         """Registers a callback invoked every time the client (re)connects to the broker.
@@ -396,20 +420,20 @@ class MqttClient():
         Exceptions raised while closing the client are ignored.
         """
         if self.mqtt_client is not None:
-            #print("Quit Mqtt client")
+            # print("Quit Mqtt client")
             try:
                 self.mqtt_client.disconnect()
                 self.mqtt_client.loop_stop()
                 if self.connection_type == ConnectionType.SERIAL_PORT:
                     self.mqtt_client.close()
-            except:
-                #Ignore exceptions when closing
+            except Exception:
+                # Ignore exceptions when closing
                 pass
             finally:
                 self.connected = False
                 self.is_starting = False
 
-    def subscribe(self, topic:str) -> tuple[MQTTErrorCode, int | None]:
+    def subscribe(self, topic: str) -> tuple[MQTTErrorCode, int | None]:
         """Subscribes to a topic on the broker. The topic is tracked by the client.
 
         Args:
@@ -418,24 +442,24 @@ class MqttClient():
         Returns:
             tuple[MQTTErrorCode, int | None]: The paho result code and the message ID.
         """
-        #print(f"Subscribed to {topic}")
+        # print(f"Subscribed to {topic}")
         self.__subscriptions.append(topic)
         return self.mqtt_client.subscribe(topic)
 
-    def unsubscribe(self, topic:str):
-        """ Unsubscribes a client from a specific topic """
+    def unsubscribe(self, topic: str):
+        """Unsubscribes a client from a specific topic"""
 
-        #print(f"Unsubscribed to {topic}")
+        # print(f"Unsubscribed to {topic}")
         self.__subscriptions.remove(topic)
         return self.mqtt_client.unsubscribe(topic)
 
     def unsubscribe_all(self):
-        """ Unsubscribes a client from all topics """
+        """Unsubscribes a client from all topics"""
 
         for topic in self.__subscriptions:
             self.unsubscribe(topic)
 
-    def publish(self, topic:str, payload:dict):
+    def publish(self, topic: str, payload: dict):
         """Publishes a payload on a topic. The payload is serialized as JSON.
 
         Args:
@@ -443,11 +467,11 @@ class MqttClient():
             payload(dict): The payload to publish.
         """
         data = json.dumps(payload, ensure_ascii=True)
-        #print(data)
-        #print(len(data))
+        # print(data)
+        # print(len(data))
         self.mqtt_client.publish(topic=topic, payload=data)
 
-    def __get_transport_type(self) -> Literal['tcp', 'unix']:
+    def __get_transport_type(self) -> Literal["tcp", "unix"]:
         if self.connection_type == ConnectionType.TCP_DEBUG:
             return "tcp"
         else:
@@ -457,7 +481,7 @@ class MqttClient():
         if self.on_log is not None:
             self.on_log(level, buf)
 
-    def __on_message(self, client:mqtt.Client, userdata, msg:mqtt.MQTTMessage):
+    def __on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
         try:
             payload = json.loads(msg.payload.decode("utf-8"))
             if self.on_message is not None:
@@ -466,13 +490,19 @@ class MqttClient():
             for cb in self.__message_callbacks:
                 cb(msg.topic, payload)
         except Exception as e:
-            SysLogger("MQTT-client").warn("[MQTT Client] Uncaught Exception when handling message:")
+            SysLogger("MQTT-client").warn(
+                "[MQTT Client] Uncaught Exception when handling message:"
+            )
             SysLogger("MQTT-client").warn(f"Topic : {msg.topic}")
             SysLogger("MQTT-client").warn(f"Payload : {msg.payload}")
             SysLogger("MQTT-client").warn(f"Exception : {e}")
-            SysLogger("MQTT-client").warn("** Notice that the error may come from the client callback **")
+            SysLogger("MQTT-client").warn(
+                "** Notice that the error may come from the client callback **"
+            )
 
-    def __on_connected(self, client:mqtt.Client, userdata, connect_flags, reason_code, properties):
+    def __on_connected(
+        self, client: mqtt.Client, userdata, connect_flags, reason_code, properties
+    ):
         SysLogger("MQTT-client").info("Connected to the MQTT broker")
         self.connected = True
         self.is_starting = False
@@ -491,7 +521,7 @@ class MqttClient():
             cb()
 
     def __on_subscribe(self, client, userdata, mid, reason_code_list, properties):
-        #print("Subscribed to a topic")
+        # print("Subscribed to a topic")
 
         if self.on_subscribed is not None:
             self.on_subscribed(mid)
@@ -504,11 +534,9 @@ class MqttClient():
 
     def __on_disconnected(self, *args):
         SysLogger("MQTT-client").info("Disconnected from the broker")
-        #print("Arguments:")
-        #for arg in args:
+        # print("Arguments:")
+        # for arg in args:
         #    print(arg)
 
-        #print("Disconnect from the broker")
-        #self.mqtt_client.close()
-        
-    
+        # print("Disconnect from the broker")
+        # self.mqtt_client.close()

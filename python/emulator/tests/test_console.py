@@ -12,7 +12,6 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtGui import QGuiApplication
-
 from safecor_emulator import Emulator
 from safecor_emulator.console import ConsoleController
 

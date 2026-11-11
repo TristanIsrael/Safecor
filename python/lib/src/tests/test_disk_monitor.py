@@ -1,9 +1,12 @@
-import unittest
 import time
-from safecor import DiskMonitor, Topics, MqttClient
+import unittest
+
+from safecor import DiskMonitor, Topics
+
 from ._test_with_api import TestWithAPI
 
-class FakeDevice():
+
+class FakeDevice:
     device_type = ""
     device_node = ""
     __values = {}
@@ -13,12 +16,12 @@ class FakeDevice():
 
     def __getitem__(self, name):
         return self.__values.get(name, "")
-    
+
     def __setitem__(self, name, value):
         self.__values[name] = value
 
+
 class TestDiskMonitor(TestWithAPI):
-    
     __device = FakeDevice()
     __device.device_type = "partition"
     __device.device_node = "No Name"
@@ -34,16 +37,16 @@ class TestDiskMonitor(TestWithAPI):
             self.__monitor.start()
         except ImportError:
             print("Cannot run this test on that machine")
-            self.assertTrue(True) # Bypass
+            self.assertTrue(True)  # Bypass
 
         self.__monitor.stop()
 
     def test_connect_storage(self):
         cls = self.__class__
-        
+
         cls.mqtt_client.unsubscribe_all()
-        cls.mqtt_client.subscribe(Topics.DISK_STATE)        
-        
+        cls.mqtt_client.subscribe(Topics.DISK_STATE)
+
         cls.clear_messages()
         self.__monitor.device_event("add", self.__device)
         time.sleep(1)
@@ -51,7 +54,7 @@ class TestDiskMonitor(TestWithAPI):
         self.assertEqual(len(cls.messages), 1)
         message = cls.messages[0]
         self.assertEqual(message["topic"], Topics.DISK_STATE)
-        self.assertEqual(message["payload"], { "disk": "No Name", "state": "connected" })
+        self.assertEqual(message["payload"], {"disk": "No Name", "state": "connected"})
 
     def test_disconnect_storage(self):
         cls = self.__class__
@@ -63,7 +66,10 @@ class TestDiskMonitor(TestWithAPI):
         self.assertEqual(len(cls.messages), 1)
         message = cls.messages[0]
         self.assertEqual(message["topic"], Topics.DISK_STATE)
-        self.assertEqual(message["payload"], { "disk": "No Name", "state": "disconnected" })
+        self.assertEqual(
+            message["payload"], {"disk": "No Name", "state": "disconnected"}
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

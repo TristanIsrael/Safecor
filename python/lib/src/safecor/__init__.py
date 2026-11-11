@@ -1,4 +1,4 @@
-""" Safecor — core library for security products on Alpine Linux + Xen.
+"""Safecor — core library for security products on Alpine Linux + Xen.
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -7,14 +7,21 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 __author__ = "Tristan Israël (tristan.israel@alefbet.net)"
-__version__ = '2.0.0'
+__version__ = "2.0.0"
 
 import logging
 from logging import NullHandler
 
 from ._topology import Topology, Domain, Screen, DomainType
 from ._singleton import SingletonMeta
-from ._constants import Constants, InputType, BenchmarkId, ComponentState, DiskState, Settings
+from ._constants import (
+    Constants,
+    InputType,
+    BenchmarkId,
+    ComponentState,
+    DiskState,
+    Settings,
+)
 from ._syslogger import SysLogger
 
 try:
@@ -74,27 +81,51 @@ from ._direct_mount_manager import DirectMountManager
 __all__ = [
     "__version__",
     "SingletonMeta",
-    "Topology", "Domain", "DomainType", "DiskState",
-    "XenStore", "XsDomain", "XsKey", 
-    "Constants", "System", "topology", "Screen", "Constants", "ComponentState", "Topics", "Settings",
+    "Topology",
+    "Domain",
+    "DomainType",
+    "DiskState",
+    "XenStore",
+    "XsDomain",
+    "XsKey",
+    "Constants",
+    "System",
+    "topology",
+    "Screen",
+    "Constants",
+    "ComponentState",
+    "Topics",
+    "Settings",
     "KeymapFR",
-    "InputType", 
+    "InputType",
     "XcbController",
-    "Configuration", "ConfigurationHelper",
+    "Configuration",
+    "ConfigurationHelper",
     "RequestFactory",
     "LibvirtHelper",
-    "Logger", "SysLogger",
-    "NotificationFactory", 
-    "ResponseFactory",    
-    "FileHelper",    
+    "Logger",
+    "SysLogger",
+    "NotificationFactory",
+    "ResponseFactory",
+    "FileHelper",
     "InputsDaemon",
-    "Mouse", "MouseButton", "MouseWheel", "MouseMove",
+    "Mouse",
+    "MouseButton",
+    "MouseWheel",
+    "MouseMove",
     "BenchmarkId",
     "TaskRunner",
-    "MqttClient", "ConnectionType", "MqttFactory", "SerialMQTTClient", "MqttHelper",
-    "Dom0Controller", "DiskMonitor", "Api",
+    "MqttClient",
+    "ConnectionType",
+    "MqttFactory",
+    "SerialMQTTClient",
+    "MqttHelper",
+    "Dom0Controller",
+    "DiskMonitor",
+    "Api",
     "ComponentsHelper",
-    "Debugging", "ApiHelper",
+    "Debugging",
+    "ApiHelper",
     "SysUsbController",
     "DirectMountManager",
 ]

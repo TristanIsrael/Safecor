@@ -10,7 +10,6 @@ import sys
 from unittest import mock
 
 import pytest
-
 from safecor_emulator import cli
 
 

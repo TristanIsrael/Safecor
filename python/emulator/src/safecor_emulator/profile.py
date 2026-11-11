@@ -1,4 +1,4 @@
-""" The system profile drives the OS/hardware fakes
+"""The system profile drives the OS/hardware fakes
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -7,9 +7,9 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any
 
 _DEFAULTS = {
     "uuid": "11111111-2222-3333-4444-555555555555",
@@ -56,8 +56,8 @@ class SystemProfile:
     mem_used: int = _DEFAULTS["mem_used"]
     mem_free: int = _DEFAULTS["mem_free"]
     kernel_cmdline: str = _DEFAULTS["kernel_cmdline"]
-    dmi: Dict[str, str] = field(default_factory=dict)
-    extra: Dict[str, Any] = field(default_factory=dict)
+    dmi: dict[str, str] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         """Returns the profile as a flat dictionary (what the fakes read)."""
@@ -82,7 +82,7 @@ def default_profile() -> SystemProfile:
     return SystemProfile()
 
 
-def load_profile(path: Union[str, Path, None]) -> SystemProfile:
+def load_profile(path: str | Path | None) -> SystemProfile:
     """Loads a profile from a JSON file.
 
     If the path is ``None`` or the file does not exist, the default profile is

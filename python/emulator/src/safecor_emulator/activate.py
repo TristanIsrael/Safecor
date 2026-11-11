@@ -1,4 +1,4 @@
-""" Install OS/hardware fakes for the ``safecor`` library
+"""Install OS/hardware fakes for the ``safecor`` library
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -11,7 +11,6 @@ import io
 import os
 import time
 import types
-from typing import Dict, List, Optional
 
 import safecor._configuration_helper as _CH
 import safecor._system as S
@@ -23,7 +22,7 @@ TOPOLOGY_PATH = "/etc/safecor/topology.json"
 
 #: The fake files currently served by the installed fakes. Kept mutable so that
 #: :func:`apply_dmi` can switch the served DMI at runtime (configuration switch).
-_active_fake_files: Dict[str, str] = {}
+_active_fake_files: dict[str, str] = {}
 
 
 def _patch(obj, attr, new):
@@ -45,7 +44,7 @@ def _unpatch():
     _patches.clear()
 
 
-def _build_fake_files(profile: dict, dmi: Optional[dict] = None) -> Dict[str, str]:
+def _build_fake_files(profile: dict, dmi: dict | None = None) -> dict[str, str]:
     screen_w = profile.get("screen_width", 1280)
     screen_h = profile.get("screen_height", 720)
     files = {
@@ -62,9 +61,9 @@ def _build_fake_files(profile: dict, dmi: Optional[dict] = None) -> Dict[str, st
 
 def install_fakes(
     profile: dict,
-    topology_content: Optional[str] = None,
-    domains: Optional[List[str]] = None,
-    dmi: Optional[dict] = None,
+    topology_content: str | None = None,
+    domains: list[str] | None = None,
+    dmi: dict | None = None,
 ):
     """Install the OS/hardware fakes driven by ``profile`` (a dict).
 
@@ -202,7 +201,7 @@ def install_fakes(
     _patch(os.path, "exists", fake_exists)
 
 
-def apply_dmi(dmi: Dict[str, str]) -> None:
+def apply_dmi(dmi: dict[str, str]) -> None:
     """Update the served DMI files in place (runtime configuration switch).
 
     Rewrites ``/sys/class/dmi/id/<key>`` in the set of faked files so that the

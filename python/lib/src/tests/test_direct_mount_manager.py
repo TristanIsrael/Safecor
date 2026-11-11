@@ -1,4 +1,4 @@
-""" Unit tests for DirectMountManager.
+"""Unit tests for DirectMountManager.
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -7,14 +7,12 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import unittest
-from unittest.mock import patch, MagicMock, PropertyMock
-import sys
+from unittest.mock import MagicMock, patch
 
-from safecor import DirectMountManager, Constants, DomainType, Topology, Domain
+from safecor import Constants, DirectMountManager
 
 
 class TestDirectMountManager(unittest.TestCase):
-
     def setUp(self):
         self.manager = DirectMountManager()
         # Reset class-level state
@@ -34,38 +32,98 @@ class TestDirectMountManager(unittest.TestCase):
         self.assertFalse(self.manager.is_mounted())
 
     def test_start_returns_false_when_no_direct_mount(self):
-        with patch.object(DirectMountManager, "_DirectMountManager__query_direct_mount_config", return_value=None):
+        with patch.object(
+            DirectMountManager,
+            "_DirectMountManager__query_direct_mount_config",
+            return_value=None,
+        ):
             result = self.manager.start()
             self.assertFalse(result)
             self.assertFalse(self.manager.is_mounted())
 
     def test_start_returns_false_when_domid_not_found(self):
-        with patch.object(DirectMountManager, "_DirectMountManager__query_direct_mount_config", return_value="rw"), \
-             patch.object(DirectMountManager, "_DirectMountManager__wait_for_domid", return_value=None):
+        with (
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__query_direct_mount_config",
+                return_value="rw",
+            ),
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__wait_for_domid",
+                return_value=None,
+            ),
+        ):
             result = self.manager.start()
             self.assertFalse(result)
             self.assertFalse(self.manager.is_mounted())
 
     def test_start_returns_false_when_vchan_script_fails(self):
-        with patch.object(DirectMountManager, "_DirectMountManager__query_direct_mount_config", return_value="rw"), \
-             patch.object(DirectMountManager, "_DirectMountManager__wait_for_domid", return_value=5), \
-             patch.object(DirectMountManager, "_DirectMountManager__generate_vchan_script", return_value=False):
+        with (
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__query_direct_mount_config",
+                return_value="rw",
+            ),
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__wait_for_domid",
+                return_value=5,
+            ),
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__generate_vchan_script",
+                return_value=False,
+            ),
+        ):
             result = self.manager.start()
             self.assertFalse(result)
 
     def test_start_returns_false_when_mount_fails(self):
-        with patch.object(DirectMountManager, "_DirectMountManager__query_direct_mount_config", return_value="rw"), \
-             patch.object(DirectMountManager, "_DirectMountManager__wait_for_domid", return_value=5), \
-             patch.object(DirectMountManager, "_DirectMountManager__generate_vchan_script", return_value=True), \
-             patch.object(DirectMountManager, "_DirectMountManager__mount", return_value=False):
+        with (
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__query_direct_mount_config",
+                return_value="rw",
+            ),
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__wait_for_domid",
+                return_value=5,
+            ),
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__generate_vchan_script",
+                return_value=True,
+            ),
+            patch.object(
+                DirectMountManager, "_DirectMountManager__mount", return_value=False
+            ),
+        ):
             result = self.manager.start()
             self.assertFalse(result)
 
     def test_start_success(self):
-        with patch.object(DirectMountManager, "_DirectMountManager__query_direct_mount_config", return_value="rw"), \
-             patch.object(DirectMountManager, "_DirectMountManager__wait_for_domid", return_value=5), \
-             patch.object(DirectMountManager, "_DirectMountManager__generate_vchan_script", return_value=True), \
-             patch.object(DirectMountManager, "_DirectMountManager__mount", return_value=True):
+        with (
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__query_direct_mount_config",
+                return_value="rw",
+            ),
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__wait_for_domid",
+                return_value=5,
+            ),
+            patch.object(
+                DirectMountManager,
+                "_DirectMountManager__generate_vchan_script",
+                return_value=True,
+            ),
+            patch.object(
+                DirectMountManager, "_DirectMountManager__mount", return_value=True
+            ),
+        ):
             result = self.manager.start()
             self.assertTrue(result)
             self.assertTrue(self.manager.is_mounted())
@@ -89,9 +147,11 @@ class TestDirectMountManager(unittest.TestCase):
         self.assertFalse(self.manager.is_mounted())
 
     def test_generate_vchan_script(self):
-        with patch("builtins.open", return_value=MagicMock()) as mock_file, \
-             patch("os.makedirs"), \
-             patch("os.chmod") as mock_chmod:
+        with (
+            patch("builtins.open", return_value=MagicMock()),
+            patch("os.makedirs"),
+            patch("os.chmod") as mock_chmod,
+        ):
             result = self.manager._DirectMountManager__generate_vchan_script(5)
             self.assertTrue(result)
             mock_chmod.assert_called_once()
@@ -108,8 +168,10 @@ class TestDirectMountManager(unittest.TestCase):
             self.assertEqual(result, 12)
 
     def test_wait_for_domid_timeout(self):
-        with patch("safecor._direct_mount_manager.System") as mock_system, \
-             patch("safecor._direct_mount_manager.time") as mock_time:
+        with (
+            patch("safecor._direct_mount_manager.System") as mock_system,
+            patch("safecor._direct_mount_manager.time") as mock_time,
+        ):
             mock_system.return_value.get_domain_domid.return_value = None
             mock_time.time.side_effect = [0, 1, 2, 100]
             mock_time.sleep = MagicMock()
@@ -125,14 +187,16 @@ class TestDirectMountManager(unittest.TestCase):
             self.assertIsNone(result)
 
     def test_query_direct_mount_config_with_response(self):
-        with patch("safecor._direct_mount_manager.System") as mock_system, \
-             patch("safecor._direct_mount_manager.MqttFactory") as mock_factory:
+        with (
+            patch("safecor._direct_mount_manager.System") as mock_system,
+            patch("safecor._direct_mount_manager.MqttFactory") as mock_factory,
+        ):
             mock_system.domain_name.return_value = "test-domain"
             mock_helper = MagicMock()
             mock_helper.send_request.return_value = {
                 "domains": [
                     {"name": "other", "direct_mount": None},
-                    {"name": "test-domain", "direct_mount": {"mode": "ro"}}
+                    {"name": "test-domain", "direct_mount": {"mode": "ro"}},
                 ]
             }
             mock_factory.return_value.get_api_helper.return_value = mock_helper
@@ -141,9 +205,11 @@ class TestDirectMountManager(unittest.TestCase):
 
     def test_mount_mode_ro(self):
         DirectMountManager._DirectMountManager__mount_mode = "ro"
-        with patch("subprocess.Popen") as mock_popen, \
-             patch("safecor._direct_mount_manager.time.sleep"), \
-             patch("os.makedirs"):
+        with (
+            patch("subprocess.Popen") as mock_popen,
+            patch("safecor._direct_mount_manager.time.sleep"),
+            patch("os.makedirs"),
+        ):
             mock_popen.return_value.poll.return_value = None
             self.manager._DirectMountManager__mount()
             call_args = mock_popen.call_args[0][0]

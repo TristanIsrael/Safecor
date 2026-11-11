@@ -58,3 +58,6 @@ line-length = 88
 
 [tool.ruff]
 select = ["E", "F", "I", "B"]
+
+[tool.ruff.per-file-ignores]
+"src/safecor/__init__.py" = ["I001"]

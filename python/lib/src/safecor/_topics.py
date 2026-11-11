@@ -1,4 +1,4 @@
-""" MQTT topic definitions.
+"""MQTT topic definitions.
 
 Defines all MQTT topics used by the Safecor protocol.
 
@@ -8,8 +8,9 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-class Topics():
-    """ This class defines MQTT topics for the API """
+
+class Topics:
+    """This class defines MQTT topics for the API"""
 
     # Groups
     SYSTEM = "system"

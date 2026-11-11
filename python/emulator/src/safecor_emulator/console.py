@@ -1,4 +1,4 @@
-""" The operator console controller
+"""The operator console controller
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -8,7 +8,6 @@ Safecor Licence — see python/lib/LICENCE.md
 
 import os
 import time
-from typing import Dict, List, Optional
 
 from PySide6.QtCore import (
     Property,
@@ -47,8 +46,8 @@ class ConsoleController(QObject):
 
     def __init__(
         self,
-        parent: Optional[QObject] = None,
-        emulator: Optional[Emulator] = None,
+        parent: QObject | None = None,
+        emulator: Emulator | None = None,
         **emulator_params,
     ):
         super().__init__(parent)
@@ -58,25 +57,25 @@ class ConsoleController(QObject):
         self.__running = False
         self.__broker_port = 0
         self.__broker_owned = False
-        self.__peers_connected: List[str] = []
-        self.__components: List[Dict[str, str]] = []
+        self.__peers_connected: list[str] = []
+        self.__components: list[dict[str, str]] = []
         self.__environment = None
-        self.__disks: List[str] = []
-        self.__disk_paths: Dict[str, str] = {}
+        self.__disks: list[str] = []
+        self.__disk_paths: dict[str, str] = {}
         self.__storage_path: str = ""
         self.__energy_level = 100.0
         self.__plugged = True
         self.__default_language = "en"
-        self.__languages: List[str] = []
-        self.__restarted_domains: List[str] = []
+        self.__languages: list[str] = []
+        self.__restarted_domains: list[str] = []
 
         self.__ui_language = DEFAULT_UI_LANGUAGE
-        self.__ui_translator: Optional[QTranslator] = None
+        self.__ui_translator: QTranslator | None = None
         self.__engine = None
 
-        self.__bus_attached: Optional[EventBus] = None
-        self.__recorders: Dict[str, FileRecorder] = {}
-        self.__pending_recorders: Dict[str, str] = {}
+        self.__bus_attached: EventBus | None = None
+        self.__recorders: dict[str, FileRecorder] = {}
+        self.__pending_recorders: dict[str, str] = {}
 
         if emulator is not None:
             self.__attach_bus(emulator.event_bus)
@@ -93,7 +92,7 @@ class ConsoleController(QObject):
         self.__engine = engine
 
     # --- event bus wiring ----------------------------------------------------
-    def __attach_bus(self, bus: Optional[EventBus]):
+    def __attach_bus(self, bus: EventBus | None):
         if bus is self.__bus_attached:
             return
         if self.__bus_attached is not None:
@@ -126,7 +125,7 @@ class ConsoleController(QObject):
         stamp = time.strftime("%H:%M:%S", time.localtime(event.timestamp))
         return f"{stamp} {event.source}: {event.text}"
 
-    def __record_action(self, text: str, payload: Optional[dict] = None):
+    def __record_action(self, text: str, payload: dict | None = None):
         if self.__bus_attached is not None:
             self.__bus_attached.publish("actions", "console", text, payload)
 

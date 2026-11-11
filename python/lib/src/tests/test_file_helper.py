@@ -1,16 +1,14 @@
-import unittest
-import os
-import io
-import tempfile
-import shutil
 import hashlib
+import os
+import shutil
+import tempfile
+import unittest
 import unittest.mock as mock
 
-from safecor import FileHelper, Constants
+from safecor import Constants, FileHelper
 
 
 class TestFileHelper(unittest.TestCase):
-
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="safecor_fh_")
 
@@ -52,7 +50,9 @@ class TestFileHelper(unittest.TestCase):
         self.assertEqual(FileHelper.calculate_fingerprint(path), expected)
 
     def test_calculate_fingerprint_missing_file(self):
-        self.assertEqual(FileHelper.calculate_fingerprint(os.path.join(self.tmp, "nope.txt")), "")
+        self.assertEqual(
+            FileHelper.calculate_fingerprint(os.path.join(self.tmp, "nope.txt")), ""
+        )
 
     # --- create_file / remove_file --------------------------------------
 
@@ -105,7 +105,9 @@ class TestFileHelper(unittest.TestCase):
     def test_get_folder_contents_non_recursive(self):
         self._make_tree(self.tmp)
         contents = []
-        FileHelper.get_folder_contents(self.tmp, contents, cutting=len(self.tmp), recursive=False)
+        FileHelper.get_folder_contents(
+            self.tmp, contents, cutting=len(self.tmp), recursive=False
+        )
         self.assertEqual(self._names(contents), ["a.txt", "sub"])
         self.assertTrue(any(e["type"] == "file" for e in contents))
         self.assertTrue(any(e["type"] == "folder" for e in contents))
@@ -113,7 +115,9 @@ class TestFileHelper(unittest.TestCase):
     def test_get_folder_contents_recursive(self):
         self._make_tree(self.tmp)
         contents = []
-        FileHelper.get_folder_contents(self.tmp, contents, cutting=len(self.tmp), recursive=True)
+        FileHelper.get_folder_contents(
+            self.tmp, contents, cutting=len(self.tmp), recursive=True
+        )
         self.assertEqual(self._names(contents), ["a.txt", "b.txt", "sub"])
 
         b = [e for e in contents if e["name"] == "b.txt"][0]
@@ -124,7 +128,11 @@ class TestFileHelper(unittest.TestCase):
         self._make_tree(self.tmp)
         contents = []
         FileHelper.get_folder_contents(
-            self.tmp, contents, cutting=len(self.tmp), recursive=True, name_filter=["*.txt"]
+            self.tmp,
+            contents,
+            cutting=len(self.tmp),
+            recursive=True,
+            name_filter=["*.txt"],
         )
         # Filters return only matching files, no folders
         self.assertEqual(self._names(contents), ["a.txt", "b.txt"])
@@ -134,7 +142,9 @@ class TestFileHelper(unittest.TestCase):
         self._make_tree(self.tmp)
         os.symlink(os.path.join(self.tmp, "a.txt"), os.path.join(self.tmp, "link.txt"))
         contents = []
-        FileHelper.get_folder_contents(self.tmp, contents, cutting=len(self.tmp), recursive=False)
+        FileHelper.get_folder_contents(
+            self.tmp, contents, cutting=len(self.tmp), recursive=False
+        )
         self.assertNotIn("link.txt", self._names(contents))
 
     # --- get_files_list (mount point mocked) ----------------------------
@@ -148,12 +158,16 @@ class TestFileHelper(unittest.TestCase):
     def test_get_files_list_with_filter(self):
         self._make_tree(self.tmp)
         with mock.patch.object(FileHelper, "get_mount_point", return_value=self.tmp):
-            files = FileHelper.get_files_list("diskX", recursive=True, name_filter=["*.txt"])
+            files = FileHelper.get_files_list(
+                "diskX", recursive=True, name_filter=["*.txt"]
+            )
         self.assertEqual(self._names(files), ["a.txt", "b.txt"])
 
     def test_get_files_list_no_mount_point(self):
         with mock.patch.object(FileHelper, "get_mount_point", return_value=None):
-            self.assertEqual(FileHelper.get_files_list("missing-disk", recursive=True), [])
+            self.assertEqual(
+                FileHelper.get_files_list("missing-disk", recursive=True), []
+            )
 
     # --- get_mount_point -------------------------------------------------
 

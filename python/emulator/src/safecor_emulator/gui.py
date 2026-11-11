@@ -1,4 +1,4 @@
-""" QML bootstrap for the operator console (the ``--gui`` entry point)
+"""QML bootstrap for the operator console (the ``--gui`` entry point)
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -9,7 +9,7 @@ Safecor Licence — see python/lib/LICENCE.md
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonInstance
@@ -50,7 +50,7 @@ else:
 
 
 def build_controller(
-    app: QGuiApplication, topology_path: Optional[str] = None, **emulator_params: Any
+    app: QGuiApplication, topology_path: str | None = None, **emulator_params: Any
 ) -> ConsoleController:
     """Create the :class:`ConsoleController` backed by a not-yet-started Emulator.
 
@@ -114,7 +114,7 @@ def _apply_theme(app: QGuiApplication) -> None:
         pass
 
 
-def run_gui(topology_path: Optional[str] = None, **emulator_params: Any) -> int:
+def run_gui(topology_path: str | None = None, **emulator_params: Any) -> int:
     """Build the app + controller, show the window, and run the event loop.
 
     :return: the exit code of the Qt event loop.

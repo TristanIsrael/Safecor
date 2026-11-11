@@ -1,10 +1,11 @@
-""" Singleton metaclass.
+"""Singleton metaclass.
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
 
 .. author:: Tristan Israël
 """
+
 
 class SingletonMeta(type):
     """
@@ -14,12 +15,12 @@ class SingletonMeta(type):
     ::
 
         class MyClass(metaclass=SingletonMeta):
-        
+
             # There won't be any __init__() method.
 
             def function(self):
                 pass
-        
+
         # Use the Singleton
         MyClass().function()
     """

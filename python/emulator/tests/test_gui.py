@@ -33,7 +33,6 @@ import pytest
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQuick import QQuickItem
-
 from safecor_emulator.console import ConsoleController
 from safecor_emulator.emulator import Emulator
 from safecor_emulator.gui import _apply_theme, build_controller, create_engine

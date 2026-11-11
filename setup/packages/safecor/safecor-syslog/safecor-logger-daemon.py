@@ -1,4 +1,4 @@
-""" Daemon that receives log messages over a Unix socket and publishes them to the Safecor MQTT logging facility.
+"""Daemon that receives log messages over a Unix socket and publishes them to the Safecor MQTT logging facility.
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -6,9 +6,10 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
+import logging
 import os
 import socket
-import logging
+
 from safecor import Logger
 
 SOCKET_PATH = "/var/run/safecor_logger.sock"
@@ -21,7 +22,7 @@ SEVERITY = {
     4: logging.WARNING,
     5: logging.WARNING,
     6: logging.INFO,
-    7: logging.DEBUG
+    7: logging.DEBUG,
 }
 
 try:
@@ -34,8 +35,8 @@ with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as s:
 
     while True:
         data = s.recv(1024)
-        if data and b'-' in data:
-            parts = data.split(b' - ', 1)
+        if data and b"-" in data:
+            parts = data.split(b" - ", 1)
             severity = parts[0].decode().strip()
             msg = parts[1].decode().strip()
 

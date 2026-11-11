@@ -1,6 +1,12 @@
-import serial, time, sys, os, socket, threading
+import os
+import socket
+import sys
+import threading
+import time
 
-# arguments attendus : 
+import serial
+
+# arguments attendus :
 #   [emission, réception]
 #   type : [série, socket]
 #   chemin du fichier
@@ -33,22 +39,28 @@ if type != "série" and type != "socket":
 
 compte = 0
 taille_totale = 0
-perfo = 0.0 # En trames par seconde
-duree = 0.0 # En nanosecondes
+perfo = 0.0  # En trames par seconde
+duree = 0.0  # En nanosecondes
 delai = 1.0
 ref_temps = time.time_ns()
 
-trame = b''
+trame = b""
 for i in range(taille):
-    trame += b'X'
+    trame += b"X"
+
 
 def mesure_perfo():
     global compte, delai, perfo, duree
-    duree += delai   
-    perfo = compte/duree # Perfo en trames / seconde
-    debit = taille_totale/duree # Débit en octets / seconde
-    print("Perfo : {} trames par seconde. débit : {} octets par seconde. {} trames. {} secondes".format(perfo, debit, compte, duree))
+    duree += delai
+    perfo = compte / duree  # Perfo en trames / seconde
+    debit = taille_totale / duree  # Débit en octets / seconde
+    print(
+        "Perfo : {} trames par seconde. débit : {} octets par seconde. {} trames. {} secondes".format(
+            perfo, debit, compte, duree
+        )
+    )
     threading.Timer(delai, mesure_perfo).start()
+
 
 threading.Timer(delai, mesure_perfo).start()
 
@@ -61,7 +73,7 @@ if type == "série":
     if action == "émission":
         while True:
             fd.write(trame)
-            compte +=1
+            compte += 1
             taille_totale += taille
     elif action == "réception":
         while True:
@@ -69,14 +81,14 @@ if type == "série":
             if len(recv) > 0:
                 taille_totale += len(recv)
                 compte += 1
-            #print("len={}".format(len(recv)))
+            # print("len={}".format(len(recv)))
 elif type == "socket":
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(chemin)
     if action == "émission":
         while True:
             sock.send(trame)
-            compte +=1
+            compte += 1
             taille_totale += taille
     elif action == "réception":
         while True:

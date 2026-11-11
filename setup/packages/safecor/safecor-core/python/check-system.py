@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-""" Interactive system health check: verifies hardware, virtualization, and Safecor components status.
+"""Interactive system health check: verifies hardware, virtualization, and Safecor components status.
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -7,22 +7,23 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-
 import subprocess
-from rich.table import Table
-from rich.console import Console
-from rich.text import Text
-from rich.align import Align
-from rich.panel import Panel
-from rich.columns import Columns
-from safecor import Api, MqttFactory, Topics, System, topology, Constants
 from threading import Event
+
+from rich.align import Align
+from rich.columns import Columns
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+from safecor import Api, Constants, MqttFactory, System, Topics, topology
 
 console = Console()
 mqtt_client = MqttFactory.create_mqtt_client_dom0("check-system")
 api_ready = False
 components = []
 api_lock = Event()
+
 
 def on_api_ready():
     "Callback invoked when the MQTT API is connected: subscribes to component discovery."
@@ -33,7 +34,8 @@ def on_api_ready():
     api_ready = True
     api_lock.set()
 
-def on_message(topic:str, payload:dict):
+
+def on_message(topic: str, payload: dict):
     "MQTT message handler: collects discovered components and signals when all are found."
     global components
 
@@ -47,13 +49,15 @@ def on_message(topic:str, payload:dict):
     if len(components) == 3:
         api_lock.set()
 
+
 def cls():
-    """ Clears the screen """
+    """Clears the screen"""
 
     print("\033[2J\033[H", end="")
 
-def check_service(service_name:str) -> tuple[bool, str]: 
-    """ Check a service status """
+
+def check_service(service_name: str) -> tuple[bool, str]:
+    """Check a service status"""
 
     cmd = ["rc-service", service_name, "status"]
 
@@ -71,18 +75,51 @@ def check_service(service_name:str) -> tuple[bool, str]:
 
     return result.returncode == 0, status
 
-def check_kernel_parameter(param_name:str) -> bool:
-    """ Verifies whether a kernel parameter is present """
+
+def check_kernel_parameter(param_name: str) -> bool:
+    """Verifies whether a kernel parameter is present"""
 
     f = open("/proc/cmdline", "r")
     params = f.read()
 
     return param_name in params.strip().split(" ")
 
-def make_report_services() -> Table:
-    """ Create a report for all services status """
 
-    services = [ "orchestrator", "sysfs", "devfs", "dmesg", "mdev", "modules", "hwdrivers", "fsck", "root", "swap", "localmount", "hostname", "sysctl", "bootmisc", "syslog-ng", "xenstored", "mosquitto", "safecor-core-controller", "chronyd", "virtlogd", "xenconsoled", "libvirtd", "create-mqtt-tunnels", "splash", "xserver", "apparmor", "seedrng", "crond", "acpid", "hardening" ]
+def make_report_services() -> Table:
+    """Create a report for all services status"""
+
+    services = [
+        "orchestrator",
+        "sysfs",
+        "devfs",
+        "dmesg",
+        "mdev",
+        "modules",
+        "hwdrivers",
+        "fsck",
+        "root",
+        "swap",
+        "localmount",
+        "hostname",
+        "sysctl",
+        "bootmisc",
+        "syslog-ng",
+        "xenstored",
+        "mosquitto",
+        "safecor-core-controller",
+        "chronyd",
+        "virtlogd",
+        "xenconsoled",
+        "libvirtd",
+        "create-mqtt-tunnels",
+        "splash",
+        "xserver",
+        "apparmor",
+        "seedrng",
+        "crond",
+        "acpid",
+        "hardening",
+    ]
 
     table = Table(show_lines=True, box=None)
     table.add_column("Service")
@@ -90,15 +127,24 @@ def make_report_services() -> Table:
 
     for service in services:
         running, status = check_service(service)
-        table.add_row(service, Text(status), style="bold green" if running else "bold red")
+        table.add_row(
+            service, Text(status), style="bold green" if running else "bold red"
+        )
 
     return table
 
-def make_report_kernel_params() -> Table:
-    """ Create a report for the kernel parameters """
 
-    params_mandatory = [ "apparmor=1", "security=apparmor" ]
-    params_optional = [ "debug=on", "nosplash", "no_autostart", "apparmor=1", "security=apparmor" ]
+def make_report_kernel_params() -> Table:
+    """Create a report for the kernel parameters"""
+
+    params_mandatory = ["apparmor=1", "security=apparmor"]
+    params_optional = [
+        "debug=on",
+        "nosplash",
+        "no_autostart",
+        "apparmor=1",
+        "security=apparmor",
+    ]
 
     table = Table(box=None)
     table.add_column("Parameter")
@@ -106,22 +152,31 @@ def make_report_kernel_params() -> Table:
 
     for param in params_mandatory:
         present = check_kernel_parameter(param)
-        table.add_row(param, Text("Present" if present else "Absent"), style="bold green" if present else "bold red")
+        table.add_row(
+            param,
+            Text("Present" if present else "Absent"),
+            style="bold green" if present else "bold red",
+        )
 
     for param in params_optional:
         present = check_kernel_parameter(param)
-        table.add_row(param, Text("Present" if present else "Absent"), style="bold green" if present else "bold yellow")
+        table.add_row(
+            param,
+            Text("Present" if present else "Absent"),
+            style="bold green" if present else "bold yellow",
+        )
 
     return table
 
+
 def get_xen_domains():
-    """ Returns a list of tuples (Domain, state) with the result of xl list """
+    """Returns a list of tuples (Domain, state) with the result of xl list"""
 
     try:
         output = subprocess.check_output(["xl", "list"], text=True)
     except FileNotFoundError:
         raise RuntimeError("An error occured while executing xl")
-    
+
     lines = output.strip().splitlines()
     domains = []
 
@@ -147,8 +202,9 @@ def get_xen_domains():
 
     return domains
 
+
 def make_report_safecor_components() -> Table:
-    """ Create a report for Safecor components """    
+    """Create a report for Safecor components"""
 
     # Verify Domains
     domains_states = get_xen_domains()
@@ -158,21 +214,38 @@ def make_report_safecor_components() -> Table:
     table.add_column("State")
 
     for domain in topology.domain_names():
-        state = next((v for k,v in domains_states if k == domain), None)
-        running = state is not None and (state.startswith("r") or state.startswith("-b"))
-        table.add_row(domain, Text("Running" if running else "Not running"), style="bold green" if running else "bold red" )
+        state = next((v for k, v in domains_states if k == domain), None)
+        running = state is not None and (
+            state.startswith("r") or state.startswith("-b")
+        )
+        table.add_row(
+            domain,
+            Text("Running" if running else "Not running"),
+            style="bold green" if running else "bold red",
+        )
 
     # Verify components
-    components_ids = [ Constants.SAFECOR_DISK_CONTROLLER, Constants.SAFECOR_INPUT_CONTROLLER, Constants.SAFECOR_SYSTEM_CONTROLLER ]
+    components_ids = [
+        Constants.SAFECOR_DISK_CONTROLLER,
+        Constants.SAFECOR_INPUT_CONTROLLER,
+        Constants.SAFECOR_SYSTEM_CONTROLLER,
+    ]
 
     for comp_id in components_ids:
         comp = next((d for d in components if d.get("id", "") == comp_id), None)
-        table.add_row(comp_id, Text(comp.get("state", "Unknown") if comp is not None else "Not ready"), style="bold green" if comp is not None and comp.get("state") == "ready" else "bold red")
+        table.add_row(
+            comp_id,
+            Text(comp.get("state", "Unknown") if comp is not None else "Not ready"),
+            style="bold green"
+            if comp is not None and comp.get("state") == "ready"
+            else "bold red",
+        )
 
     return table
 
+
 def make_report_safecor_features() -> Table:
-    """ Create a report for Safecor features """
+    """Create a report for Safecor features"""
 
     global components
     table = Table(box=None)
@@ -186,7 +259,11 @@ def make_report_safecor_features() -> Table:
     api_lock.wait(1)
     api_lock.clear()
 
-    table.add_row("API connection", Text("OK" if api_ready else "KO"), style="bold green" if api_ready else "bold red")
+    table.add_row(
+        "API connection",
+        Text("OK" if api_ready else "KO"),
+        style="bold green" if api_ready else "bold red",
+    )
 
     # Get components
     components.clear()
@@ -194,25 +271,30 @@ def make_report_safecor_features() -> Table:
     resp_ok = api_lock.wait(2)
     api_lock.clear()
 
-    table.add_row("Components discovery", Text("OK" if resp_ok else "KO"), style="bold green" if resp_ok else "bold red")
+    table.add_row(
+        "Components discovery",
+        Text("OK" if resp_ok else "KO"),
+        style="bold green" if resp_ok else "bold red",
+    )
 
     return table
 
+
 def check_system():
-    """ Check the system state """
+    """Check the system state"""
 
     cls()
 
     services = make_report_services()
     kernel_params = make_report_kernel_params()
     safecor_features = make_report_safecor_features()
-    safecor_components = make_report_safecor_components()    
+    safecor_components = make_report_safecor_components()
 
     panels = [
         Panel(services, title="Services"),
         Panel(kernel_params, title="Kernel parameters"),
         Panel(safecor_components, title="Safecor components"),
-        Panel(safecor_features, title="Safecor features")
+        Panel(safecor_features, title="Safecor features"),
     ]
 
     console.print(Align.center(Columns(panels)))

@@ -4,10 +4,10 @@ These use the session ``emulator`` fixture provided by
 ``safecor_emulator.pytest_plugin`` (see conftest.py).
 """
 
-import time
 import threading
+import time
 
-from safecor import MqttClient, ConnectionType, Topics
+from safecor import ConnectionType, MqttClient, Topics
 from safecor_emulator import FakeInputDevice
 
 

@@ -1,16 +1,15 @@
+import io
 import logging
 import os
-import io
 import unittest
 import unittest.mock as mock
 from contextlib import redirect_stdout
 
-from safecor import Logger, Topics
 import safecor._logger as _logger
+from safecor import Logger, Topics
 
 
 class TestLoggerUnit(unittest.TestCase):
-
     def setUp(self):
         self._patcher = mock.patch.object(_logger, "System", mock.MagicMock())
         self._patcher.start()
@@ -114,7 +113,11 @@ class TestLoggerUnit(unittest.TestCase):
         self._setup()
         Logger()._Logger__on_message(
             "system/events/info",
-            {"datetime": "2025-01-01 00:00:00", "module": "mod", "description": "a logged line"}
+            {
+                "datetime": "2025-01-01 00:00:00",
+                "module": "mod",
+                "description": "a logged line",
+            },
         )
         with open(self.tmpfile, "r") as f:
             content = f.read()
@@ -127,7 +130,11 @@ class TestLoggerUnit(unittest.TestCase):
         Logger().set_log_level(logging.CRITICAL)
         Logger()._Logger__on_message(
             "system/events/info",
-            {"datetime": "2025-01-01 00:00:00", "module": "mod", "description": "filtered out"}
+            {
+                "datetime": "2025-01-01 00:00:00",
+                "module": "mod",
+                "description": "filtered out",
+            },
         )
         if os.path.exists(self.tmpfile):
             with open(self.tmpfile, "r") as f:
@@ -139,7 +146,9 @@ class TestLoggerUnit(unittest.TestCase):
         self._setup()
         with open(self.tmpfile, "wb") as f:
             f.write(b"existing log content\n")
-        Logger()._Logger__on_message(Topics.SAVE_LOG, {"disk": "out", "filename": "file.txt"})
+        Logger()._Logger__on_message(
+            Topics.SAVE_LOG, {"disk": "out", "filename": "file.txt"}
+        )
         self.mqtt.publish.assert_called()
         topic, payload = self.mqtt.publish.call_args[0]
         self.assertEqual(topic, f"{Topics.CREATE_FILE}/request")
@@ -183,8 +192,12 @@ class TestLoggerUnit(unittest.TestCase):
         self.assertEqual(Logger.loglevel_value("unknown"), logging.NOTSET)
 
     def test_loglevel_from_topic(self):
-        self.assertEqual(Logger.loglevel_from_topic("system/events/debug"), logging.DEBUG)
-        self.assertEqual(Logger.loglevel_from_topic("system/events/critical"), logging.CRITICAL)
+        self.assertEqual(
+            Logger.loglevel_from_topic("system/events/debug"), logging.DEBUG
+        )
+        self.assertEqual(
+            Logger.loglevel_from_topic("system/events/critical"), logging.CRITICAL
+        )
 
     def test_format_logline(self):
         line = Logger.format_logline("hello world")

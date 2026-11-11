@@ -2,18 +2,19 @@
 
 import os
 import signal
-import pkgutil
-from pathlib import Path
 import sys
+from pathlib import Path
 
-from PySide6.QtCore import QUrl, Qt
-from PySide6.QtGui import QKeyEvent, QGuiApplication, QFont, QFontDatabase
-from PySide6.QtQuick import QQuickView
-from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterType, qmlRegisterSingletonType, qmlRegisterUncreatableType, qmlRegisterSingletonInstance
 from app_controller import AppController
-from safecor import Api
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFontDatabase, QGuiApplication, QKeyEvent
+from PySide6.QtQml import (
+    qmlRegisterSingletonInstance,
+)
+from PySide6.QtQuick import QQuickView
 
 _view = None
+
 
 class MyView(QQuickView):
     def __init__(self):
@@ -34,18 +35,24 @@ class MyView(QQuickView):
         else:
             super().keyPressEvent(event)
 
+
 def main():
     app = QGuiApplication(sys.argv)
 
     signal.signal(signal.SIGINT, lambda *_: app.quit())
-    
+
     # Expose QML Types
-    qmlRegisterSingletonInstance(AppController, "Safecor", 1, 0, 'AppController', AppController(app))
-            
+    qmlRegisterSingletonInstance(
+        AppController, "Safecor", 1, 0, "AppController", AppController(app)
+    )
+
     app_root_path = Path(__file__).parent
 
     # Install font Google Material
-    font_file = app_root_path / "fonts/MaterialSymbolsOutlined-VariableFont_FILL,GRAD,opsz,wght.ttf"
+    font_file = (
+        app_root_path
+        / "fonts/MaterialSymbolsOutlined-VariableFont_FILL,GRAD,opsz,wght.ttf"
+    )
     font_id = QFontDatabase.addApplicationFont(font_file.as_posix())
 
     if font_id != -1:
@@ -54,10 +61,10 @@ def main():
         print(f"The font Google Material has not been installed. Font path={font_file}")
 
     view = MyView()
-    
+
     view.engine().quit.connect(app.quit)
-    view.engine().addImportPath(app_root_path / 'qml')
-    qml_file = app_root_path / 'qml/content/MainScreen.qml'
+    view.engine().addImportPath(app_root_path / "qml")
+    qml_file = app_root_path / "qml/content/MainScreen.qml"
     view.setSource(qml_file.as_uri())
     if os.getenv("DEVMODE") is None:
         view.showFullScreen()
@@ -71,5 +78,6 @@ def main():
 
     return app.exec()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

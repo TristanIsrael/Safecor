@@ -1,9 +1,9 @@
 import unittest
+
 from safecor import MqttHelper
 
 
 class TestMqttHelper(unittest.TestCase):
-
     def test_check_payload_all_keys_present(self):
         payload = {"a": 1, "b": 2, "c": 3}
         self.assertTrue(MqttHelper.check_payload(payload, ["a", "b", "c"]))

@@ -1,12 +1,11 @@
 import unittest
 import unittest.mock as mock
 
-from safecor import Debugging, Topics
 import safecor._debugging as _debugging
+from safecor import Debugging, Topics
 
 
 class TestDebugging(unittest.TestCase):
-
     def _new_debugger(self):
         d = Debugging()
         return d
@@ -14,8 +13,10 @@ class TestDebugging(unittest.TestCase):
     # --- benchmark_messaging setup ---------------------------------------
 
     def test_benchmark_messaging_subscribes(self):
-        with mock.patch.object(_debugging, "Api", mock.MagicMock()) as api, \
-             mock.patch.object(_debugging, "System", mock.MagicMock()) as system:
+        with (
+            mock.patch.object(_debugging, "Api", mock.MagicMock()) as api,
+            mock.patch.object(_debugging, "System", mock.MagicMock()) as system,
+        ):
             system.domain_name.return_value = "me"
             api.return_value.subscribe.return_value = (True, 5)
             d = self._new_debugger()
@@ -23,7 +24,9 @@ class TestDebugging(unittest.TestCase):
 
             api.return_value.add_subscription_callback.assert_called_once()
             api.return_value.add_message_callback.assert_called_once()
-            api.return_value.subscribe.assert_called_once_with(f"{Topics.PING}/me/response")
+            api.return_value.subscribe.assert_called_once_with(
+                f"{Topics.PING}/me/response"
+            )
 
     # --- on_subscribed -> do_benchmark -> iterate ------------------------
 
@@ -84,8 +87,10 @@ class TestDebugging(unittest.TestCase):
     # --- on_message_received ---------------------------------------------
 
     def test_on_message_received_appends_response(self):
-        with mock.patch.object(_debugging, "System", mock.MagicMock()) as system, \
-             mock.patch("threading.Thread", mock.MagicMock()) as thread:
+        with (
+            mock.patch.object(_debugging, "System", mock.MagicMock()) as system,
+            mock.patch("threading.Thread", mock.MagicMock()) as thread,
+        ):
             system.domain_name.return_value = "me"
             d = self._new_debugger()
             d._Debugging__ping_responses = []
@@ -99,8 +104,10 @@ class TestDebugging(unittest.TestCase):
             thread.return_value.start.assert_called_once()
 
     def test_on_message_received_ignores_other_topic(self):
-        with mock.patch.object(_debugging, "System", mock.MagicMock()) as system, \
-             mock.patch("threading.Thread", mock.MagicMock()) as thread:
+        with (
+            mock.patch.object(_debugging, "System", mock.MagicMock()) as system,
+            mock.patch("threading.Thread", mock.MagicMock()) as thread,
+        ):
             system.domain_name.return_value = "me"
             d = self._new_debugger()
             d._Debugging__ping_responses = []
@@ -140,7 +147,9 @@ class TestDebugging(unittest.TestCase):
         d = self._new_debugger()
         d._Debugging__callback_benchmark_messaging = None
         # Returns early without raising
-        d._Debugging__handle_ping_response({"data": "x", "sent_at": 1.0, "received_at": 2.0})
+        d._Debugging__handle_ping_response(
+            {"data": "x", "sent_at": 1.0, "received_at": 2.0}
+        )
 
 
 if __name__ == "__main__":

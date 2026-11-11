@@ -1,5 +1,6 @@
-from safecor_emulator import MockSysUsbController
 import threading
+
+from safecor_emulator import MockSysUsbController
 
 # Mapping of disk id -> root directory exposed as a source disk.
 SOURCE_DISKS = {"usb0": "/Applications"}  # e.g. "C:\\" on Windows

@@ -1,4 +1,4 @@
-"""  Disk Monitor
+"""Disk Monitor
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -7,14 +7,16 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import pyudev
-from . import Logger, MqttClient, Topics, NotificationFactory, DiskState
 
-class DiskMonitor():
-    """ This class monitors a folder in order to detect the addition and removal of files and folders.    
+from . import DiskState, Logger, MqttClient, NotificationFactory, Topics
+
+
+class DiskMonitor:
+    """This class monitors a folder in order to detect the addition and removal of files and folders.
 
     It works in polling mode because it needs to be compatible with XEN's 9pfs protocol which does not handle
     filesystem notifications.
-    
+
     This class must be instanciated with the mount points directory that must be monitored (for instance ``/mnt``).
 
     Use case: Storage connection
@@ -28,16 +30,16 @@ class DiskMonitor():
 
     .. seealso::
         - :class:`Topics`
-    
+
     Use case: Storage disconnection
     ===============================
 
     When an external storage is removed, the mount point is removed by the system in the mount points directory (``/mnt``).
     In such a case, the notification ``DISK_STATE`` will be sent.
 
-    """    
+    """
 
-    def __init__(self, folder:str, mqtt_client:MqttClient):
+    def __init__(self, folder: str, mqtt_client: MqttClient):
         Logger().setup("Disk monitor", mqtt_client)
         self.__disks = {}
         self.__folder = folder
@@ -45,31 +47,47 @@ class DiskMonitor():
         self.__is_started = False
 
     def device_event(self, action, device):
-        if action == 'add':
+        if action == "add":
             if device.device_type == "partition":
-                disk_name = "NONAME" if device.get('ID_FS_LABEL') is None else device.get('ID_FS_LABEL')
+                disk_name = (
+                    "NONAME"
+                    if device.get("ID_FS_LABEL") is None
+                    else device.get("ID_FS_LABEL")
+                )
                 mount_point = device.device_node
-                Logger().info(f"USB Device connected. Partition detected: {mount_point} with name {disk_name}", "Disk monitor")
+                Logger().info(
+                    f"USB Device connected. Partition detected: {mount_point} with name {disk_name}",
+                    "Disk monitor",
+                )
                 self.__disks[mount_point] = disk_name
 
-                payload = NotificationFactory.create_notification_disk_state(disk_name, DiskState.CONNECTED)
+                payload = NotificationFactory.create_notification_disk_state(
+                    disk_name, DiskState.CONNECTED
+                )
                 self.__mqtt_client.publish(Topics.DISK_STATE, payload)
-        elif action == 'remove':
+        elif action == "remove":
             if device.device_type == "partition":
                 mount_point = device.device_node
                 if mount_point in self.__disks:
-                    Logger().info(f"USB Device disconnected on {device.device_node}", "Disk monitor")
+                    Logger().info(
+                        f"USB Device disconnected on {device.device_node}",
+                        "Disk monitor",
+                    )
                     disk_name = self.__disks.pop(mount_point)
 
-                    payload = NotificationFactory.create_notification_disk_state(disk_name, DiskState.DISCONNECTED)
+                    payload = NotificationFactory.create_notification_disk_state(
+                        disk_name, DiskState.DISCONNECTED
+                    )
                     self.__mqtt_client.publish(Topics.DISK_STATE, payload)
 
     def start(self):
-        Logger().debug(f"Starting disks monitoring on mount point {self.__folder}", "Disk monitor")
+        Logger().debug(
+            f"Starting disks monitoring on mount point {self.__folder}", "Disk monitor"
+        )
 
         context = pyudev.Context()
         monitor = pyudev.Monitor.from_netlink(context)
-        monitor.filter_by(subsystem='block')
+        monitor.filter_by(subsystem="block")
 
         self.__is_started = True
 

@@ -1,4 +1,4 @@
-""" A thread-safe, bounded event bus for the operator console
+"""A thread-safe, bounded event bus for the operator console
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -10,8 +10,9 @@ import json
 import threading
 import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Deque, Dict, List, Optional
+from typing import Any
 
 #: The three event streams exposed by the bus.
 STREAMS = ("actions", "mqtt_events", "platform_log")
@@ -26,7 +27,7 @@ class Event:
     text: str
     payload: Any = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """A JSON-friendly representation (for :class:`FileRecorder`)."""
         return {
             "timestamp": self.timestamp,
@@ -41,10 +42,10 @@ class EventBus:
 
     def __init__(self, maxlen: int = 1000):
         self._maxlen = maxlen
-        self._streams: Dict[str, Deque[Event]] = {
+        self._streams: dict[str, deque[Event]] = {
             s: deque(maxlen=maxlen) for s in STREAMS
         }
-        self._subscribers: Dict[str, List[Callable[[Event], None]]] = {
+        self._subscribers: dict[str, list[Callable[[Event], None]]] = {
             s: [] for s in STREAMS
         }
         self._lock = threading.RLock()
@@ -83,14 +84,14 @@ class EventBus:
             if callback in self._subscribers[stream]:
                 self._subscribers[stream].remove(callback)
 
-    def entries(self, stream: str) -> List[Event]:
+    def entries(self, stream: str) -> list[Event]:
         """A snapshot of the entries currently held for ``stream``."""
         if stream not in self._streams:
             raise ValueError(f"Unknown stream: {stream!r}")
         with self._lock:
             return list(self._streams[stream])
 
-    def clear(self, stream: Optional[str] = None) -> None:
+    def clear(self, stream: str | None = None) -> None:
         """Clear one stream, or all of them when ``stream`` is None."""
         with self._lock:
             if stream is None:

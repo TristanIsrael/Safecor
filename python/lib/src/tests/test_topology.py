@@ -1,9 +1,9 @@
 import unittest
-from safecor import Topology, Domain, DomainType
+
+from safecor import Domain, DomainType, Topology
 
 
 class TestTopology(unittest.TestCase):
-
     def test_init_domain(self):
         domain = Domain("My domain", DomainType.BUSINESS)
 
@@ -36,9 +36,9 @@ class TestTopology(unittest.TestCase):
 
         self.assertEqual(topo.color_as_rgba("color 1"), (255, 255, 255, 255))
         self.assertEqual(topo.color_as_rgba("color 2"), (0, 0, 0, 255))
-        self.assertEqual(topo.color_as_rgba("color 3"), (0x12, 0x34, 0x56, 0xab))
-        self.assertEqual(topo.color_as_rgba("color 4"), (0xfa, 0xfa, 0xfa, 0xff))
-        self.assertEqual(topo.color_as_rgba("color 5"), (0xff, 0xff, 0xff, 0x22))
+        self.assertEqual(topo.color_as_rgba("color 3"), (0x12, 0x34, 0x56, 0xAB))
+        self.assertEqual(topo.color_as_rgba("color 4"), (0xFA, 0xFA, 0xFA, 0xFF))
+        self.assertEqual(topo.color_as_rgba("color 5"), (0xFF, 0xFF, 0xFF, 0x22))
 
         self.assertEqual(topo.color_as_hex("color 1"), "#ffffffff")
         self.assertEqual(topo.color_as_hex("color 2"), "#000000ff")
@@ -58,7 +58,7 @@ class TestTopology(unittest.TestCase):
 
     def test_domains(self):
         topo = Topology()
-        
+
         topo.add_domain(Domain("domain 1", DomainType.BUSINESS))
         topo.add_domain(Domain("domain 2", DomainType.CORE))
 

@@ -9,10 +9,10 @@ Note on ordering: ``System`` caches its values on first read, so the
 so that any cached value is consistent across tests.
 """
 
-import time
 import threading
+import time
 
-from safecor import System, Api, MqttFactory, Topics
+from safecor import Api, MqttFactory, System, Topics
 from safecor_emulator import (
     Emulator,
     default_profile,

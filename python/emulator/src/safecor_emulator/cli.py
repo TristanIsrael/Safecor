@@ -1,4 +1,4 @@
-""" Command-line entry point: ``safecor-emulator``
+"""Command-line entry point: ``safecor-emulator``
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -16,7 +16,7 @@ import time
 from safecor_emulator import Emulator, load_profile
 
 
-def _terminate_on_signal(signum, frame):  # noqa: ARG001
+def _terminate_on_signal(signum, frame):
     """Turn SIGTERM into a KeyboardInterrupt so shutdown is clean."""
     raise KeyboardInterrupt
 

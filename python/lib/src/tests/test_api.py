@@ -1,14 +1,14 @@
 import base64
 import unittest
 import unittest.mock as mock
+
 from paho.mqtt.enums import MQTTErrorCode
 
-from safecor import Api, Topics, Constants
 import safecor._api as _api
+from safecor import Api, Constants, Topics
 
 
 class TestApi(unittest.TestCase):
-
     def setUp(self):
         api = Api()
         # Reset singleton state (class-level callback lists and subscriptions)
@@ -49,7 +49,8 @@ class TestApi(unittest.TestCase):
     # --- callback registration -------------------------------------------
 
     def test_add_message_callback(self):
-        cb = lambda t, p: None
+        def cb(t, p):
+            pass
         self.api.add_message_callback(cb)
         self.api.add_message_callback(cb)  # dedupe
         self.assertEqual(self.api._Api__message_callbacks.count(cb), 1)
@@ -59,12 +60,14 @@ class TestApi(unittest.TestCase):
         self.assertEqual(self.api._Api__message_callbacks, [])
 
     def test_add_ready_callback(self):
-        cb = lambda: None
+        def cb():
+            pass
         self.api.add_ready_callback(cb)
         self.assertIn(cb, self.api._Api__ready_callbacks)
 
     def test_add_subscription_callback(self):
-        cb = lambda mid: None
+        def cb(mid):
+            pass
         self.api.add_subscription_callback(cb)
         self.assertIn(cb, self.api._Api__subscription_callbacks)
 
@@ -134,7 +137,7 @@ class TestApi(unittest.TestCase):
         self.api.copy_file("disk1", "/a.txt", "disk2")
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.COPY_FILE}/request",
-            {"disk": "disk1", "filepath": "/a.txt", "destination": "disk2"}
+            {"disk": "disk1", "filepath": "/a.txt", "destination": "disk2"},
         )
 
     def test_delete_file(self):
@@ -146,7 +149,8 @@ class TestApi(unittest.TestCase):
     def test_get_file_fingerprint(self):
         self.api.get_file_fingerprint("/a.txt", "disk1")
         self.mqtt.publish.assert_called_once_with(
-            f"{Topics.FILE_FINGERPRINT}/request", {"filepath": "/a.txt", "disk": "disk1"}
+            f"{Topics.FILE_FINGERPRINT}/request",
+            {"filepath": "/a.txt", "disk": "disk1"},
         )
 
     def test_create_file(self):
@@ -169,17 +173,23 @@ class TestApi(unittest.TestCase):
         )
 
     def test_archive_extensions_handled(self):
-        self.assertEqual(self.api.archive_extensions_handled(), Constants.ARCHIVE_EXTENSIONS_HANDLED)
+        self.assertEqual(
+            self.api.archive_extensions_handled(), Constants.ARCHIVE_EXTENSIONS_HANDLED
+        )
 
     def test_unmount(self):
         self.api.unmount("disk1")
-        self.mqtt.publish.assert_called_once_with(f"{Topics.UNMOUNT}/request", {"disk": "disk1"})
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.UNMOUNT}/request", {"disk": "disk1"}
+        )
 
     # --- discovery / info / energy ---------------------------------------
 
     def test_discover_components(self):
         self.api.discover_components()
-        self.mqtt.publish.assert_called_once_with(f"{Topics.DISCOVER_COMPONENTS}/request", {})
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.DISCOVER_COMPONENTS}/request", {}
+        )
 
     def test_publish_components(self):
         self.api.publish_components([{"id": "x"}])
@@ -197,7 +207,9 @@ class TestApi(unittest.TestCase):
 
     def test_clear_sys_usb_queues(self):
         self.api.clear_sys_usb_queues()
-        self.mqtt.publish.assert_called_once_with(f"{Topics.SYS_USB_CLEAR_QUEUES}/request", {})
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.SYS_USB_CLEAR_QUEUES}/request", {}
+        )
 
     # --- settings / languages --------------------------------------------
 
@@ -207,15 +219,21 @@ class TestApi(unittest.TestCase):
 
     def test_get_default_language(self):
         self.api.get_default_language()
-        self.mqtt.publish.assert_called_once_with(f"{Topics.DEFAULT_LANGUAGE}/request", {})
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.DEFAULT_LANGUAGE}/request", {}
+        )
 
     def test_get_current_language(self):
         self.api.get_current_language()
-        self.mqtt.publish.assert_called_once_with(f"{Topics.CURRENT_LANGUAGE}/request", {})
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.CURRENT_LANGUAGE}/request", {}
+        )
 
     def test_set_current_language(self):
         self.api.set_current_language("fr")
-        self.mqtt.publish.assert_called_once_with(f"{Topics.SET_LANGUAGE}/request", {"language": "fr"})
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.SET_LANGUAGE}/request", {"language": "fr"}
+        )
 
     # --- notifications ---------------------------------------------------
 
@@ -249,7 +267,9 @@ class TestApi(unittest.TestCase):
 
     def test_switch_gui(self):
         self.api.switch_gui("sys-gui")
-        self.mqtt.publish.assert_called_once_with(f"{Topics.SWITCH_GUI}/request", {"domain": "sys-gui"})
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.SWITCH_GUI}/request", {"domain": "sys-gui"}
+        )
 
     def test_ping(self):
         self.api.ping("target", "data")
@@ -270,14 +290,17 @@ class TestApi(unittest.TestCase):
     def test_on_message_received_shutdown(self):
         received = []
         self.api.add_shutdown_callback(lambda s, r: received.append((s, r)))
-        self.api._Api__on_message_received(f"{Topics.SHUTDOWN}/response", {"state": "accepted", "reason": ""})
+        self.api._Api__on_message_received(
+            f"{Topics.SHUTDOWN}/response", {"state": "accepted", "reason": ""}
+        )
         self.assertEqual(received, [(True, "")])
 
     def test_on_message_received_restart(self):
         received = []
         self.api.add_restart_callback(lambda d, s, r: received.append((d, s, r)))
         self.api._Api__on_message_received(
-            f"{Topics.RESTART_DOMAIN}/response", {"domain_name": "sys-usb", "state": "refused", "reason": "x"}
+            f"{Topics.RESTART_DOMAIN}/response",
+            {"domain_name": "sys-usb", "state": "refused", "reason": "x"},
         )
         self.assertEqual(received, [("sys-usb", False, "x")])
 
@@ -287,12 +310,13 @@ class TestApi(unittest.TestCase):
         )
         self.mqtt.publish.assert_called_once_with(
             f"{Topics.PING}/testdomain/response",
-            {"id": 1, "source": "testdomain", "data": "d", "sent_at": 5}
+            {"id": 1, "source": "testdomain", "data": "d", "sent_at": 5},
         )
 
     def test_on_message_received_callback_exception(self):
         def bad_cb(t, p):
             raise ValueError("boom")
+
         self.api.add_message_callback(bad_cb)
         # Must not propagate
         self.api._Api__on_message_received("some/topic", {})

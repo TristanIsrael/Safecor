@@ -1,4 +1,4 @@
-""" Manage a local Mosquitto broker for the emulated core
+"""Manage a local Mosquitto broker for the emulated core
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -50,13 +50,21 @@ class MosquittoBroker:
     broker on 1883 must be reused). See :class:`safecor_emulator.Emulator`.
     """
 
-    def __init__(self, port: int = 1883, host: str = "localhost",
-                 unix_socket: str = None, workdir: str = None):
+    def __init__(
+        self,
+        port: int = 1883,
+        host: str = "localhost",
+        unix_socket: str = None,
+        workdir: str = None,
+    ):
         self.port = port
         self.host = host
         self.unix_socket = unix_socket
-        self._workdir = Path(workdir) if workdir else Path(
-            tempfile.mkdtemp(prefix="safecor_emulator_mosq_"))
+        self._workdir = (
+            Path(workdir)
+            if workdir
+            else Path(tempfile.mkdtemp(prefix="safecor_emulator_mosq_"))
+        )
         self._proc = None
 
     @property
@@ -89,14 +97,17 @@ class MosquittoBroker:
             raise RuntimeError(
                 "The 'mosquitto' executable was not found on PATH. "
                 "Install it (e.g. 'apt-get install mosquitto') to use the "
-                "safecor emulator.")
+                "safecor emulator."
+            )
 
         config = self._write_config()
         logfile = self._workdir / "mosquitto.log"
         with open(logfile, "ab") as lf:
             self._proc = subprocess.Popen(
                 [mosquitto, "-c", str(config)],
-                stdout=lf, stderr=lf, stdin=subprocess.DEVNULL,
+                stdout=lf,
+                stderr=lf,
+                stdin=subprocess.DEVNULL,
             )
 
         deadline = time.time() + timeout
@@ -104,14 +115,17 @@ class MosquittoBroker:
             if self._proc.poll() is not None:
                 raise RuntimeError(
                     f"mosquitto exited early (code={self._proc.returncode}). "
-                    f"See log: {logfile}")
+                    f"See log: {logfile}"
+                )
             if _port_is_open(self.host, self.port):
                 return
             time.sleep(0.1)
 
         self.stop()
-        raise RuntimeError(f"mosquitto did not open port {self.port} "
-                           f"within {timeout}s. See log: {logfile}")
+        raise RuntimeError(
+            f"mosquitto did not open port {self.port} "
+            f"within {timeout}s. See log: {logfile}"
+        )
 
     def stop(self):
         """Stop the broker (best effort)."""
