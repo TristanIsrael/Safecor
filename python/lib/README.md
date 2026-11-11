@@ -1,4 +1,6 @@
-# Panoptiscan python library
+# Safecor python library
+
+The core Python package `safecor` — the control plane for Safecor-based security products.
 
 ## Dependencies
 

@@ -117,6 +117,10 @@ Each Domain is a **volatile** VM, re-created at every boot (stateless system):
   **temporary disk** mounted on `/tmp` (`temp_disk_size`).
 - Automatically attached shares: the local storage on `/mnt/storage` and the local Alpine
   package repository on `/mnt/packages`.
+- **Direct USB mount** (v2, optional): a DomU with `direct_mount` in its topology entry
+  mounts `/media/usb` directly from `sys-usb` over a vchan+sshfs channel, bypassing the
+  9p repository. Managed by `DirectMountManager` (see §4). The mount mode is controlled
+  by the `direct_mount.mode` field (`ro` or `rw`).
 - A GUI Domain (`has_gui: 1`) additionally gets a virtual keyboard, mouse and touch screen.
 
 **vCPU allocation** (Wiki `Topology.md` "Resource management"): Dom0 and `sys-usb` are not
@@ -200,6 +204,7 @@ suffixes `/request` and `/response`; **notifications** are published on a bare t
 | `system/events` | `error`, `warning`, `info`, `debug`, `set_loglevel`, `save_log` (logging) |
 | `system/info` | (request/response) system information |
 | `system/sys-usb` | `clear-queues` |
+| `system/topology` | `my_config` (request/response — DomU queries its own topology config) |
 
 ### 3.3 The three message shapes
 - **Request** — a command from a DomU to the platform (`RequestFactory` builds the payload).
@@ -252,6 +257,7 @@ every `Api().info(...)` is both logged locally and published on the `system/even
 | `_tasks_runner.py` | `TaskRunner` | Background task execution |
 | `_components_helper.py` | `ComponentsHelper` | Component discovery helpers |
 | `_debugging.py` | `Debugging` | Debugging utilities |
+| `_direct_mount_manager.py` | `DirectMountManager` | Manages the direct USB mount from sys-usb via vchan+sshfs. Runs as a standalone process in a DomU. Handles the full flow: query topology → discover domid → generate vchan script → mount via sshfs. |
 
 ## 5. The emulatable surface (what an emulator must provide)
 
@@ -295,6 +301,7 @@ The operator console lets a human **drive the inputs** (scenario) and **observe 
 | Component discovery | Dom0 + sys-usb → `DISCOVER_COMPONENTS` response | ✅ both mocks | **Observe** |
 | Ping / keepalive | Dom0 / DomU → `PING` response | ✅ (Dom0 + sys-usb respond; `Emulator.ping` round-trip) | **Control**: ping target + data; **Observe**: result |
 | Clear sys-usb queues | `sys-usb` `clear-queues` | ❌ **not implemented** in `MockSysUsb` | candidate |
+| Get my config (topology) | Dom0 → `MY_CONFIG` response (full topology: domains, direct_mount, screen, languages) | ❌ **not implemented** in `MockDom0` | candidate |
 
 ### 5.4 Logging (provided by the `Logger`)
 | Function | Real source | Emulator today | Console control / observation |
