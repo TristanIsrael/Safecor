@@ -8,13 +8,13 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-import subprocess
 import os
-import time
 import signal
+import subprocess
 import sys
+import time
 
-from . import Constants, System, Topics, MqttFactory, Logger
+from . import Constants, Logger, MqttFactory, System, Topics
 
 VCHAN_SFTP_SCRIPT_PATH = "/usr/local/bin/vchan-sftp"
 DOMID_WAIT_TIMEOUT = 60
@@ -44,7 +44,7 @@ class DirectMountManager:
         """ Initiates the direct mount flow.
 
         Steps:
-            1. Query `system/topology/my_config` to check if this domain has direct_mount.
+            1. Query my_config to check if this domain has direct_mount.
             2. Discover the sys-usb domid from xenstore (with retry).
             3. Generate the vchan-sftp client script.
             4. Mount via sshfs.
@@ -55,7 +55,9 @@ class DirectMountManager:
         # Step 1: Check if this domain has direct_mount enabled
         mount_mode = self.__query_direct_mount_config()
         if mount_mode is None:
-            Logger().info("DirectMountManager: this domain does not have direct_mount enabled")
+            Logger().info(
+                "DirectMountManager: this domain does not have direct_mount enabled"
+            )
             return False
 
         self.__mount_mode = mount_mode
@@ -201,7 +203,8 @@ class DirectMountManager:
                 return True
             else:
                 Logger().error(
-                    f"DirectMountManager: sshfs exited with code {self.__sshfs_process.returncode}"
+                    f"DirectMountManager: sshfs exited with code "
+                    f"{self.__sshfs_process.returncode}"
                 )
                 return False
         except (OSError, FileNotFoundError) as e:

@@ -971,7 +971,10 @@ class System(metaclass=SingletonMeta):
             notification).
         """
         System.__mount_watchers.append(callback)
-        if System.__mount_watcher_thread is None or not System.__mount_watcher_thread.is_alive():
+        if (
+            System.__mount_watcher_thread is None
+            or not System.__mount_watcher_thread.is_alive()
+        ):
             System.__mount_watcher_thread = threading.Thread(
                 target=self.__mount_watcher_worker, daemon=True
             )
@@ -991,7 +994,7 @@ class System(metaclass=SingletonMeta):
         return 0
 
     def __mount_watcher_worker(self) -> None:
-        """ Background thread that polls is_usb_mountpoint_ready() and fires callbacks. """
+        """ Background thread polling for mount readiness, fires callbacks. """
         while not self.is_usb_mountpoint_ready():
             time.sleep(2)
         watchers = System.__mount_watchers[:]

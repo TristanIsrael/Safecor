@@ -8,7 +8,7 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-from . import ComponentState, BenchmarkId, Topology
+from . import BenchmarkId, ComponentState, Topology
 
 class ResponseFactory():
     """ This class helps generating commands for API reponses.   
@@ -177,7 +177,7 @@ class ResponseFactory():
 
     @staticmethod
     def create_my_config(topology: Topology) -> dict:
-        """ Serializes the topology into a JSON-serializable dict for the my_config response. """
+        """ Serializes the topology for the my_config response. """
         domains = []
         for d in topology.domains:
             domains.append({

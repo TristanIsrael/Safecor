@@ -440,7 +440,7 @@ class Dom0Controller():
         XcbController().show_gui(new_gui)
 
     def __handle_my_config(self):
-        """ Handle the my_config request: return the full topology to the requesting domain.
+        """ Handle my_config: return the topology to the requesting domain.
 
         The topology is read from the module-level `topology` object which was loaded
         during Dom0Controller initialization (lazy init in __init__).
