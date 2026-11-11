@@ -1,5 +1,11 @@
-''' @brief This file contains mechanims for creating new DomUs on a Safecor system
-'''
+""" Creates all DomU Xen domains from the topology definition during system setup.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import subprocess
 import tempfile
 import os
@@ -39,6 +45,7 @@ class DomainsFactory:
     #
     @staticmethod
     def __create_domd_usb():
+        "Creates the Xen configuration file for the sys-usb Driver Domain."
         SysLogger("create-domains").info("Create configuration for Driver Domain sys-usb")
 
         conf = DomainsFactory.__create_xl_conf_sys_usb()
@@ -58,6 +65,7 @@ class DomainsFactory:
     
     @staticmethod
     def __create_business_domains():
+        "Creates Xen configuration files and provisions Alpine packages for all business Domains."
         SysLogger("create-domains").info("Create all the business Domains")
 
         topology = System.get_topology()
@@ -99,6 +107,7 @@ class DomainsFactory:
 
     @staticmethod
     def __create_xl_conf_sys_usb() -> None:
+        "Generates the xl configuration string for the sys-usb Domain."
         topology = System.get_topology()
 
         sys_usb = topology.domain("sys-usb")
@@ -136,6 +145,7 @@ vif=[]
 
     @staticmethod
     def __create_xl_conf_sys_gui() -> None:
+        "Generates the xl configuration string for the sys-gui Domain."
         topology = System.get_topology()
 
         sys_gui = topology.domain("sys-gui")
@@ -179,6 +189,7 @@ vif=[]
 
     @staticmethod
     def __create_xl_conf_domain(domain:Domain, boot_iso_location:str, share_packages:bool=True, share_storage:bool=True, share_system:bool=False):
+        "Generates the xl configuration string for a generic Domain with optional 9p shares."
         topology = System.get_topology()
         
         dom = topology.domain(domain.name)
@@ -253,6 +264,7 @@ device_model_args = [
 
     @staticmethod
     def __provision_domain(domain_name:str, main_package:str, alpine_branch:str = "virt", blacklist_conf:str = None):
+        "Provisions a Domain by creating its boot ISO from the Alpine repository."
         cmd = "/usr/lib/safecor/bin/provision-domain.sh"
 
         try:
@@ -266,6 +278,7 @@ device_model_args = [
 
     @staticmethod
     def __fetch_alpine_packages(package):
+        "Downloads Alpine packages required by a Domain into the local repository."
         # Fetch Alpine packages
         if package is None:
             SysLogger("create-domains").error("No package name provided")
@@ -286,6 +299,7 @@ device_model_args = [
 ### Private functions
     @staticmethod
     def __create_blacklist_conf(domain_name:str = "") -> str:
+        "Generates the PCI device blacklist configuration from the topology."
         SysLogger("DomainsFactory").info(f"Create blacklist.conf file for { domain_name if domain_name != "" else "standard Domain" }")
         SysLogger("DomainsFactory").warn("BLACKLIST IS DISABLED")
 

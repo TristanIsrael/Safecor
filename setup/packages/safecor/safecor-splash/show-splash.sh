@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
 
 if grep -qw "nosplash" /proc/cmdline; then
     echo "Splash explicitely disabled on kernel command line"

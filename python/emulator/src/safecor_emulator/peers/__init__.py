@@ -1,9 +1,9 @@
-"""Mock peer domains provided by the emulator.
+""" Mock peer domains provided by the emulator
 
-These stand in for the core Domains (Dom0 and sys-usb) when running Safecor or
-a Safecor-based product on a machine without Xen. They speak the same MQTT
-protocol as the real controllers but operate on local directories instead of
-real hardware.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
 """
 
 from .mock_dom0 import MockDom0Controller

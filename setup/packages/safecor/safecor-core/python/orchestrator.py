@@ -1,3 +1,11 @@
+""" Orchestrates Dom0 startup: creates MQTT tunnels, virtual input devices, and launches the core controller.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import os
 import glob
 import subprocess
@@ -390,6 +398,7 @@ def start_business_domains():
 
 
 def on_mqtt_message(topic:str, payload:dict):
+    "MQTT message callback (reserved for future use)."
     # Currently unused
     pass
 

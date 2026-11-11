@@ -1,3 +1,11 @@
+""" Creates serial-based MQTT tunnels between Dom0 and each DomU for inter-domain communication.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import subprocess
 import time
 import threading
@@ -34,6 +42,7 @@ class UnixSocketTunneler:
     '''
 
     def __init__(self, client_socket_path, broker_socket_path, n_socket:int):
+        "Initializes the tunnel with client and broker socket paths and socket index."
         self.client_socket_path = client_socket_path
         self.broker_socket_path = broker_socket_path
         self.n_socket = n_socket

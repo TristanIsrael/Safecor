@@ -1,5 +1,13 @@
+""" Safecor — core library for security products on Alpine Linux + Xen.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël (tristan.israel@alefbet.net)
+"""
+
 __author__ = "Tristan Israël (tristan.israel@alefbet.net)"
-__version__ = '1.4.0'
+__version__ = '2.0.0'
 
 import logging
 from logging import NullHandler

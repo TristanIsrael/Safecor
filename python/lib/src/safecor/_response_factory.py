@@ -1,4 +1,12 @@
-""" \author Tristan Israël """
+""" Response payload factory.
+
+Builds JSON response payloads for the Safecor MQTT protocol.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 from . import ComponentState, BenchmarkId, Topology
 

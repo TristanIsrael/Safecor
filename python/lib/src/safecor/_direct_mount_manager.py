@@ -1,4 +1,12 @@
-""" \author Tristan Israël """
+""" Direct USB mount manager.
+
+Manages the direct USB mount from sys-usb via vchan+sshfs in a DomU.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 import subprocess
 import os
@@ -113,6 +121,7 @@ class DirectMountManager:
             sys.exit(1)
 
     def __handle_signal(self, signum, frame):
+        """ Handle SIGTERM/SIGINT: stop the mount and exit. """
         Logger().info("DirectMountManager: received termination signal")
         self.stop()
         sys.exit(0)

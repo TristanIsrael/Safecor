@@ -1,19 +1,9 @@
-"""UI internationalization for the operator console.
+""" UI internationalization for the operator console
 
-The console UI (QML labels + a few controller strings) can be shown in several
-languages, switchable at runtime. Translations are Qt ``.qm`` catalogs compiled
-from the ``.ts`` sources in this directory (``pyside6-lrelease``). The ``.qm``
-files are gitignored build artifacts, so :func:`ensure_catalogs` compiles any
-that are missing (self-healing a fresh checkout or a wheel built without them);
-this module also locates and loads them. The
-:class:`~safecor_emulator.console.ConsoleController` owns the
-:class:`QTranslator` lifecycle (install / swap / remove) so the QML re-translates
-live when the operator changes the interface language.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-English is the source language: its catalog carries empty translations and simply
-falls back to the source strings, so the mechanism is uniform across languages.
-
-This module requires PySide6 (the optional ``gui`` extra).
+.. author:: Tristan Israël
 """
 
 import shutil

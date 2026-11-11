@@ -1,4 +1,10 @@
-""" \author Tristan Israël """
+""" French keyboard layout mapping
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 import evdev
 from evdev import ecodes

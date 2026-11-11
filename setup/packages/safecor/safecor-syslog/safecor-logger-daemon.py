@@ -1,3 +1,11 @@
+""" Daemon that receives log messages over a Unix socket and publishes them to the Safecor MQTT logging facility.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import os
 import socket
 import logging

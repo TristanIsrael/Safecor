@@ -1,4 +1,10 @@
-""" \author Tristan Israël """
+""" USB passthrough controller (Dom0 side)
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 import time
 import threading

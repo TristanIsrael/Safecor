@@ -1,20 +1,9 @@
-"""Safecor emulation and testing infrastructure.
+""" Safecor emulation and testing infrastructure
 
-This package lets you run Safecor, and any Safecor-based product, on a
-machine that has no Xen, no HVM and no real hardware. It provides:
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-- :class:`SystemProfile` / :func:`load_profile` -- the hardware/OS
-  characteristics used to drive the fakes.
-- :func:`install_fakes` / :func:`uninstall_fakes` -- the OS/hardware fakes,
-  installed from the outside (the ``safecor`` library is left untouched).
-- :class:`MosquittoBroker` -- a local Mosquitto broker managed for the test.
-- :class:`FakeInputDevice` -- produces keyboard/mouse events in the XenBus wire
-  format (for input injection without real devices).
-- :class:`Emulator` -- the orchestrator that brings up the broker + the mock
-  core domains (Dom0 + sys-usb) + the fakes. Use it as a context manager in
-  tests, or run the ``safecor-emulator`` command to start it standalone. It
-  supports USB hot-plug (:meth:`Emulator.attach_disk` / :meth:`Emulator.detach_disk`)
-  and input injection (:meth:`Emulator.inject_key` / :meth:`Emulator.mouse_click`).
+.. author:: Tristan Israël
 """
 
 from .activate import apply_dmi, install_fakes, uninstall_fakes

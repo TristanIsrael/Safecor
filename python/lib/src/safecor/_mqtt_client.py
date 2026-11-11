@@ -1,10 +1,9 @@
-""" MQTT client module.
+""" MQTT client module
 
-This module provides the MQTT transports (UNIX domain socket, serial port,
-TCP on localhost for debugging) and the :class:`MqttClient` used to
-exchange messages over MQTT.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-\author Tristan Israël
+.. author:: Tristan Israël
 """
 
 from enum import StrEnum

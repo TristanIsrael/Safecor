@@ -1,4 +1,10 @@
-""" \author Tristan Israël """
+""" Safecor logger with MQTT event publishing
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 # ruff: noqa: I001
 import base64
 from datetime import datetime

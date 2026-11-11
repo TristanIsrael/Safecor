@@ -1,3 +1,11 @@
+""" Generates the boot splash screen image with product logo and background color from the topology.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 from PIL import Image
 import sys
 import os
@@ -6,6 +14,7 @@ from safecor import SysLogger, System
 LOGO_FILEPATH = "/boot/splash.png"
 
 def create_splash(rotate:bool, filepath_pattern:str) -> Image:
+    "Creates the splash screen image with the product logo centered on the topology background color."
     screen = System.get_framebuffer_dimension()
     screen_width = screen[0] if screen is not None else 800
     screen_height = screen[1] if screen is not None else 600
@@ -36,6 +45,7 @@ def create_splash(rotate:bool, filepath_pattern:str) -> Image:
     save_splash(splash, filepath_pattern, rotate)
 
 def save_splash(splash:Image, dest:str, rotate:bool):
+    "Saves the splash image as both PNG and PPM files to the destination path."
     # dest does not contain the extension
 
     SysLogger("Create splash").info("Create PNG file")

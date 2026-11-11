@@ -1,4 +1,8 @@
 #!/sbin/openrc-run
+# Start per-DomU vchan+SFTP channels on sys-usb for direct USB mount.
+#
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
 
 name="safecor-vchan-sftp"
 command_background="yes"

@@ -1,4 +1,10 @@
-""" \author Tristan Israël """
+""" Mouse input handling
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 class MouseButton():
     """ This class codes the buttons of a mouse """

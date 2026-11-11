@@ -1,4 +1,9 @@
 #!/bin/sh
+# Setup the direct USB mount in a DomU via vchan+sshfs.
+# Queries the topology, generates the vchan client script, and mounts /media/usb.
+#
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
 
 SCRIPT_NAME=$(basename "$0")
 MOUNT_POINT="/media/usb"

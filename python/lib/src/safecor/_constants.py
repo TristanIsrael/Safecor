@@ -1,4 +1,10 @@
-""" \author Tristan Israël """
+""" Safecor constants
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 from enum import Enum
 

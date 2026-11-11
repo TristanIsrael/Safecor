@@ -1,3 +1,11 @@
+""" Entry point for the sys-usb Domain controller: manages USB storage passthrough and MQTT notifications.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 from safecor import SysUsbController, MqttFactory
 import threading
 

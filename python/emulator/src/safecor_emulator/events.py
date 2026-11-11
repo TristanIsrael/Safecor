@@ -1,16 +1,9 @@
-"""A thread-safe, bounded event bus for the operator console.
+""" A thread-safe, bounded event bus for the operator console
 
-The console observes three independent streams:
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-- ``actions``      -- scenario steps triggered by the operator,
-- ``mqtt_events``  -- requests handled / notifications published by the mocks,
-- ``platform_log`` -- captured platform log lines.
-
-Every entry is an :class:`Event` (timestamp, source, human text, raw payload).
-Each stream is a fixed-size ring buffer, so a long session cannot grow memory
-without bound. Consumers subscribe a callback, invoked (on the publishing
-thread) for every new entry. The bus is pure Python: it has no Qt dependency,
-so it can be tested headlessly.
+.. author:: Tristan Israël
 """
 
 import json

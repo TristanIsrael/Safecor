@@ -1,3 +1,6 @@
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
 # Contributor:
 # Maintainer: Tristan Israël <tristan.israel@alefbet.net>
 pkgname=safecor-splash

@@ -1,15 +1,9 @@
-"""The operator console controller.
+""" The operator console controller
 
-A Qt ``QObject`` that bridges the QML views and the in-process
-:class:`~safecor_emulator.Emulator`. It owns the live state (running, broker,
-disks, energy, language, restarted domains), observes the three event streams
-(via the shared :class:`~safecor_emulator.events.EventBus`) and exposes the
-scenario controls as slots.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-The QML never touches the :class:`~safecor_emulator.Emulator` directly; this
-controller is the single bridge (Saphir / demo2 convention).
-
-This module requires PySide6 (the optional ``gui`` extra).
+.. author:: Tristan Israël
 """
 
 import os

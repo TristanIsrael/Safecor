@@ -1,9 +1,9 @@
-"""The system profile drives the OS/hardware fakes.
+""" The system profile drives the OS/hardware fakes
 
-A profile is a plain set of values describing the (fake) machine: its UUID,
-CPU count, screen size/rotation, memory, CPU frequency, kernel command line,
-DMI keys and so on. Providing a profile is what makes the emulated system
-deterministic and independent of the host it runs on.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
 """
 
 import json

@@ -1,19 +1,9 @@
-"""Load and interpret a product ``topology.json`` for the emulated environment.
+""" Load and interpret a product ``topology.json`` for the emulated environment
 
-A product topology file (see the Safecor *Topology* documentation) defines the
-product, the screen, USB, the vCPU groups, the business Domains and the
-optional hardware *configurations*. The emulated environment derives from it:
-the console and the :class:`~safecor_emulator.Emulator` read it to know what to
-emulate, and the file is served to the product under test at
-``/etc/safecor/topology.json``.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-This module also resolves the DMI values that make
-:func:`safecor.ConfigurationHelper.apply_configuration` match a *selected*
-configuration (or match none, for the standard configuration).
-
-The parsing here mirrors the library's own (see ``System.get_topology_struct``
-and ``System.__parse_topology``) but reads the raw file structure directly, so
-it does not require the fakes to be installed.
+.. author:: Tristan Israël
 """
 
 import json

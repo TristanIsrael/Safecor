@@ -1,4 +1,13 @@
-""" \author Tristan Israël """
+""" Topology model.
+
+Defines the Topology, Domain, Screen, and Pci data classes that represent
+the parsed system topology from /etc/safecor/topology.json.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 from typing import List
 from enum import Enum

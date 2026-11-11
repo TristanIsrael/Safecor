@@ -1,13 +1,9 @@
-"""Mock sys-usb controller.
+""" Mock sys-usb controller
 
-Stands in for the ``sys-usb`` core Domain when running on a machine without
-Xen. It answers the USB/disk MQTT commands (list disks, list/read/copy/create
-files, mount/unmount) and operates on local directories given at start instead
-of real USB hardware.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-When an :class:`~safecor_emulator.events.EventBus` is provided, every handled
-request, published response and log line is also published to it (observation
-only -- the behaviour is unchanged).
+.. author:: Tristan Israël
 """
 
 import base64

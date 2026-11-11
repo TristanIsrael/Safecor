@@ -1,10 +1,9 @@
-"""Manage a local Mosquitto broker for the emulated core.
+""" Manage a local Mosquitto broker for the emulated core
 
-The emulator uses an external ``mosquitto`` process (chosen over an in-process
-broker). The ``safecor`` MQTT client connects to the default MQTT port (1883)
-in TCP mode, so the emulated broker must run on that port. The orchestrator
-(:class:`safecor_emulator.Emulator`) reuses a broker already listening on 1883
-and only starts its own otherwise.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
 """
 
 import os

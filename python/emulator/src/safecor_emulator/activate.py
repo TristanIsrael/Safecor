@@ -1,19 +1,9 @@
-"""Install OS/hardware fakes for the ``safecor`` library.
+""" Install OS/hardware fakes for the ``safecor`` library
 
-The design goal is to keep the ``safecor`` library completely untouched. The
-fakes are installed *from the outside* by patching the module-level OS
-touch-points of ``safecor._system``:
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-- ``psutil``            -- CPU / memory / boot-time metrics
-- ``LibvirtHelper``     -- CPU count and domain list
-- ``subprocess.run``    -- the ``xenstore-read`` screen size/rotation queries
-- ``open``              -- sysfs reads (``product_uuid``, ``fb0``) and the
-                           ``/proc/cmdline`` / ``/proc/mounts`` files
-
-Every patch is recorded and fully reversed by :func:`uninstall_fakes`, so the
-same process can run with or without emulation.
-
-The fakes are driven by a plain ``dict`` (see :meth:`SystemProfile.as_dict`).
+.. author:: Tristan Israël
 """
 
 import builtins

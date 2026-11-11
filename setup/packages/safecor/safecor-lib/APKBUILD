@@ -1,7 +1,10 @@
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
 # Contributor:
 # Maintainer: Tristan Isra..l <tristan.israel@alefbet.net>
 pkgname=safecor-lib
-pkgver=1.4
+pkgver=2.0
 pkgrel=0
 pkgdesc="Safecor - Python library"
 url="https://www.alefbet.net/"

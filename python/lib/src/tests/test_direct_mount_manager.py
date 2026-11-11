@@ -1,3 +1,11 @@
+""" Unit tests for DirectMountManager.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import unittest
 from unittest.mock import patch, MagicMock, PropertyMock
 import sys

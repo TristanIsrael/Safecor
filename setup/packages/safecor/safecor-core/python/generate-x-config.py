@@ -1,8 +1,17 @@
+""" Generates the Xorg monitor configuration (resolution and rotation) from the Safecor topology.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import json
 from safecor import SysLogger, System
 
 
 def angle_to_rotate(angle):
+    "Translates a rotation angle (0, 90, -90, 180) to the corresponding Xorg rotation value."
     mapping = {
         0: "normal",
         90: "left",
@@ -13,6 +22,7 @@ def angle_to_rotate(angle):
 
 
 def write_monitor_section(angle:int) -> None:
+    "Writes the Xorg monitor configuration file with resolution and rotation settings."
     filepath = "/etc/X11/xorg.conf.d/10-monitor.conf"
 
     # Read current resolution

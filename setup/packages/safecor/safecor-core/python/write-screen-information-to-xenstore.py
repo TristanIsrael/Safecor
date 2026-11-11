@@ -1,3 +1,11 @@
+""" Writes screen resolution and rotation to Xenstore so DomUs can query display parameters.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import subprocess
 import sys
 from safecor import System, SysLogger

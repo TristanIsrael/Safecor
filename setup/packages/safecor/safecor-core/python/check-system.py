@@ -1,4 +1,12 @@
 #!/usr/bin/python3
+""" Interactive system health check: verifies hardware, virtualization, and Safecor components status.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 
 import subprocess
 from rich.table import Table
@@ -17,6 +25,7 @@ components = []
 api_lock = Event()
 
 def on_api_ready():
+    "Callback invoked when the MQTT API is connected: subscribes to component discovery."
     global api_ready
 
     Api().subscribe(f"{Topics.DISCOVER_COMPONENTS}/response")
@@ -25,6 +34,7 @@ def on_api_ready():
     api_lock.set()
 
 def on_message(topic:str, payload:dict):
+    "MQTT message handler: collects discovered components and signals when all are found."
     global components
 
     if topic == f"{Topics.DISCOVER_COMPONENTS}/response":

@@ -1,4 +1,7 @@
 #!/sbin/openrc-run
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
 
 # This files contains kernel parameters definitions applied with sysctl 
 # It only contains parameters which depend on the DEBUG state of the system

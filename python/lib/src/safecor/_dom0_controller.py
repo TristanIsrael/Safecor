@@ -1,4 +1,14 @@
-""" \author Tristan Israël """
+""" Dom0 controller.
+
+Handles Dom0-side MQTT commands: file repository, shutdown, restart domain,
+system info, energy state, component discovery, ping, settings, GUI switch,
+and topology queries.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 import threading
 import subprocess

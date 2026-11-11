@@ -1,4 +1,8 @@
 #!/sbin/openrc-run
+# Start/stop the DirectMountManager process in a DomU.
+#
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
 
 name="direct-mount"
 pidfile="/var/run/safecor-direct-mount.pid"

@@ -1,24 +1,9 @@
-"""Command-line entry point: ``safecor-emulator``.
+""" Command-line entry point: ``safecor-emulator``
 
-Starts the emulated Safecor core (broker + mock Dom0 + mock sys-usb) and keeps
-it running so that a Safecor-based product can be launched in another terminal
-against it. Use ``--profile`` / ``--disk`` / ``--storage``
-to shape the emulated system.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-Example::
-
-    safecor-emulator --disk usb0=/path/to/files
-
-Then, in another terminal, run your product (e.g. the demo2 app). Press Ctrl+C
-here to stop the emulator.
-
-With ``--gui``, a QML operator console is shown instead of the headless core; it
-drives a topology-shaped emulator. ``--topology`` is optional: without it the
-console starts on the standard environment and a topology can be loaded later
-from the Setup panel. It needs the optional ``gui`` extra (PySide6)::
-
-    safecor-emulator --gui
-    safecor-emulator --gui --topology /path/to/topology.json
+.. author:: Tristan Israël
 """
 
 import argparse

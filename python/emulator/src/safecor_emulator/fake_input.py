@@ -1,17 +1,9 @@
-"""Fake input device for the emulator.
+""" Fake input device for the emulator
 
-On real hardware, keyboard/mouse events are read by ``safecor.InputsDaemon``
-from a XenBus serial socket and forwarded as a *msgpack-packed* 4-tuple
-``[input_type, evdev_type, evdev_code, evdev_value]`` terminated by a newline
-(see ``InputsDaemon.__serialize_event``). There is no MQTT topic for input.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-This class is the software stand-in for that input channel on a machine without
-Xen. It serializes events with the *exact same wire format* and writes them to a
-local file, which can then be consumed by whatever stands in for the DomU input
-socket (e.g. point ``Constants.DOMU_INPUT_SOCKET_FILEPATH`` at that file).
-
-It has **no hard dependency** on ``evdev``/``ecodes`` (which are optional): the
-common Linux input event codes are defined here directly.
+.. author:: Tristan Israël
 """
 
 import os

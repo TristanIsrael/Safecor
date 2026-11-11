@@ -1,4 +1,10 @@
-""" \author Tristan Israël """
+""" API helper: bridges API calls to MQTT
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 from . import DiskState
 

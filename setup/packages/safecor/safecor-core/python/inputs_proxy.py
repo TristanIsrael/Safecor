@@ -1,3 +1,11 @@
+""" Proxies input events (keyboard, mouse, touch) from sys-usb to virtual input devices in Dom0.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import threading
 import socket
 import msgpack
@@ -52,6 +60,7 @@ class InputsProxy:
         self.__xenstore.monitor(XsDomain.System.value, XsKey.InputFocus.value, "inputs-focus", self.__on_focus_changed)
 
     def __del__(self):
+        "Destructor: stops the input proxy when the object is garbage collected."
         self.stop()
 
     def stop(self):

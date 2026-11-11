@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
 
 DEBUG_ON=$(xenstore-read /local/domain/system/debug_on)
 

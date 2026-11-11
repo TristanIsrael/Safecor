@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
 
 LABEL=$(printf "%b" "$ID_FS_LABEL_ENC")
 # Si le label est vide, utiliser "NONAME"

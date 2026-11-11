@@ -1,3 +1,11 @@
+""" Udev helper: publishes a disk-added notification over MQTT when a USB storage device is plugged in.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import sys, threading
 from safecor import Api, MqttFactory
 
@@ -9,6 +17,7 @@ name = sys.argv[1]
 
 api_ready = threading.Event()
 def on_api_connected():
+    """ Callback invoked when the MQTT API connection is established. """
     api_ready.set()
 
 mqtt_client = MqttFactory.create_mqtt_client_domu("notify-disk-added")

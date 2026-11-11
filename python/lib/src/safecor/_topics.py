@@ -1,4 +1,12 @@
-""" \author Tristan Israël """
+""" MQTT topic definitions.
+
+Defines all MQTT topics used by the Safecor protocol.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 class Topics():
     """ This class defines MQTT topics for the API """

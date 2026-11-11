@@ -1,4 +1,13 @@
-""" \author Tristan Israël """
+""" System state and topology management.
+
+Provides the System singleton (screen, UUID, CPU, memory, settings, domain
+identification) and the module-level topology global.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
 
 import subprocess
 import platform

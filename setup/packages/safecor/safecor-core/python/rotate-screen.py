@@ -1,3 +1,11 @@
+""" Applies the screen rotation defined in the topology to the Xorg framebuffer.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import subprocess
 import sys
 from safecor import SysLogger, System

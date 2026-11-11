@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
 
 # This file contains kernel parameters and shell instructions to harden 
 # the sys-usb domain

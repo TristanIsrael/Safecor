@@ -1,16 +1,9 @@
-"""QML bootstrap for the operator console (the ``--gui`` entry point).
+""" QML bootstrap for the operator console (the ``--gui`` entry point)
 
-Creates a :class:`QGuiApplication`, registers the
-:class:`~safecor_emulator.console.ConsoleController` as a QML singleton and
-loads the QML window. This is the graphical counterpart of the headless CLI:
-without ``--gui`` the emulator runs headless and this module is never imported.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-The emulator is built (so the topology-driven environment is known to the views
-before start) but **not** started; the operator starts it from the *Setup*
-panel. The QML never touches the :class:`~safecor_emulator.Emulator` directly —
-the controller is the single bridge (Saphir / demo2 convention).
-
-This module requires PySide6 (the optional ``gui`` extra).
+.. author:: Tristan Israël
 """
 
 import os

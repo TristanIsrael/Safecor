@@ -1,3 +1,11 @@
+"""  Xenstore
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
+"""
+
 import xen.lowlevel.xs as xapi
 from threading import Thread
 from enum import Enum

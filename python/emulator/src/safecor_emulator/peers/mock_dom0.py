@@ -1,14 +1,9 @@
-"""Mock Dom0 controller.
+""" Mock Dom0 controller
 
-Stands in for the privileged management domain (Dom0) when running on a machine
-without Xen. It answers the MQTT commands the Dom0 controller would normally
-handle (file deletion from the repository, system information, energy state,
-default language, domain restart, shutdown, GUI ready, GUI switch) and operates
-on a local directory instead of the real repository.
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
 
-When an :class:`~safecor_emulator.events.EventBus` is provided, every handled
-request, published response and log line is also published to it (observation
-only -- the behaviour is unchanged).
+.. author:: Tristan Israël
 """
 
 from pathlib import Path
