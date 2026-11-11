@@ -145,3 +145,6 @@ bin/*.*
 ### Xorg conf files ###
 !**/xorg.conf.d
 **/.coverage
+setup/packages/safecor/safecor-core/incubator/xen-test.qcow2
+setup/packages/safecor/safecor-core/incubator/xen-uefi-vars.fd
+/setup/packages/safecor/safecor-core/incubator/bin.nosync
