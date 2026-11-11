@@ -31,6 +31,10 @@ chgrp safecor /dev/hvc*
 rc-update add safecor-sys-usb-controller
 rc-service safecor-sys-usb-controller start
 
+# Start vchan SFTP server for direct mount
+rc-update add safecor-vchan-sftp
+rc-service safecor-vchan-sftp start
+
 # Manage udev
 echo Start udev service
 rc-update add udev boot
