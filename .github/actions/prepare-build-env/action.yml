@@ -49,6 +49,10 @@ runs:
       run: |
         echo "Register the official repository: ${{ inputs.repository-url }}"
         echo "${{ inputs.repository-url }}" >> /etc/apk/repositories
+        if [ "${{ inputs.repository-url }}" != "https://www.alefbet.net/github/safecor" ]; then
+          echo "Also registering stable repository for shared dependencies"
+          echo "https://www.alefbet.net/github/safecor" >> /etc/apk/repositories
+        fi
 
     - shell: sh
       run: |
