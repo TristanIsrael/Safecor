@@ -145,3 +145,4 @@ bin/*.*
 ### Xorg conf files ###
 !**/xorg.conf.d
 **/.coverage
+/setup/packages/safecor/safecor-lib/src
