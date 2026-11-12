@@ -10,7 +10,7 @@ pkgver=2.0
 pkgrel=0
 pkgdesc="Safecor - Core of the system"
 url="https://www.alefbet.net/"
-arch="noarch"
+arch="all"
 license="MIT"
 depends="openrc xorriso safecor-lib xen xen-hypervisor qemu-system-x86_64 qemu-ui-gtk seabios abuild pciutils xorg-server 
 gtk+3.0 sdl2 sdl2_image mosquitto mosquitto-openrc mosquitto-clients socat py3-evdev py3-udev feh jq xdotool syslog-ng xrandr font-terminus 
