@@ -50,8 +50,7 @@ runs:
     - shell: sh
       run: |
         echo "Register the official repository: ${{ inputs.repository-url }}"
-        echo "${{ inputs.repository-url }} x86_64" >> /etc/apk/repositories
-        echo "${{ inputs.repository-url }} noarch" >> /etc/apk/repositories
+        echo "${{ inputs.repository-url }}" >> /etc/apk/repositories
 
     - shell: sh
       run: |
