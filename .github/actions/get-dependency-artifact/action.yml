@@ -16,7 +16,7 @@ runs:
         name: ${{ github.event.inputs.name }}
         run-id: ${{ github.event.workflow_run.id }}
 
-    - name: Uncompress and copy packages 
+    - name: Uncompress and copy packages
       shell: sh
       env:
         FILENAME: ${{ inputs.name }}
@@ -26,14 +26,27 @@ runs:
           cd "$FILENAME"
         fi
         mkdir -p /home/builder/packages/safecor/x86_64
-        cp *.apk /home/builder/packages/safecor/x86_64
+        mkdir -p /home/builder/packages/safecor/noarch
+        # Copy packages to the correct architecture directory
+        find . -name "*.apk" -exec sh -c '
+          if echo "$1" | grep -q "/noarch/"; then
+            cp "$1" /home/builder/packages/safecor/noarch/
+          else
+            cp "$1" /home/builder/packages/safecor/x86_64/
+          fi
+        ' _ {} \;
 
     - name: Rebuild and sign the APK index
       shell: sh
-      run: |        
-        cd /home/builder/packages/safecor/x86_64/
-        apk index -d Safecor -o APKINDEX.tar.gz *.apk
-        abuild-sign -k /home/builder/.abuild/safecor.rsa -p /etc/apk/keys/safecor.rsa.pub APKINDEX.tar.gz            
+      run: |
+        for ARCH in x86_64 noarch; do
+          DIR="/home/builder/packages/safecor/${ARCH}"
+          if ls "${DIR}"/*.apk 1>/dev/null 2>&1; then
+            cd "${DIR}"
+            apk index -d Safecor -o APKINDEX.tar.gz *.apk
+            abuild-sign -k /home/builder/.abuild/safecor.rsa -p /etc/apk/keys/safecor.rsa.pub APKINDEX.tar.gz
+          fi
+        done
 
     - name: Update repository configuration
       shell: sh
@@ -46,7 +59,4 @@ runs:
           echo "Adding local repository"
           echo "$LINE" | sudo tee -a $FILE
         fi
-
-        cd /home/builder/packages/safecor
-        ln -s x86_64 noarch
         sudo apk update

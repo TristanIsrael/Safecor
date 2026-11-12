@@ -484,7 +484,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/py3-paho-mqtt2*.apk
+          filepath: /home/builder/packages/safecor/noarch/py3-paho-mqtt2*.apk
 
   build-fuse-archive:
     needs: [ prepare ]
@@ -548,7 +548,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-lib*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-lib*.apk
 
   build-alpine-virt-kernel:
     needs: [ prepare ]
@@ -688,7 +688,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/alpine-iso*.apk 
+          filepath: /home/builder/packages/safecor/noarch/alpine-iso*.apk 
 
   build-lxc-container-debian:
     needs: [ prepare ]
@@ -805,7 +805,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-core*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-core*.apk
 
   build-safecor-hardening:
     needs: [ prepare ]
@@ -839,7 +839,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-hardening*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-hardening*.apk
 
   build-safecor-syslog:
     needs: [ prepare ]
@@ -873,7 +873,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-syslog*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-syslog*.apk
 
   build-safecor-splash:
     needs: [ prepare ]
@@ -905,7 +905,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-splash*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-splash*.apk
 
   build-safecor-sys-usb:
     needs: [ prepare ]
@@ -938,7 +938,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-sys-usb*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-sys-usb*.apk
 
   build-safecor-gui-base:
     needs: [ prepare ]
@@ -971,7 +971,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-gui-base*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-gui-base*.apk
 
   build-safecor-domu-base:
     needs: [ prepare ]
@@ -1004,7 +1004,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-domu-base*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-domu-base*.apk
 
   build-app-tests:
     #needs: [ prepare, build-safecor-lib, build-safecor-core, build-safecor-sys-usb, build-safecor-gui-base ]
@@ -1036,7 +1036,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-tests-gui*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-tests-gui*.apk
 
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -1049,7 +1049,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/
+          filepath: /home/builder/packages/safecor/noarch/
 
   build-app-diag:
     needs: [ prepare ]
@@ -1080,7 +1080,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/safecor/x86_64/safecor-diag*.apk
+          filepath: /home/builder/packages/safecor/noarch/safecor-diag*.apk
 
   build-iso-diag:
     needs: [ prepare, build-app-diag ]

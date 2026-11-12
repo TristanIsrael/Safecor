@@ -29,6 +29,7 @@ runs:
         echo "Prepare directories"
         chown -R builder:builder .
         mkdir -p /home/builder/packages/safecor/x86_64
+        mkdir -p /home/builder/packages/safecor/noarch
         chown -R builder:builder /home/builder/packages
         chmod -R 770 /home/builder/packages
 
@@ -49,10 +50,6 @@ runs:
       run: |
         echo "Register the official repository: ${{ inputs.repository-url }}"
         echo "${{ inputs.repository-url }}" >> /etc/apk/repositories
-        if [ "${{ inputs.repository-url }}" != "https://www.alefbet.net/github/safecor" ]; then
-          echo "Also registering stable repository for shared dependencies"
-          echo "https://www.alefbet.net/github/safecor" >> /etc/apk/repositories
-        fi
 
     - shell: sh
       run: |

@@ -60,7 +60,13 @@ runs:
         else
           REPO_BASE="/var/www/www.alefbet.net/github/safecor/edge"
         fi
-        rsync -av -e 'ssh -p 222 -4 -i ssh/id_rsa -o StrictHostKeyChecking=no' ${{ inputs.filepath }} github-safecor@alefbet.net:${REPO_BASE}/x86_64/
+        if echo "${{ inputs.filepath }}" | grep -q "/noarch/"; then
+          TARGET_ARCH="noarch"
+        else
+          TARGET_ARCH="x86_64"
+        fi
+        echo "Publishing to arch: $TARGET_ARCH"
+        rsync -av -e 'ssh -p 222 -4 -i ssh/id_rsa -o StrictHostKeyChecking=no' ${{ inputs.filepath }} github-safecor@alefbet.net:${REPO_BASE}/${TARGET_ARCH}/
 
     - name: Copy files to the server
       if: ${{ inputs.is_package != 'true' }}
@@ -80,16 +86,22 @@ runs:
         ssh -p 222 -4 -i ssh/id_rsa -o StrictHostKeyChecking=no github-safecor@alefbet.net <<'EOF'
           set -e
           BRANCH="${{ inputs.branch }}"
+          FILEPATH="${{ inputs.filepath }}"
           if [ "$BRANCH" == "main" ]; then
             REPO_BASE="/var/www/www.alefbet.net/github/safecor"
           else
             REPO_BASE="/var/www/www.alefbet.net/github/safecor/edge"
           fi
-          docker run --rm -v ${REPO_BASE}/x86_64:/mnt/apk -v /home/github-safecor:/mnt/keys alpine:3.20 sh -c "
+          if echo "$FILEPATH" | grep -q "/noarch/"; then
+            TARGET_ARCH="noarch"
+          else
+            TARGET_ARCH="x86_64"
+          fi
+          docker run --rm -v ${REPO_BASE}/${TARGET_ARCH}:/mnt/apk -v /home/github-safecor:/mnt/keys alpine:3.20 sh -c "
             apk add --no-cache alpine-sdk
             cp /mnt/keys/safecor.rsa.pub /etc/apk/keys
             cd /mnt/apk
-            echo 'Building APK index...'
+            echo 'Building APK index for ${TARGET_ARCH}...'
             apk index -d Safecor -o APKINDEX.tar.gz *.apk
             echo 'Signing APK index...'
             abuild-sign -k /mnt/keys/safecor.rsa -p /mnt/keys/safecor.rsa.pub APKINDEX.tar.gz
