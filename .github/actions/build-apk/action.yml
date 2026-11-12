@@ -24,6 +24,16 @@ runs:
         #sudo -u builder gitbranch="$GITHUB_REF_NAME" gitrepo="${{ github.event.repository.name }}" abuild checksum
         sudo -u builder CHECK=1 gitbranch="$GITHUB_REF_NAME" gitrepo="${{ github.event.repository.name }}" abuild -r 
 
+    - name: Move package to correct architecture directory
+      working-directory: ${{ inputs.working-dir }}
+      shell: sh
+      run: |
+        PKG_ARCH=$(grep '^arch=' APKBUILD | head -1 | cut -d'"' -f2)
+        if [ "$PKG_ARCH" == "noarch" ]; then
+          echo "Package arch is noarch, moving to noarch/ directory"
+          mv /home/builder/packages/safecor/x86_64/*.apk /home/builder/packages/safecor/noarch/
+        fi
+
     - name: Upload packages
       uses: actions/upload-artifact@v4
       with:
