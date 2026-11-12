@@ -139,7 +139,7 @@ configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remainin
 
 **Provisioning** (one-time, at Dom0 install):
 1. `finish-core-init.sh` creates `/usr/lib/safecor/{storage,packages}`, generates the PGP key,
-   builds the local signed apk repository, patches QEMU, extracts boot files.
+   builds the local signed apk repository, patches QEMU (for GUI domains).
 2. `create-domains.py` (`DomainsFactory.create_domains()`) for each domain in the topology:
    - `provision-domain.sh` — untars `domu.apkovl.tar.gz`, patches `etc/apk/world` + hostname,
      creates a 1 MB ext4 **config disk** (`/usr/lib/safecor/system/<name>-config.img`).
@@ -157,11 +157,13 @@ configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remainin
    - For GUI domains: reads screen geometry from xenstore, positions the QEMU GTK window.
 
 **DomU boot** (inside the guest):
-1. Boots from the shared `alpine-virt.iso` (CD-ROM) + config disk (apkovl).
-2. OpenRC `localmount` mounts the 9p shares from `/etc/fstab`.
-3. `safecor-core-init` (boot runlevel) fixes permissions, runs `apk add` from the 9p repo.
-4. Domain-specific package post-install (e.g. `safecor-sys-usb`, `safecor-domu-base`).
-5. Controller process starts, connects to MQTT over the PV channel (`/dev/hvc1`).
+1. Non-GUI domains boot as **PVH** using the Dom0 kernel (`/boot/vmlinuz-lts`) + config disk
+    (apkovl). Rootfs is the shared `alpine-virt.iso` mounted as a read-only block device.
+   GUI domains boot as **HVM** from the `alpine-virt.iso` (CD-ROM) with QEMU for GPU display.
+   OpenRC `localmount` mounts the 9p shares from `/etc/fstab`.
+   `safecor-core-init` (boot runlevel) fixes permissions, runs `apk add` from the 9p repo.
+   Domain-specific package post-install (e.g. `safecor-sys-usb`, `safecor-domu-base`).
+   Controller process starts, connects to MQTT over the PV channel (`/dev/hvc1`).
 
 **Xenstore key model** (`/local/domain/system/` — Dom0 writes, all DomUs read):
 
