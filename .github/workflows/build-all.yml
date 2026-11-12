@@ -471,6 +471,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -482,6 +483,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/py3-paho-mqtt2*.apk
 
   build-fuse-archive:
@@ -501,6 +503,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -512,6 +515,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/fuse-archive*.apk
           
   build-safecor-lib:
@@ -531,6 +535,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -542,6 +547,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-lib*.apk
 
   build-alpine-virt-kernel:
@@ -561,6 +567,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build kernel package
         uses: ./.github/actions/build-kernel         
@@ -569,6 +576,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/main/x86_64/alpine-virt*.apk # The package comes from aports    
 
   build-xtables-addons-safecor-virt:
@@ -590,6 +598,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build the package
         shell: sh
@@ -619,6 +628,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/main/x86_64/xtables-addons-lts*.apk # The package comes from aports    
 
   build-safecor-virt-iso:
@@ -639,12 +649,14 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
 
       - name: Build and publish ISO
         uses: ./.github/actions/build-and-publish-iso
         with:
           package-name: safecor-virt
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
 
   build-alpine-iso:
     needs: [ prepare ]
@@ -663,6 +675,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -674,6 +687,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/alpine-iso*.apk 
 
   build-lxc-container-debian:
@@ -724,6 +738,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: lxc-container-debian.tar.bz2
           container: false
 
@@ -744,6 +759,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -755,6 +771,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-container-debian*.apk
 
   build-safecor-core:
@@ -775,6 +792,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -786,6 +804,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-core*.apk
 
   build-safecor-hardening:
@@ -807,6 +826,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -818,6 +838,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-hardening*.apk
 
   build-safecor-syslog:
@@ -839,6 +860,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -850,6 +872,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-syslog*.apk
 
   build-safecor-splash:
@@ -869,6 +892,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -880,6 +904,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-splash*.apk
 
   build-safecor-sys-usb:
@@ -900,6 +925,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}      
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -911,6 +937,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-sys-usb*.apk
 
   build-safecor-gui-base:
@@ -931,6 +958,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}     
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -942,6 +970,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-gui-base*.apk
 
   build-safecor-domu-base:
@@ -962,6 +991,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}     
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -973,6 +1003,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-domu-base*.apk
 
   build-app-tests:
@@ -992,6 +1023,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}     
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
  
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -1003,6 +1035,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-tests-gui*.apk
 
       - name: Build APK
@@ -1015,6 +1048,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/
 
   build-app-diag:
@@ -1033,6 +1067,7 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
 
       - name: Build APK
         uses: ./.github/actions/build-apk
@@ -1044,6 +1079,7 @@ jobs:
         uses: ./.github/actions/publish
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
           filepath: /home/builder/packages/safecor/x86_64/safecor-diag*.apk
 
   build-iso-diag:
@@ -1064,12 +1100,14 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
 
       - name: Build and publish ISO
         uses: ./.github/actions/build-and-publish-iso
         with:
           package-name: diag
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
 
   build-iso-tests:
     needs: [ prepare, build-app-tests ]
@@ -1089,9 +1127,11 @@ jobs:
         uses: ./.github/actions/prepare-build-env
         with:
           abuild-key: ${{ secrets.ABUILD_PRIVATE_KEY }}
+          repository-url: ${{ github.ref_name == 'main' && 'https://www.alefbet.net/github/safecor' || 'https://www.alefbet.net/github/safecor/edge' }}
 
       - name: Build and publish ISO
         uses: ./.github/actions/build-and-publish-iso
         with:
           package-name: tests
           privkey: ${{ secrets.DEPLOY_KEY }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}

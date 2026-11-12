@@ -1,9 +1,13 @@
-name: Prepare Alpine build environment  
+name: Prepare Alpine build environment
 
 inputs:
   abuild-key:
     description: Base64 encoded private key
     required: true
+  repository-url:
+    description: Alpine repository URL for dependency resolution
+    required: false
+    default: "https://www.alefbet.net/github/safecor"
 
 runs:
   using: composite  
@@ -43,8 +47,8 @@ runs:
 
     - shell: sh
       run: |
-        echo "Register the official repository"
-        sudo echo "https://www.alefbet.net/github/safecor" >> /etc/apk/repositories
+        echo "Register the official repository: ${{ inputs.repository-url }}"
+        echo "${{ inputs.repository-url }}" >> /etc/apk/repositories
 
     - shell: sh
       run: |

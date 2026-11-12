@@ -49,12 +49,25 @@ Please read the [licence](python/lib/LICENCE.md) carefully before using this pro
 
 *Please notice that only x86_64 packages are available*
 
-The releases are available in the [official repository](https://alefbet.net/github/safecor).
+### Stable repository
+
+The stable releases are available in the [official repository](https://alefbet.net/github/safecor).
 
 Add the following in `/etc/apk/repositories`:
 ```
 https://alefbet.net/github/safecor
 ```
+
+### Edge repository
+
+The edge repository contains development packages built from the `version-2` branch. Use it to test upcoming features before they reach the stable channel.
+
+Add the following in `/etc/apk/repositories`:
+```
+https://alefbet.net/github/safecor/edge
+```
+
+> ⚠️ **Warning**: Edge packages may be unstable. Do not use them in production.
 
 The [public key file](https://alefbet.net/github/safecor/safecor.rsa.pub) must be downloaded into `/etc/apk/keys`.
 

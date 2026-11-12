@@ -11,6 +11,10 @@ inputs:
     description: The version of Alpine Linux to package with
     requierd: false
     default: 3.22
+  branch:
+    description: Target branch for the publish path (main uses stable, others use edge)
+    required: false
+    default: "main"
 
 runs:
   using: composite  
@@ -60,3 +64,4 @@ runs:
       privkey: ${{ inputs.privkey }}
       filepath: ~/iso/safecor-${{ inputs.package-name }}-x86_64.iso
       is_package: false
+      branch: ${{ inputs.branch }}

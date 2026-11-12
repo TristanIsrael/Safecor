@@ -49,12 +49,25 @@ Veuillez lire attentivement la [licence](python/lib/LICENCE.md) avant d’utilis
 
 *Veuillez noter que seuls les paquets x86_64 sont disponibles actuellement.*
 
-Les releases sont disponibles dans le [dépôt officiel](https://alefbet.net/github/safecor).
+### Dépôt stable
+
+Les releases stables sont disponibles dans le [dépôt officiel](https://alefbet.net/github/safecor).
 
 Ajoutez la ligne suivante dans `/etc/apk/repositories` :
 ```
 https://alefbet.net/github/safecor
 ```
+
+### Dépôt edge
+
+Le dépôt edge contient les paquets de développement construits depuis la branche `version-2`. Utilisez-le pour tester les futures fonctionnalités avant leur intégration dans le canal stable.
+
+Ajoutez la ligne suivante dans `/etc/apk/repositories` :
+```
+https://alefbet.net/github/safecor/edge
+```
+
+> ⚠️ **Attention** : les paquets edge peuvent être instables. Ne pas les utiliser en production.
 
 Le fichier de [la clé publique](https://alefbet.net/github/safecor/safecor.rsa.pub) doit être téléchargé dans le répertoire `/etc/apk/keys`.
 
