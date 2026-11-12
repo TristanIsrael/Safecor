@@ -45,6 +45,7 @@ runs:
         echo "PACKAGER_NAME=\"Tristan Israël\"" >> /etc/abuild.conf
         echo "PACKAGER_EMAIL=\"tristan.israel@alefbet.net\"" >> /etc/abuild.conf
         echo "PACKAGER_SIGN=1" >> /etc/abuild.conf
+        echo "APKROOT=/home/builder/packages/safecor" >> /etc/abuild.conf
 
     - shell: sh
       run: |
