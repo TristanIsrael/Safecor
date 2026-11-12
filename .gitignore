@@ -146,3 +146,7 @@ bin/*.*
 !**/xorg.conf.d
 **/.coverage
 /setup/packages/safecor/safecor-lib/src
+/setup/packages/safecor/safecor-core/src
+/setup/packages/safecor/safecor-gui-base/src
+/setup/packages/safecor/safecor-sys-usb/src
+/setup/packages/safecor/safecor-syslog/src

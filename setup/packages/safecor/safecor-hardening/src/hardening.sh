@@ -1,0 +1,1 @@
+/home/builder/src/safecor/setup/packages/safecor/safecor-hardening/hardening.sh

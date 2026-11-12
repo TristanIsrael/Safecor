@@ -143,6 +143,7 @@ Naming conventions:
 - **Never push** when the code coverage is under 85%.
 - After push, the Github issue must be updated (task and status).
 - **Never commit** before updating the documentation and the plans if needed.
+- Compute the checksums of the Alpine packages before pushing if their resources have been modified.
 
 ## Chat rules
 
