@@ -119,18 +119,21 @@ class DomainsFactory:
 
     @staticmethod
     def __create_xl_conf_sys_usb() -> None:
-        "Generates the xl configuration string for the sys-usb Domain."
+        "Generates the xl configuration string for the sys-usb Domain (PVH)."
         topology = System.get_topology()
 
         sys_usb = topology.domain("sys-usb")
 
         txt = f'''
-type = "hvm"
+type = "pvh"
 name = "sys-usb"
 serial = "pty" 
 memory= {sys_usb.memory}
 vcpus = {sys_usb.vcpus}
 cpus = "{System.cpu_affinity_to_string(sys_usb.cpu_affinity)}"
+kernel = "/boot/vmlinuz-lts"
+ramdisk = "/boot/initramfs-lts"
+extra = "root=/dev/xvdc ro apkovl=/dev/sdd"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
     'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-usb-config.img'
@@ -146,10 +149,6 @@ channel = [
 'name=sys-usb-tty, connection=socket, path=/var/run/safecor/sys-usb-tty.sock'
 ]
 vga = "none"
-device_model_override = "/usr/bin/qemu-system-x86_64"
-device_model_version = "qemu-xen"
-usb=0
-vnc=0
 vif=[]
 '''
 
@@ -212,6 +211,67 @@ vif=[]
 
         dom = topology.domain(domain.name)
 
+        if domain.has_gui:
+            return DomainsFactory.__create_xl_conf_hvm(
+                domain, boot_iso_location, share_packages, share_storage, share_system
+            )
+        else:
+            return DomainsFactory.__create_xl_conf_pvh(
+                domain, boot_iso_location, share_packages, share_storage, share_system
+            )
+
+    @staticmethod
+    def __create_xl_conf_pvh(
+        domain: Domain,
+        boot_iso_location: str,
+        share_packages: bool = True,
+        share_storage: bool = True,
+        share_system: bool = False,
+    ):
+        "Generates the PVH xl configuration for a non-GUI Domain."
+        dom = System.get_topology().domain(domain.name)
+
+        txt = f'''
+type = "pvh"
+serial = "pty" 
+name = "{domain.name}"
+memory = {domain.memory}
+vcpus = {domain.vcpus}
+cpus = "{System.cpu_affinity_to_string(dom.cpu_affinity)}"
+kernel = "/boot/vmlinuz-lts"
+ramdisk = "/boot/initramfs-lts"
+extra = "root=/dev/xvdc ro apkovl=/dev/sdd"
+disk = [
+	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
+    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img'
+'''
+        if domain.temp_disk_size > 0:
+            txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
+
+        if domain.swap_size > 0:
+            txt += f", 'format=raw, vdev=sdf, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
+
+        txt += """
+]
+vif=[]
+"""
+
+        txt += DomainsFactory.__generate_p9_and_channels(
+            domain, share_packages, share_storage, share_system
+        )
+        return txt
+
+    @staticmethod
+    def __create_xl_conf_hvm(
+        domain: Domain,
+        boot_iso_location: str,
+        share_packages: bool = True,
+        share_storage: bool = True,
+        share_system: bool = False,
+    ):
+        "Generates the HVM xl configuration for a GUI Domain."
+        dom = System.get_topology().domain(domain.name)
+
         txt = f'''
 type = "hvm"
 serial = "pty" 
@@ -224,43 +284,43 @@ disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
     'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img'
 '''
-        # Add a temp diskfile if required
-        # The diskfile is prepared by the orchestrator
         if domain.temp_disk_size > 0:
             txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
 
-        # Add a swap diskfile if required
-        # The diskfile is prepared by the orchestrator
         if domain.swap_size > 0:
             txt += f", 'format=raw, vdev=sdf, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
 
-        txt += """
+        txt += f"""
 ]
 device_model_override = "/usr/bin/qemu-system-x86_64"
 device_model_version = "qemu-xen"
+device_model_args = [
+      '-device', 'virtio-gpu-pci',
+      '-display', 'gtk,full-screen=on,zoom-to-fit=on,gl=on',
+      '-device', 'virtio-input-host,id=virtio-mouse,evdev=/var/run/safecor/virtual_mouse_{domain.name}',
+      '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/var/run/safecor/virtual_keyboard_{domain.name}',
+      '-device', 'virtio-input-host,id=virtio-touch,evdev=/var/run/safecor/virtual_touch_{domain.name}'
+]
+vga = "none"
 vnc=0
 usb=0
 vif=[]
 """
 
-        # Add vGPU if needed
-        if domain.has_gui:
-            txt += f"""
-vga = "none"
-device_model_override = "/usr/bin/qemu-system-x86_64"
-device_model_version = "qemu-xen"
-device_model_args = [
-     '-device', 'virtio-gpu-pci',
-     '-display', 'gtk,full-screen=on,zoom-to-fit=on,gl=on',
-     '-device', 'virtio-input-host,id=virtio-mouse,evdev=/var/run/safecor/virtual_mouse_{domain.name}',
-     '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/var/run/safecor/virtual_keyboard_{domain.name}',
-     '-device', 'virtio-input-host,id=virtio-touch,evdev=/var/run/safecor/virtual_touch_{domain.name}'
-]
-"""
+        txt += DomainsFactory.__generate_p9_and_channels(
+            domain, share_packages, share_storage, share_system
+        )
+        return txt
 
-        # Add P9 shares
+    @staticmethod
+    def __generate_p9_and_channels(
+        domain: Domain,
+        share_packages: bool,
+        share_storage: bool,
+        share_system: bool,
+    ) -> str:
+        "Generates the p9 shares and channel sections shared by both HVM and PVH configs."
         shares = []
-        # shares.append("'name=console, connection=pty'")
         if share_packages:
             shares.append(
                 "'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none'"
@@ -274,18 +334,14 @@ device_model_args = [
                 "'tag=system, path=/usr/lib/safecor/system, backend=0, security_model=none'"
             )
 
+        txt = ""
         if len(shares) > 0:
             txt += "p9 = [\n{}\n]\n".format(",\n".join(shares))
 
-        # Add serial channels
-        channels = []
-        channels.append(
+        channels = [
             f"'name={domain.name}-msg, connection=socket, path=/var/run/safecor/{domain.name}-msg.sock'"
-        )  # /dev/hvc1
-
-        if len(channels) > 0:
-            txt += "channel = [\n{}\n]\n".format(",\n".join(channels))
-
+        ]
+        txt += "channel = [\n{}\n]\n".format(",\n".join(channels))
         return txt
 
     @staticmethod
