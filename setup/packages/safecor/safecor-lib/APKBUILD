@@ -49,5 +49,5 @@ check() {
 
 package() {
     cd "$srcdir/lib/dist"
-    python3 -m installer --destdir=$pkgdir $pkgname-$pkgver.$pkgrel-py3-none-any.whl
+    python3 -m installer --destdir=$pkgdir safecor-$pkgver.$pkgrel-py3-none-any.whl
 }
