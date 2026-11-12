@@ -16,8 +16,8 @@ subpackages=""
 replaces=""
 options="!check"  # no tests provided
 source="
-http://dl-cdn.alpinelinux.org/alpine/v3.21/releases/x86_64/alpine-standard-$pkgver.$pkgrel-$arch.iso
-http://dl-cdn.alpinelinux.org/alpine/v3.21/releases/x86_64/alpine-virt-$pkgver.$pkgrel-$arch.iso
+http://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86_64/alpine-standard-$pkgver.$pkgrel-$arch.iso
+http://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86_64/alpine-virt-$pkgver.$pkgrel-$arch.iso
 "
 
 package() {    

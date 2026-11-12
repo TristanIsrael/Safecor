@@ -10,7 +10,7 @@ Safecor is a software architecture for building security products (kiosk/embedde
 - The product topology (domains, vCPU groups/pinning, screen, USB, PCI blacklist, configurations) is defined in `/etc/safecor/topology.json` and parsed into a `Topology` object.
 - Hardware requires VT-x (virtualization) and VT-d/IOMMU.
 - Many `System` functions must run in Dom0 or in DomU depending on the call — check the docstrings.
-- x86_64 only; tested on Alpine 3.20/3.21.
+- x86_64 only; tested on Alpine 3.20/3.24.
 
 ### Directory layout
 

@@ -4,11 +4,11 @@ all:
     install_tftp: yes     
     install_http: yes
     install_nfs: yes
-    alpine_repository: "http://192.168.10.5/alpine/v3.21"
+    alpine_repository: "http://192.168.10.5/alpine/v3.24"
     safecor_repository: "http://192.168.10.5/safecor"
     alpine_kernels_server: "192.168.10.5"
     alpine_kernels_path: "/alpine/releases"
-    alpine_version: "3.21.3"
+    alpine_version: "3.24.4"
     dhcp_domain: safecor.lan    
     lan_subnet: 192.168.10.0
     lan_netmask: 255.255.255.0

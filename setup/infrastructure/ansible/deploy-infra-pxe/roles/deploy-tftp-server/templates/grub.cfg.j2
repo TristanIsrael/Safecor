@@ -38,7 +38,7 @@ menuentry "Safecor Diag" {
 	initrd (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/initramfs-lts
 }
 
-menuentry "Alpine 3.21.3 with Xen" {
+menuentry "Alpine 3.24.4 with Xen" {
 	insmod gzip
 	insmod http
 
@@ -52,7 +52,7 @@ menuentry "Alpine 3.21.3 with Xen" {
 	module2 (http,{{ alpine_kernels_server }}){{ alpine_kernels_path }}/initramfs-lts
 }
 
-menuentry "Alpine 3.21.3" {
+menuentry "Alpine 3.24.4" {
 	insmod http
 
 	echo "Loading Linux..."
