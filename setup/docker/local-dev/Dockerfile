@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.24
 
 ENV TERM=xterm-256color
 

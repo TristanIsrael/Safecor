@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.24
 
 ENV SAFECOR_REPOSITORY=http://192.168.10.5/safecor
 ENV ALPINE_REPOSITORY_ROOT=http://192.168.10.5/alpine/v3.24
