@@ -27,7 +27,7 @@ package() {
     echo "$pkgname" >> "$pkgdir"/usr/lib/safecor/etc/installed
     mkdir -p "$pkgdir"/usr/lib/safecor/scripts
     mkdir -p "$pkgdir"/etc/init.d
-    install -m 755 scripts/setup-direct-mount.sh "$pkgdir"/usr/lib/safecor/scripts/
-    install -m 755 scripts/start-direct-mount.py "$pkgdir"/usr/lib/safecor/scripts/
-    install -m 755 init/direct-mount.initd "$pkgdir"/etc/init.d/
+    install -m 755 scripts/setup-direct-mount.sh "$pkgdir"/usr/lib/safecor/scripts/setup-direct-mount.sh
+    install -m 755 scripts/start-direct-mount.py "$pkgdir"/usr/lib/safecor/scripts/start-direct-mount.py
+    install -m 755 init/direct-mount.initd "$pkgdir"/etc/init.d/direct-mount
 }
