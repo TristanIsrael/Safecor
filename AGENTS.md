@@ -144,11 +144,11 @@ Naming conventions:
 - After push, the Github issue must be updated (task and status).
 - **Never commit** before updating the documentation and the plans if needed.
 - Compute the checksums of the Alpine packages before pushing if their resources have been modified.
+- Never commit or push unless explicitly asked to do so
 
 ## Chat rules
 
 - Respond in the same language as the prompt's
-- Never commit or push unless explicitly asked to do so
 
 ## Documentation standards
 
