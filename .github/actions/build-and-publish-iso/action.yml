@@ -27,8 +27,12 @@ runs:
 
   - name: Fetch aports git repository
     shell: sh
+    env:
+      ALPINE_VERSION: ${{ inputs.alpine-version }}
     run: |
-      git clone --depth=1 https://gitlab.alpinelinux.org/alpine/aports.git
+      #git clone --depth=1 https://gitlab.alpinelinux.org/alpine/aports.git
+      wget https://github.com/alpinelinux/aports/archive/refs/heads/$ALPINE_VERSION-stable.tar.gz
+      tar xf $ALPINE_VERSION-stable.tar.gz
 
   # Unneeded in 3.24 - patches have been submitted upstream and applied
   #- name: Apply patches
@@ -43,18 +47,18 @@ runs:
       ALPINE_VERSION: ${{ inputs.alpine-version }}
     run: |
       # Copy scripts
-      cp setup/iso/mkimg.safecor.sh aports/scripts
-      cp setup/iso/genapkovl-safecor.sh aports/scripts
-      cp setup/iso/${{ inputs.package-name }}/*.sh aports/scripts
-      sudo chmod +x aports/scripts/*.sh
+      cp setup/iso/mkimg.safecor.sh aports-$ALPINE_VERSION-stable/scripts
+      cp setup/iso/genapkovl-safecor.sh aports-$ALPINE_VERSION-stable/scripts
+      cp setup/iso/${{ inputs.package-name }}/*.sh aports-$ALPINE_VERSION-stable/scripts
+      sudo chmod +x aports-$ALPINE_VERSION-stable/scripts/*.sh
 
       # Copy splash images
-      cp setup/iso/splash.ppm aports/scripts || true # Default Safecor Splash
-      cp setup/iso/${{ inputs.package-name }}/splash.* aports/scripts || true
+      cp setup/iso/splash.ppm aports-$ALPINE_VERSION-stable/scripts || true # Default Safecor Splash
+      cp setup/iso/${{ inputs.package-name }}/splash.* aports-$ALPINE_VERSION-stable/scripts || true
 
       mkdir -pv ~/tmp
 
-      cd aports/scripts
+      cd aports-$ALPINE_VERSION-stable/scripts
       TMPDIR=~/tmp ./mkimage.sh --tag v${{ inputs.alpine-version }} --outdir ~/iso --arch x86_64 --repository https://www.alefbet.net/github/safecor --repository http://dl-cdn.alpinelinux.org/alpine/v${{ inputs.alpine-version }}/main --repository http://dl-cdn.alpinelinux.org/alpine/v${{ inputs.alpine-version }}/community --profile ${{ inputs.package-name }} --hostkeys --workdir ~/tmp
       mv ~/iso/alpine-${{ inputs.package-name }}-v${{ inputs.alpine-version }}-x86_64.iso ~/iso/safecor-${{ inputs.package-name }}-x86_64.iso
       rm -rf ~/tmp
