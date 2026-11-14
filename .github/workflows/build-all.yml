@@ -602,13 +602,15 @@ jobs:
  
       - name: Build the package
         shell: sh
+        env:
+          alpine-version: 3.24
         run: |
           # Download aports sources
           #wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2 # Returns HTTP 418
-          wget https://github.com/alpinelinux/aports/archive/refs/heads/master.tar.gz
-          tar xvf master.tar.gz
+          wget https://github.com/alpinelinux/aports/archive/refs/heads/${alpine-version}-stable.tar.gz
+          tar xvf ${alpine-version}-stable.tar.gz
 
-          cd "aports-master/main/xtables-addons-lts"
+          cd "${alpine-version}-stable/main/xtables-addons-lts"
 
           # Patch APKBUILD
           sed -i \
@@ -619,9 +621,9 @@ jobs:
 
           # Update permissions
           cd "$GITHUB_WORKSPACE/"
-          sudo chown -R builder:builder "aports-master"
+          sudo chown -R builder:builder "${alpine-version}-stable"
 
-          cd "aports-master/main/xtables-addons-lts"
+          cd "${alpine-version}-stable/main/xtables-addons-lts"
           sudo -u builder FLAVOR=safecor-virt abuild checksum
           sudo -u builder FLAVOR=safecor-virt abuild -r  
 
