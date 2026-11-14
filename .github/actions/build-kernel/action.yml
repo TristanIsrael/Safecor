@@ -1,5 +1,11 @@
 name: Build linux-virt kernel
 
+inputs:
+  alpine-version:
+    description: The version of Alpine Linux to package with
+    requierd: false
+    default: 3.24
+
 runs:
   using: composite  
 
@@ -9,10 +15,10 @@ runs:
       run: |
         # Download aports sources
         #wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2 # Returns HTTP 418
-        wget https://github.com/alpinelinux/aports/archive/refs/heads/master.tar.gz
-        tar xvf master.tar.gz
+        wget https://github.com/alpinelinux/aports/archive/refs/heads/${alpine-version}-stable.tar.gz
+        tar xvf ${alpine-version}-stable.tar.gz
 
-        cd "aports-master/main/linux-lts"
+        cd "${alpine-version}-stable/main/linux-lts"
 
         # Patch the config file (remove undesired archs)
         cp "virt.x86_64.config" "safecor-virt.x86_64.config"
@@ -35,10 +41,10 @@ runs:
 
         # Update permissions
         cd "$GITHUB_WORKSPACE/"
-        sudo chown -R builder:builder "aports-master"
+        sudo chown -R builder:builder "${alpine-version}-stable"
 
         # Build the package
-        cd "aports-master/main/linux-lts"
+        cd "${alpine-version}-stable/main/linux-lts"
         sudo -u builder FLAVOR=safecor-virt abuild checksum
         sudo -u builder FLAVOR=safecor-virt abuild -r        
 
