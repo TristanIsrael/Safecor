@@ -577,7 +577,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/main/x86_64/alpine-virt*.apk # The package comes from aports    
+          filepath: /home/builder/packages/main/x86_64/safecor-virt*.apk 
 
   build-xtables-addons-safecor-virt:
     needs: [ prepare ]
@@ -608,7 +608,7 @@ jobs:
           # Download aports sources
           #wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2 # Returns HTTP 418
           wget https://github.com/alpinelinux/aports/archive/refs/heads/$ALPINE_VERSION-stable.tar.gz
-          tar xvf $ALPINE_VERSION-stable.tar.gz
+          tar xf $ALPINE_VERSION-stable.tar.gz
 
           cd "aports-$ALPINE_VERSION-stable/main/xtables-addons-lts"
 

@@ -18,7 +18,7 @@ runs:
         # Download aports sources
         #wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2 # Returns HTTP 418
         wget https://github.com/alpinelinux/aports/archive/refs/heads/$ALPINE_VERSION-stable.tar.gz
-        tar xvf $ALPINE_VERSION-stable.tar.gz
+        tar xf $ALPINE_VERSION-stable.tar.gz
 
         cd "aports-$ALPINE_VERSION-stable/main/linux-lts"
 
