@@ -438,7 +438,7 @@ class System(metaclass=SingletonMeta):
         topo_domains["sys-usb"] = {
             "name": "sys-usb",
             "type": DomainType.CORE,
-            "memory": 350,
+            "memory": 512,
             "vcpus": System.compute_vcpus_for_group("sys-usb", vcpu_groups),
             "cpus": System().compute_cpus_for_group("sys-usb", vcpu_groups),
             "vcpu_groups": vcpu_groups,

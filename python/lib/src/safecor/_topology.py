@@ -28,7 +28,7 @@ class Domain:
     id = 0
     name = "NoName"
     vcpu_group = "group1"
-    memory = 1000
+    memory = 1024
     vcpus = 1
     cpu_affinity = []  # List of CPU pins
     package = ""

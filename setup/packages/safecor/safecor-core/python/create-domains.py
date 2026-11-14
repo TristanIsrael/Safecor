@@ -125,30 +125,22 @@ class DomainsFactory:
         sys_usb = topology.domain("sys-usb")
 
         txt = f'''
-type = "pvh"
+type = "pv"
 name = "sys-usb"
 serial = "pty" 
-memory= {sys_usb.memory}
+memory = {sys_usb.memory}
 vcpus = {sys_usb.vcpus}
 cpus = "{System.cpu_affinity_to_string(sys_usb.cpu_affinity)}"
-kernel = "/boot/vmlinuz-lts"
-ramdisk = "/boot/initramfs-lts"
-extra = "root=/dev/xvdc ro apkovl=/dev/sdd"
+kernel = "/var/lib/xen/boot/vmlinuz-safecor-virt"
+ramdisk = "/var/lib/xen/boot/initramfs-safecor-virt"
+modloop = "/var/lib/xen/boot/modloop-safecor-virt"
+driver_domain = 1
+extra = "alpine_dev=xvdc:iso9660 apkovl=/media/xvdd/sys-usb.apkovl.tar.gz modules=loop,squashfs,ext4,sd-mod,usb-storage,9p,xen_blkfront,xen_evtchn,xen_gntdev,xen_gntalloc"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-usb-config.img'
+    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-usb-config.img',
+    'format=raw, vdev=xvde, access=r, target=/usr/lib/safecor/packages.squashfs'
 ]
-p9 = [
-'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none',
-'tag=storage, path=/usr/lib/safecor/storage, backend=0, security_model=none'
-]
-channel = [
-#'name=console, connection=pty',
-'name=sys-usb-msg, connection=socket, path=/var/run/safecor/sys-usb-msg.sock',
-'name=sys-usb-input, connection=socket, path=/var/run/safecor/sys-usb-input.sock',
-'name=sys-usb-tty, connection=socket, path=/var/run/safecor/sys-usb-tty.sock'
-]
-vga = "none"
 vif=[]
 '''
 
@@ -171,10 +163,6 @@ cpus = "{System.cpu_affinity_to_string(sys_gui.cpu_affinity)}"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
     'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-gui-config.img'
-]
-p9 = [
-    'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none',
-    'tag=storage, path=/usr/lib/safecor/storage, backend=0, security_model=none'
 ]
 channel = [
 #'name=console, connection=pty',
@@ -238,12 +226,14 @@ name = "{domain.name}"
 memory = {domain.memory}
 vcpus = {domain.vcpus}
 cpus = "{System.cpu_affinity_to_string(dom.cpu_affinity)}"
-kernel = "/boot/vmlinuz-lts"
-ramdisk = "/boot/initramfs-lts"
-extra = "root=/dev/xvdc ro apkovl=/dev/sdd"
+kernel = "/var/lib/xen/boot/vmlinuz-safecor-virt"
+ramdisk = "/var/lib/xen/boot/initramfs-safecor-virt"
+modloop = "/var/lib/xen/boot/modloop-safecor-virt"
+extra = "alpine_dev=xvdc:iso9660 apkovl=/media/xvdd/sys-usb.apkovl.tar.gz modules=loop,squashfs,ext4,sd-mod,usb-storage,9p,xen_blkfront,xen_evtchn,xen_gntdev,xen_gntalloc"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img'
+    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img',
+    'format=raw, vdev=xvde, access=r, target=/usr/lib/safecor/packages.squashfs'
 '''
         if domain.temp_disk_size > 0:
             txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
@@ -282,7 +272,8 @@ vcpus = {domain.vcpus}
 cpus = "{System.cpu_affinity_to_string(dom.cpu_affinity)}"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img'
+    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img',
+    'format=raw, vdev=xvde, access=r, target=/usr/lib/safecor/packages.squashfs'
 '''
         if domain.temp_disk_size > 0:
             txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
