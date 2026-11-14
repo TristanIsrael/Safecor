@@ -11,14 +11,16 @@ runs:
 
   steps:
     - name: Prepare the environment and build
+      env:
+        ALPINE_VERSION: ${{ inputs.alpine-version }}
       shell: sh
       run: |
         # Download aports sources
         #wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2 # Returns HTTP 418
-        wget https://github.com/alpinelinux/aports/archive/refs/heads/${alpine-version}-stable.tar.gz
-        tar xvf ${{ alpine-version }}-stable.tar.gz
+        wget https://github.com/alpinelinux/aports/archive/refs/heads/$ALPINE_VERSION-stable.tar.gz
+        tar xvf $ALPINE_VERSION-stable.tar.gz
 
-        cd "${{ alpine-version }}-stable/main/linux-lts"
+        cd "$ALPINE_VERSION-stable/main/linux-lts"
 
         # Patch the config file (remove undesired archs)
         cp "virt.x86_64.config" "safecor-virt.x86_64.config"
@@ -41,10 +43,10 @@ runs:
 
         # Update permissions
         cd "$GITHUB_WORKSPACE/"
-        sudo chown -R builder:builder "${{ alpine-version }}-stable"
+        sudo chown -R builder:builder "$ALPINE_VERSION-stable"
 
         # Build the package
-        cd "${{ alpine-version }}-stable/main/linux-lts"
+        cd "$ALPINE_VERSION-stable/main/linux-lts"
         sudo -u builder FLAVOR=safecor-virt abuild checksum
         sudo -u builder FLAVOR=safecor-virt abuild -r        
 
