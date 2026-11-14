@@ -10,7 +10,7 @@ runs:
         # Download aports sources
         #wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2 # Returns HTTP 418
         wget https://github.com/alpinelinux/aports/archive/refs/heads/master.tar.gz
-        tar xvf aports-master.tar.gz
+        tar xvf master.tar.gz
 
         cd "master/main/linux-lts"
 
