@@ -8,8 +8,9 @@ runs:
       shell: sh
       run: |
         # Download aports sources
-        wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2
-        tar xjf aports-master.tar.bz2
+        #wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2 # Returns HTTP 418
+        wget https://github.com/alpinelinux/aports/archive/refs/heads/master.tar.gz
+        tar xvf aports-master.tar.gz
 
         cd "aports-master/main/linux-lts"
 
