@@ -610,7 +610,7 @@ jobs:
           wget https://github.com/alpinelinux/aports/archive/refs/heads/$ALPINE_VERSION-stable.tar.gz
           tar xvf $ALPINE_VERSION-stable.tar.gz
 
-          cd aports-$ALPINE_VERSION-stable/main/xtables-addons-lts"
+          cd "aports-$ALPINE_VERSION-stable/main/xtables-addons-lts"
 
           # Patch APKBUILD
           sed -i \
