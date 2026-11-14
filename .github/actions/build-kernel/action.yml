@@ -12,7 +12,7 @@ runs:
         wget https://github.com/alpinelinux/aports/archive/refs/heads/master.tar.gz
         tar xvf aports-master.tar.gz
 
-        cd "aports-master/main/linux-lts"
+        cd "master/main/linux-lts"
 
         # Patch the config file (remove undesired archs)
         cp "virt.x86_64.config" "safecor-virt.x86_64.config"
@@ -35,10 +35,10 @@ runs:
 
         # Update permissions
         cd "$GITHUB_WORKSPACE/"
-        sudo chown -R builder:builder "aports-master"
+        sudo chown -R builder:builder "master"
 
         # Build the package
-        cd "aports-master/main/linux-lts"
+        cd "master/main/linux-lts"
         sudo -u builder FLAVOR=safecor-virt abuild checksum
         sudo -u builder FLAVOR=safecor-virt abuild -r        
 
