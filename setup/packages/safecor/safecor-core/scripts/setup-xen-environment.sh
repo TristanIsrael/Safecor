@@ -58,23 +58,23 @@ else
     cp /media/cdrom/boot/initramfs-* /var/lib/xen/boot
     umount /media/cdrom
 
-    if [ -f $ALPINE_LTS_ISO_LOCAL ]
-    then 
-        logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Alpine standard ISO image is PRESENT"
-    else
-        logger -s -t "Safecor/$SCRIPT_NAME" -p user.err "... Alpine standard ISO image is MISSING"
-        exit 1   
-    fi
+    #if [ -f $ALPINE_LTS_ISO_LOCAL ]
+    #then 
+    #    logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Alpine standard ISO image is PRESENT"
+    #else
+    #    logger -s -t "Safecor/$SCRIPT_NAME" -p user.err "... Alpine standard ISO image is MISSING"
+    #    exit 1   
+    #fi
 
-    logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Extract boot files (kernel, initrd)"    
-    mkdir -p /var/lib/xen/boot
-    mkdir -p /usr/lib/safecor/tmp/alpine-standard
-    modprobe iso9660
-    mount -o loop $ALPINE_LTS_ISO_LOCAL /media/cdrom
-    cp /media/cdrom/boot/vmlinuz-* /var/lib/xen/boot
-    cp /media/cdrom/boot/modloop-* /var/lib/xen/boot
-    cp /media/cdrom/boot/initramfs-* /var/lib/xen/boot
-    umount /media/cdrom    
+    #logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Extract boot files (kernel, initrd)"    
+    #mkdir -p /var/lib/xen/boot
+    #mkdir -p /usr/lib/safecor/tmp/alpine-standard
+    #modprobe iso9660
+    #mount -o loop $ALPINE_LTS_ISO_LOCAL /media/cdrom
+    #cp /media/cdrom/boot/vmlinuz-* /var/lib/xen/boot
+    #cp /media/cdrom/boot/modloop-* /var/lib/xen/boot
+    #cp /media/cdrom/boot/initramfs-* /var/lib/xen/boot
+    #umount /media/cdrom    
 fi
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"

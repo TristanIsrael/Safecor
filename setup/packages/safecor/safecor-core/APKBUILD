@@ -25,7 +25,7 @@ subpackages=""
 replaces="alpine-release alpine-baselayout alpine-baselayout-data mosquitto grub openrc qemu-system-x86_64"
 
 source="
-https://alefbet.net/github/safecor/iso/safecor-safecor-virt-x86_64.iso
+https://alefbet.net/github/safecor/edge/iso/alpine-safecor-virt-x86_64.iso
 
 init/safecor-core-controller.initd
 init/splash.initd
@@ -209,11 +209,11 @@ package() {
     install -D -m644 "$srcdir"/doas-svc-safecor-controller.conf "$pkgdir"/etc/doas.d/svc-safecor-controller.conf
 
     # ISO images for Domains
-    install -D -m644 "$srcdir/safecor-safecor-virt-x86_64.iso" "$pkgdir/var/lib/xen/images/safecor-safecor-virt-x86_64.iso"
+    install -D -m644 "$srcdir/alpine-safecor-virt-x86_64.iso" "$pkgdir/var/lib/xen/images/alpine-safecor-virt-x86_64.iso"
 }
 
 sha512sums="
-6c490a50a2a12ed7339cca5475af57bbb0fe02438eacffbc8b0a0f84aad149f63e880c8df0f22b5919228b536ae940fba6a22bdcd6528f82e36ed0a4f6321dcc  safecor-safecor-virt-x86_64.iso
+c6d7fd6e6a6d25be416ea3982b3ea41838547c2f0d6de29ef1f4042385e33b0f2b8998902a8c4318635b98a56cb0f72e5a357b4ce457e8239931b360f46026ee  alpine-safecor-virt-x86_64.iso
 2b2891ce4bd436da3bc674d9574391bc02d9e73bbcf551c2eb96f6992b9cd1f0fd5778cbe7de601146a668e7f0ec6382cde3667625aa0d6718810133ff24f1a1  safecor-core-controller.initd
 e75dbba1024005dbea4f7aa57351a50cde3331652c1c7aa3302f9ed7311d9a71554b5de65ad86978a62a165084a2f6db131528cfea9e8a9d38827164653adf4f  splash.initd
 68c83cab0b309ed7ddb6e49a39acd281fb630a35e812b66c19e4b7db3bca757f10951ec01a6e491b2dcac99f101b18f71f41c8521db9432d7c3c6abfe9a9a43c  orchestrator.initd
@@ -227,7 +227,7 @@ e02106556c18ffecedf7b91776713bf0d86fb02a43ca254662e5d37d6f78f118875c5a3ae29b88f5
 251958a102f3bea4fca05d186fbb14c0d786cae00cf3bc67fd20ec781941e3f54bbed977a42619b9ddc3480ad220a1fac578605233b36fba8cb1d506ccdb1b2e  provision-domain.sh
 3a4ad5212df91774d8e771c471c3842f3f3ff53b131b0976d55f68cbb8ed7862a69e650387ecc7467fae173224cbbb867856c8e625688a2a78c8159ab1032ee7  reindex-and-sign-repository.sh
 670063aa707126812e848e6c613c73789e44c7385738492ff6506929c4ca8b31821d78a6c3e563160d648026d9fa2521bda6fbb8caf100b0e8bf0270b1d702ec  setup-alpine-repositories.sh
-74d6d17c6966d1428344385739687bfcb5f98976677935d939c110c6ceb340a4d4c8cbf5c3573c290f5e6e079d621131c9242e39cdfbe76a2ed48fa08b1c74f4  setup-xen-environment.sh
+0a0ad3020f95d2bcc98e6ac9e7857c49d6d942904bc9efe7fe64dc0c3f6a404da0bef2854e02897ecf6729f637727a80c26a5b8ecb1da8ee0acc8efc5792cb1a  setup-xen-environment.sh
 63c555af2da7d96b8e63adf4f0a89fffa81d5b2a478a1f2cf87a4081f92d99cfd9755cc86a3c28dca37612934fdf7fe769542e8a5f5f3649c6dfa0384d9886a8  get-sys-gui-domid.sh
 9dfcd4eda29a2b6c6f764b63cfb29f566ef769715c20a885abe1366f8b98ba50d33d6a8526f10c20ac9c94f94d775e16244af14c5518ea2763f94e5fa756543e  post-install.sh
 a2939517625516068825bd9c57c995c3e2fad668accf44ce5dd94232005320b67e30c4438505ae5b7ad271c35a28b573c9fbff0a3be3ccae007196e9ce7bd6e9  show-logs.sh

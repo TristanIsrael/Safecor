@@ -60,7 +60,7 @@ runs:
 
       cd aports-$ALPINE_VERSION-stable/scripts
       TMPDIR=~/tmp ./mkimage.sh --tag v${{ inputs.alpine-version }} --outdir ~/iso --arch x86_64 --repository https://www.alefbet.net/github/safecor --repository http://dl-cdn.alpinelinux.org/alpine/v${{ inputs.alpine-version }}/main --repository http://dl-cdn.alpinelinux.org/alpine/v${{ inputs.alpine-version }}/community --profile ${{ inputs.package-name }} --hostkeys --workdir ~/tmp
-      mv ~/iso/alpine-${{ inputs.package-name }}-v${{ inputs.alpine-version }}-x86_64.iso ~/iso/safecor-${{ inputs.package-name }}-x86_64.iso
+      mv ~/iso/alpine-${{ inputs.package-name }}-v${{ inputs.alpine-version }}-x86_64.iso ~/iso/alpine-${{ inputs.package-name }}-x86_64.iso
       rm -rf ~/tmp
   
   - name: Publish ISO
