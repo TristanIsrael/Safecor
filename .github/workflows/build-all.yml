@@ -577,7 +577,7 @@ jobs:
         with:
           privkey: ${{ secrets.DEPLOY_KEY }}
           branch: ${{ github.ref_name == 'main' && 'main' || 'edge' }}
-          filepath: /home/builder/packages/main/x86_64/safecor-virt*.apk 
+          filepath: /home/builder/packages/main/x86_64/linux-safecor-virt*.apk 
 
   build-xtables-addons-safecor-virt:
     needs: [ prepare ]
