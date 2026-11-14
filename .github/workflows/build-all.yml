@@ -608,9 +608,9 @@ jobs:
           # Download aports sources
           #wget https://gitlab.alpinelinux.org/alpine/aports/-/archive/master/aports-master.tar.bz2 # Returns HTTP 418
           wget https://github.com/alpinelinux/aports/archive/refs/heads/$ALPINE_VERSION-stable.tar.gz
-          tar xvf $alpineversion-stable.tar.gz
+          tar xvf $ALPINE_VERSION-stable.tar.gz
 
-          cd $ALPINE_VERSION-stable/main/xtables-addons-lts"
+          cd aports-$ALPINE_VERSION-stable/main/xtables-addons-lts"
 
           # Patch APKBUILD
           sed -i \
@@ -621,9 +621,9 @@ jobs:
 
           # Update permissions
           cd "$GITHUB_WORKSPACE/"
-          sudo chown -R builder:builder "$ALPINE_VERSION-stable"
+          sudo chown -R builder:builder "aports-$ALPINE_VERSION-stable"
 
-          cd "$ALPINE_VERSION-stable/main/xtables-addons-lts"
+          cd "aports-$ALPINE_VERSION-stable/main/xtables-addons-lts"
           sudo -u builder FLAVOR=safecor-virt abuild checksum
           sudo -u builder FLAVOR=safecor-virt abuild -r  
 
