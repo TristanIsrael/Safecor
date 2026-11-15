@@ -53,7 +53,7 @@ except Exception as e:
 
 from ._topics import Topics
 from ._mqtt_helper import MqttHelper
-from ._mqtt_client import MqttClient, ConnectionType, SerialMQTTClient
+from ._mqtt_client import MqttClient, ConnectionType
 from ._request_factory import RequestFactory
 from ._logger import Logger
 from ._notification_factory import NotificationFactory
@@ -118,7 +118,6 @@ __all__ = [
     "MqttClient",
     "ConnectionType",
     "MqttFactory",
-    "SerialMQTTClient",
     "MqttHelper",
     "Dom0Controller",
     "DiskMonitor",

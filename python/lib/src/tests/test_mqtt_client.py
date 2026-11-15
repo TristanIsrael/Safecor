@@ -193,16 +193,10 @@ class TestMqttClient(unittest.TestCase):
         self.client.stop()
         self.client.mqtt_client.disconnect.assert_called_once()
         self.client.mqtt_client.loop_stop.assert_called_once()
-        # Not a serial port, so close() must not be called
+        # close() is not called for UNIX sockets
         self.client.mqtt_client.close.assert_not_called()
         self.assertFalse(self.client.connected)
         self.assertFalse(self.client.is_starting)
-
-    def test_stop_serial_calls_close(self):
-        self.client.connection_type = ConnectionType.SERIAL_PORT
-        self.client.mqtt_client = mock.MagicMock()
-        self.client.stop()
-        self.client.mqtt_client.close.assert_called_once()
 
 
 if __name__ == "__main__":

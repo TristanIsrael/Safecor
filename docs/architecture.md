@@ -2,7 +2,7 @@
 
 > **Status**: Draft (first edition, written to support the emulator operator-console work)
 >
-> **Last updated**: 2026-11-11
+> **Last updated**: 2026-11-15
 >
 > **Audience**: developers working on the Safecor core and on Safecor-based products
 >
@@ -99,8 +99,11 @@ storage   /mnt/storage   9p  trans=xen,version=9p2000.L,rw,cache=none,nosuid,noe
 Dom0 is not only the `safecor` control side; it runs the whole orchestration stack
 (Wiki `Safecor-core.md`):
 - **Mosquitto** — the MQTT broker (core of the messaging).
-- **Safecor MQTT tunnels** — proxy that filters and copies messages between the Domains'
-  sockets and the Mosquitto sockets.
+- **Safecor vchan tunnels** — `create-vchan-tunnels.py` discovers DomUs in xenstore and runs
+  `vchan-socket-proxy` clients that bridge each DomU's PV channels (msg, input, tty) to local
+  UNIX sockets in `/var/run/safecor/`.
+- **Safecor MQTT tunnels** — `create-mqtt-tunnels.py` proxies MQTT messages between the DomUs'
+  UNIX sockets (created by the vchan tunnels) and the Mosquitto broker.
 - **Safecor orchestrator** — creates the virtual inputs (keyboard/mouse/touch), the Xen config
   files, and starts the Domains.
 - **Safecor inputs proxy** — filters and copies input data between the Domains and the physical
@@ -143,8 +146,9 @@ configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remainin
 2. `create-domains.py` (`DomainsFactory.create_domains()`) for each domain in the topology:
    - `provision-domain.sh` — untars `domu.apkovl.tar.gz`, patches `etc/apk/world` + hostname,
      creates a 1 MB ext4 **config disk** (`/usr/lib/safecor/system/<name>-config.img`).
-   - `__create_xl_conf_domain()` — writes `/etc/safecor/xen/<name>.conf` (disks, `p9` shares,
-     PV channels, vGPU/virtual inputs, PCI).
+    - `__create_xl_conf_domain()` — writes `/etc/safecor/xen/<name>.conf` (disks, `p9` shares,
+      vGPU/virtual inputs, PCI). No `channel = [...]` — all inter-domain communication uses
+      PV channels (vchan) bridged by `vchan-socket-proxy` at runtime.
    - `__fetch_alpine_packages()` — fetches the domain's package into the local repo.
 
 **Boot** (every boot, via `orchestrator.initd` → `orchestrator.py`):
@@ -162,8 +166,10 @@ configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remainin
    GUI domains boot as **HVM** from the `alpine-virt.iso` (CD-ROM) with QEMU for GPU display.
    OpenRC `localmount` mounts the 9p shares from `/etc/fstab`.
    `safecor-core-init` (boot runlevel) fixes permissions, runs `apk add` from the 9p repo.
-   Domain-specific package post-install (e.g. `safecor-sys-usb`, `safecor-domu-base`).
-   Controller process starts, connects to MQTT over the PV channel (`/dev/hvc1`).
+    Domain-specific package post-install (e.g. `safecor-sys-usb`, `safecor-domu-base`).
+    `setup-vchan` (default runlevel) starts `vchan-socket-proxy` servers (msg, input, tty).
+    Controller process starts, connects to MQTT over the vchan UNIX socket
+    (`/var/run/safecor/mqtt.sock`).
 
 **Xenstore key model** (`/local/domain/system/` — Dom0 writes, all DomUs read):
 
@@ -184,9 +190,12 @@ a `doas` config permits it to run `xl`, `xenstore-read`, and the start scripts a
 ## 3. Communication (the MQTT protocol)
 
 ### 3.1 Transports
-`MqttClient` supports three transports (`ConnectionType`):
-- **UNIX socket** — Dom0 side (`/tmp/mqtt_msg_dom0.sock`).
-- **Serial port** — DomU side (`/dev/hvc1`).
+`MqttClient` supports two transports (`ConnectionType`):
+- **UNIX socket** — used by both Dom0 (`/tmp/mqtt_msg_dom0.sock`) and DomU
+  (`/var/run/safecor/mqtt.sock`). On the DomU side, the socket is bridged to Dom0 via
+  `vchan-socket-proxy` (PV channel). On the Dom0 side, `create-vchan-tunnels.py` runs
+  `vchan-socket-proxy` clients that expose each DomU's vchan as a local UNIX socket
+  (`/var/run/safecor/<name>-msg.sock`), which `create-mqtt-tunnels.py` then forwards to Mosquitto.
 - **TCP on localhost** — `TCP_DEBUG`, development only. **This is what the emulator uses**
   (all peers and the product under test connect to a local `mosquitto` on port 1883).
 
@@ -241,7 +250,7 @@ every `Api().info(...)` is both logged locally and published on the `system/even
 | `_api.py` | `Api` | The DomU-facing asynchronous API (singleton) |
 | `_dom0_controller.py` | `Dom0Controller` | Dom0-side command handler. **Dispatch**: linear `if/elif` chain in `__message_worker` matching topic strings to `__handle_*` methods; each message runs in its own thread. **Pattern to add a handler**: (1) define topic in `_topics.py`, (2) subscribe in `__on_mqtt_connected`, (3) add `elif` branch, (4) implement `__handle_*`. **Caveat**: the module-level `topology` global is **not populated** in the controller process (it's only populated in boot scripts like `create-domains.py`). |
 | `_sys_usb_controller.py` | `SysUsbController` | Core DomU: real USB/disk controller (the emulator's `MockSysUsbController` stands in for it) |
-| `_mqtt_client.py` | `MqttClient`, `SerialMQTTClient`, `ConnectionType` | MQTT transport (UNIX socket / serial / TCP) |
+| `_mqtt_client.py` | `MqttClient`, `ConnectionType` | MQTT transport (UNIX socket / TCP) |
 | `_mqtt_factory.py` | `MqttFactory` | Creates a Dom0 or DomU client (incl. `create_mqtt_network_dev` for development) |
 | `_system.py` | `System`, `topology` | System state (screen, UUID, CPU, memory), topology loading, settings, domain name. **Singleton** (`SingletonMeta` metaclass, no `__init__`, class-level cache). Also exports a **module-level global** `topology = Topology()` (populated by `System.get_topology()`). Xenstore reads via `subprocess.run(["xenstore-read", ...])`. |
 | `_topology.py` | `Topology`, `Domain`, `Screen`, `Pci`, `DomainType` | Parsed topology model. **Not a singleton** — plain data class. `Domain` fields: `name`, `domain_type`, `memory`, `vcpus`, `cpu_affinity`, `package`, `has_gui`, `vcpu_group`, `temp_disk_size`, `swap_size`. Parsing is done by `System.__analyse_topology_struct` + `__parse_topology` (Topology never parses JSON itself). |

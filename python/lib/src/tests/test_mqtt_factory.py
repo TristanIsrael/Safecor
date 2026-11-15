@@ -8,8 +8,8 @@ class TestMqttFactory(unittest.TestCase):
         client = MqttFactory.create_mqtt_client_domu("sys-usb")
         self.assertIsInstance(client, MqttClient)
         self.assertEqual(client.identifier, "sys-usb")
-        self.assertEqual(client.connection_type, ConnectionType.SERIAL_PORT)
-        self.assertEqual(client.connection_string, Constants.SERIAL_PORT_MSG)
+        self.assertEqual(client.connection_type, ConnectionType.UNIX_SOCKET)
+        self.assertEqual(client.connection_string, Constants.MQTT_VCHAN_SOCKET)
 
     def test_create_mqtt_client_dom0(self):
         client = MqttFactory.create_mqtt_client_dom0("dom0")

@@ -149,6 +149,7 @@ Naming conventions:
 - **Never commit** before updating the documentation and the plans if needed.
 - Compute the checksums of the Alpine packages before pushing if their resources have been modified.
 - Never commit or push unless explicitly asked to do so
+- **Never push** before recalculating the checksums of the APKBUILD files if modified.
 
 ## Chat rules
 

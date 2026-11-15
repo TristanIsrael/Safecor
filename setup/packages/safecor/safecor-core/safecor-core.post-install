@@ -11,7 +11,7 @@ echo ---        script post-install.sh        ---
 echo --------------------------------------------
 echo
 
-ln -s /var/lib/xen/images/safecor-safecor-virt-x86_64.iso /var/lib/xen/images/alpine-virt.iso
+ln -s /var/lib/xen/images/alpine-safecor-virt-x86_64.iso /var/lib/xen/images/alpine-virt.iso
 
 rc-update del syslog boot
 rc-update add syslog-ng boot
@@ -29,6 +29,7 @@ mount -o remount,size=16M /dev/shm
 logger -t "Safecor/core-post-install" "Creating service accounts"
 addgroup -g 2000 safecor
 adduser -H -D -s /sbin/nologin -G safecor svc-mqtt-tunnels
+adduser -H -D -s /sbin/nologin -G safecor svc-vchan-tunnels
 adduser -H -D -s /sbin/nologin -G safecor svc-tty-tunnels
 adduser -H -D -s /sbin/nologin -G safecor svc-tty-terminal
 adduser -H -D -s /sbin/nologin -G safecor svc-mqtt-logger
@@ -45,6 +46,7 @@ addgroup svc-tty-tunnels tty
 addgroup svc-tty-terminal tty
 addgroup xenstore
 addgroup svc-orchestrator xenstore
+addgroup svc-vchan-tunnels xenstore
 
 logger -t "Safecor/core-post-install" "Settings permissions on system files"
 mkdir -p /var/log/safecor
@@ -71,6 +73,7 @@ rc-service modules restart
 rc-service xenconsoled start
 rc-update add xenconsoled
 rc-update add mosquitto
+rc-update add create-vchan-tunnels
 rc-update add create-mqtt-tunnels
 rc-update add safecor-core-controller
 rc-update add xserver

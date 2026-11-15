@@ -38,7 +38,7 @@ class DomainsFactory:
             DomainsFactory.__create_domd_usb()
 
         DomainsFactory.__create_business_domains()
-        DomainsFactory.build_packages_squashfs()
+        DomainsFactory.create_packages_squashfs()
 
         SysLogger("create-domains").info("Finished creating domains")
 
@@ -148,6 +148,7 @@ vif=[]
         return txt
 
     @staticmethod
+    @DeprecationWarning
     def __create_xl_conf_sys_gui() -> None:
         "Generates the xl configuration string for the sys-gui Domain."
         topology = System.get_topology()
@@ -164,11 +165,6 @@ cpus = "{System.cpu_affinity_to_string(sys_gui.cpu_affinity)}"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
     'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-gui-config.img'
-]
-channel = [
-#'name=console, connection=pty',
-'name=sys-gui-msg, connection=socket, path=/var/run/safecor/sys-gui-msg.sock',
-'name=sys-gui-input, connection=socket, path=/var/run/safecor/sys-gui-input.sock'
 ]
 vga = "none"
 device_model_override = "/usr/bin/qemu-system-x86_64"
@@ -222,7 +218,7 @@ vif=[]
 
         txt = f'''
 type = "pvh"
-serial = "pty" 
+serial = "pty"
 name = "{domain.name}"
 memory = {domain.memory}
 vcpus = {domain.vcpus}
@@ -247,7 +243,7 @@ disk = [
 vif=[]
 """
 
-        txt += DomainsFactory.__generate_p9_and_channels(
+        txt += DomainsFactory.__generate_p9_shares(
             domain, share_packages, share_storage, share_system
         )
         return txt
@@ -274,13 +270,13 @@ cpus = "{System.cpu_affinity_to_string(dom.cpu_affinity)}"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
     'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img',
-    'format=raw, vdev=xvde, access=r, target=/usr/lib/safecor/packages.squashfs'
+    'format=raw, vdev=sde, access=r, target=/usr/lib/safecor/packages.squashfs'
 '''
         if domain.temp_disk_size > 0:
-            txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
+            txt += f", 'format=raw, vdev=xvdd, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
 
         if domain.swap_size > 0:
-            txt += f", 'format=raw, vdev=sdf, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
+            txt += f", 'format=raw, vdev=xvde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
 
         txt += f"""
 ]
@@ -299,19 +295,19 @@ usb=0
 vif=[]
 """
 
-        txt += DomainsFactory.__generate_p9_and_channels(
+        txt += DomainsFactory.__generate_p9_shares(
             domain, share_packages, share_storage, share_system
         )
         return txt
 
     @staticmethod
-    def __generate_p9_and_channels(
+    def __generate_p9_shares(
         domain: Domain,
         share_packages: bool,
         share_storage: bool,
         share_system: bool,
     ) -> str:
-        "Generates the p9 shares and channel sections shared by both HVM and PVH configs."
+        "Generates the p9 shares section shared by both HVM and PVH configs."
         shares = []
         if share_packages:
             shares.append(
@@ -329,11 +325,6 @@ vif=[]
         txt = ""
         if len(shares) > 0:
             txt += "p9 = [\n{}\n]\n".format(",\n".join(shares))
-
-        channels = [
-            f"'name={domain.name}-msg, connection=socket, path=/var/run/safecor/{domain.name}-msg.sock'"
-        ]
-        txt += "channel = [\n{}\n]\n".format(",\n".join(channels))
         return txt
 
     @staticmethod
@@ -381,13 +372,13 @@ vif=[]
     ###
     ### Private functions
     @staticmethod
-    def build_packages_squashfs():
-        """Builds the packages.squashfs image from the local Alpine repository.
+    def create_packages_squashfs():
+        """Creates the packages.squashfs image from the local Alpine repository.
 
         The resulting file is placed at /usr/lib/safecor/packages.squashfs,
         matching the xvde disk target in the generated XL configs.
         """
-        SysLogger("create-domains").info("Building packages.squashfs")
+        SysLogger("create-domains").info("Creating packages.squashfs")
         subprocess.run(
             args=[
                 "mksquashfs",

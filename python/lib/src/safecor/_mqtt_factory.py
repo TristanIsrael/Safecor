@@ -13,7 +13,7 @@ class MqttFactory:
     @staticmethod
     def create_mqtt_client_domu(identifier: str) -> MqttClient:
         return MqttClient(
-            identifier, ConnectionType.SERIAL_PORT, Constants.SERIAL_PORT_MSG
+            identifier, ConnectionType.UNIX_SOCKET, Constants.MQTT_VCHAN_SOCKET
         )
 
     @staticmethod

@@ -7,12 +7,12 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import glob
+import socket
 import struct
 import threading
 import time
 
 import msgpack
-import serial
 
 try:
     from evdev import InputDevice, InputEvent, ecodes  # noqa: F401
@@ -69,7 +69,7 @@ class InputsDaemon(metaclass=SingletonMeta):
         self.__can_run = True
 
         # Start XenBus messaging
-        self.__xenbus_socket_path = Constants.DOMU_INPUT_SOCKET_FILEPATH
+        self.__xenbus_socket_path = Constants.INPUT_VCHAN_SOCKET
         if not self.__connect_xenbus():
             return
 
@@ -172,7 +172,7 @@ class InputsDaemon(metaclass=SingletonMeta):
                     ecodes.EV_SYN,
                 ]:
                     serialized = self.__serialize_event(InputType.MOUSE, event)
-                    self.__xenbus_socket.write(serialized)
+                    self.__xenbus_socket.send(serialized)
                     # print(f"Sent: {serialized.strip()}")
 
                 if not self.__can_run:
@@ -200,7 +200,7 @@ class InputsDaemon(metaclass=SingletonMeta):
         try:
             for event in touch.read_loop():
                 serialized = self.__serialize_event(InputType.TOUCH, event)
-                self.__xenbus_socket.write(serialized)
+                self.__xenbus_socket.send(serialized)
                 # print(f"Sent: {serialized.strip()}")
 
                 if not self.__can_run:
@@ -410,7 +410,7 @@ class InputsDaemon(metaclass=SingletonMeta):
                 or (event.type == ecodes.EV_MSC and event.code == ecodes.MSC_SCAN)
             ):
                 serialized = self.__serialize_event(InputType.KEYBOARD, event)
-                self.__xenbus_socket.write(serialized)
+                self.__xenbus_socket.send(serialized)
                 # print(f"Sent: {serialized.strip()}")
 
             if not self.__can_run:
@@ -437,14 +437,14 @@ class InputsDaemon(metaclass=SingletonMeta):
         )
 
         try:
-            self.__xenbus_socket = serial.Serial(port=self.__xenbus_socket_path)
-            # self.__xenbus_iface_ready = True
+            self.__xenbus_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self.__xenbus_socket.connect(self.__xenbus_socket_path)
             SysLogger("Input Daemon").info("I/O channel is open")
             return True
-        except serial.SerialException as e:
+        except (ConnectionRefusedError, FileNotFoundError, OSError) as e:
             self.__xenbus_socket = None
             SysLogger("Input Daemon").error(
-                f"Impossible to open the serial port {self.__xenbus_socket_path}"
+                f"Impossible to connect to {self.__xenbus_socket_path}"
             )
             SysLogger("Input Daemon").error(str(e))
             return False
