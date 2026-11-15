@@ -35,6 +35,9 @@ rc-service safecor-sys-usb-controller start
 rc-update add safecor-vchan-sftp
 rc-service safecor-vchan-sftp start
 
+# Start vchan servers (msg, input, tty)
+rc-update add setup-vchan default
+
 # Manage udev
 echo Start udev service
 rc-update add udev boot

@@ -1,0 +1,26 @@
+#!/sbin/openrc-run
+# Start/stop the vchan servers in a DomU.
+#
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
+name="setup-vchan"
+pidfile="/var/run/safecor-vchan.pid"
+
+depend() {
+    after network
+}
+
+start() {
+    ebegin "Starting vchan servers"
+    start-stop-daemon --start --background --make-pidfile \
+        --pidfile "$pidfile" \
+        --exec /usr/lib/safecor/scripts/setup-vchan.sh
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping vchan servers"
+    start-stop-daemon --stop --pidfile "$pidfile" --signal TERM
+    eend 0
+}

@@ -49,3 +49,26 @@
 - [x] Verify `/var/run/safecor/sys-usb-msg.sock` exists on Dom0 -> It does not exist
 - [x] Verify `/var/log/safecor/vchan-tunnels.log` contains the discovery messages -> Contains `vchan-tunnels: starting discovery loop`
 - [x] Verify MQTT communication between sys-usb and Dom0 -> no communication
+
+### Root cause
+
+`/etc/init.d/setup-vchan` does not exist in the sys-usb DomU. The `setup-vchan.sh`
+script and `setup-vchan.initd` were only in `safecor-domu-base` (business domains),
+but `sys-usb` uses `safecor-sys-usb` which does not depend on `safecor-domu-base`.
+
+### Fix applied
+
+- Added `setup-vchan.sh` and `setup-vchan.initd` to `safecor-sys-usb` package
+- Added `rc-update add setup-vchan default` to `safecor-sys-usb` post-install
+- Added `rc-update add setup-vchan default` to `safecor-domu-base` post-install
+
+## Run 3
+
+- [ ] Rebuild `safecor-sys-usb` and `safecor-domu-base` packages
+- [ ] Refresh local Alpine repository on Dom0
+- [ ] Boot in debug mode
+- [ ] Verify `/etc/init.d/setup-vchan` exists in sys-usb
+- [ ] Verify `rc-service setup-vchan status` is running
+- [ ] Verify `/var/run/safecor/mqtt.sock` exists in sys-usb
+- [ ] Verify `/var/run/safecor/sys-usb-msg.sock` exists on Dom0
+- [ ] Verify MQTT communication between sys-usb and Dom0

@@ -20,20 +20,22 @@ install="$pkgname.post-install"
 subpackages=""
 replaces="mdev-conf alpine-baselayout-data fuse-common"
 options="!check"  # no tests provided
-source="modules
- safecor-sys-usb-controller.initd
- notify-disk-added.py
- notify-disk-removed.py
- mdev-usb-storage.sh
- 99-usbdisks.rules
- 99-usbserial.rules
- safecor-sys-usb-controller.py
- create-tty-tunnel.sh
- hardening.sh
- fuse.conf
- doas-svc-sys-usb-controller.conf
- safecor-vchan-sftp.initd
- "
+ source="modules
+  safecor-sys-usb-controller.initd
+  notify-disk-added.py
+  notify-disk-removed.py
+  mdev-usb-storage.sh
+  99-usbdisks.rules
+  99-usbserial.rules
+  safecor-sys-usb-controller.py
+  create-tty-tunnel.sh
+  hardening.sh
+  fuse.conf
+  doas-svc-sys-usb-controller.conf
+  safecor-vchan-sftp.initd
+  setup-vchan.sh
+  setup-vchan.initd
+  "
 
 CONFDIR="/etc/safecor"
 ROOTDIR="/usr/lib/safecor"
@@ -61,6 +63,10 @@ package() {
 
     # Direct mount (vchan SFTP)
     install -D -m755 "$srcdir"/safecor-vchan-sftp.initd "$pkgdir"/etc/init.d/safecor-vchan-sftp
+
+    # Vchan servers
+    install -D -m755 "$srcdir"/setup-vchan.sh "$pkgdir"/usr/lib/safecor/scripts/setup-vchan.sh
+    install -D -m755 "$srcdir"/setup-vchan.initd "$pkgdir"/etc/init.d/setup-vchan
 }
 
 sha512sums="
@@ -77,4 +83,6 @@ a58eae6ccf148f05c9bff54614c97a15897e1ef1629a082986b87c744c2b9efb320d708498632976
 ba274975e3c728b600dc828024f14d880183e1ca5a1214f121d20424398c402791bb85ae7eddf1118ed13801b6645bdc96946e666658999a17298e927a4afb21  fuse.conf
 3060d310c49aab0ca87d69fd5c6dda3ad6c35724ebdac29fa72f05980e40deed0d9d68bb618535a514123c49485b4f4b6f68b9b4104b9f40c09e3f711e041aa3  doas-svc-sys-usb-controller.conf
  18be53115e8b778432e565dfd69b03e1a2b7f1e13a01c3cc956cc800fe576c79435963cdebd72f25db955d3707662c9b90e2e8c76a212c9fe9406f3123b5aecd  safecor-vchan-sftp.initd
+788cf124304989c380e62cb71211b9d3bacdf44eb9a211e610fc92ec024e842a182b9b24f30183fcf9112788e436a9766cf0249465bcf2886d9ce7099779dd52  setup-vchan.sh
+db0503bdd0c360427704459755f41e77ed4231da512bc6149ac29dbb2bb26ae03881c61d8d8e35cd6cc3c33be10c6ccc4570c08740b2de61c81cc9fa80c53743  setup-vchan.initd
 "
