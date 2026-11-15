@@ -37,6 +37,7 @@ rc-service safecor-vchan-sftp start
 
 # Start vchan servers (msg, input, tty)
 rc-update add setup-vchan default
+rc-service setup-vchan start
 
 # Manage udev
 echo Start udev service

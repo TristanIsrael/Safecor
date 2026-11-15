@@ -26,3 +26,4 @@ rc-update add direct-mount default
 
 echo "Enable vchan servers"
 rc-update add setup-vchan default
+rc-service setup-vchan start
