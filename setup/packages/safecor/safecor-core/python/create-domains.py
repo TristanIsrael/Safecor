@@ -38,6 +38,7 @@ class DomainsFactory:
             DomainsFactory.__create_domd_usb()
 
         DomainsFactory.__create_business_domains()
+        DomainsFactory.build_packages_squashfs()
 
         SysLogger("create-domains").info("Finished creating domains")
 
@@ -379,6 +380,33 @@ vif=[]
 
     ###
     ### Private functions
+    @staticmethod
+    def build_packages_squashfs():
+        """Builds the packages.squashfs image from the local Alpine repository.
+
+        The resulting file is placed at /usr/lib/safecor/packages.squashfs,
+        matching the xvde disk target in the generated XL configs.
+        """
+        SysLogger("create-domains").info("Building packages.squashfs")
+        subprocess.run(
+            args=[
+                "mksquashfs",
+                "packages",
+                "packages.squashfs",
+                "-comp",
+                "zstd",
+                "-Xcompression-level",
+                "1",
+                "-b",
+                "128K",
+                "-noappend",
+                "-no-xattrs",
+            ],
+            cwd="/usr/lib/safecor",
+            check=True,
+        )
+        SysLogger("create-domains").info("packages.squashfs built successfully")
+
     @staticmethod
     def __create_blacklist_conf(domain_name: str = "") -> str:
         "Generates the PCI device blacklist configuration from the topology."
