@@ -147,10 +147,20 @@ class ResponseFactory:
         return {"state": "accepted" if accepted else "refused", "reason": reason}
 
     @staticmethod
-    def create_my_config(topology: Topology) -> dict:
-        """Serializes the topology for the my_config response."""
+    def create_my_config(topology: Topology, domain_name: str = "") -> dict:
+        """Serializes the topology for the my_config response.
+
+        If domain_name is provided, only that domain's entry is included.
+        Additionally, a ``direct_mount_domains`` list contains the names of all
+        domains that have direct_mount enabled (needed by sys-usb).
+        """
         domains = []
+        direct_mount_domains = []
         for d in topology.domains:
+            if d.direct_mount:
+                direct_mount_domains.append(d.name)
+            if domain_name and d.name != domain_name:
+                continue
             domains.append(
                 {
                     "name": d.name,
@@ -163,6 +173,7 @@ class ResponseFactory:
             "use_usb": topology.use_usb,
             "repository_disabled": topology.repository_disabled,
             "domains": domains,
+            "direct_mount_domains": direct_mount_domains,
             "screen": {
                 "width": topology.screen.width,
                 "height": topology.screen.height,

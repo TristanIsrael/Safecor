@@ -314,7 +314,7 @@ class System(metaclass=SingletonMeta):
             domain.temp_disk_size = domain_desc.get("temp_disk_size", 0)
             domain.swap_size = domain_desc.get("swap_size", 0)
             domain.has_gui = domain_desc.get("has_gui", False)
-            domain.direct_mount = domain_desc.get("direct_mount", None)
+            domain.direct_mount = domain_desc.get("direct_mount", False)
 
             _topology.add_domain(domain)
 
@@ -472,7 +472,7 @@ class System(metaclass=SingletonMeta):
                 "temp_disk_size": domain.get("temp_disk_size", 0),
                 "swap_size": domain.get("swap_size", 0),
                 "has_gui": domain.get("has_gui", False),
-                "direct_mount": domain.get("direct_mount", None),
+                "direct_mount": domain.get("direct_mount", False),
             }
 
         topo_struct["domains"] = topo_domains

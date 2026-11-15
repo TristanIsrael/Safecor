@@ -225,7 +225,7 @@ class TestResponseFactory(unittest.TestCase):
         self.assertEqual(len(payload["domains"]), 2)
         self.assertEqual(payload["domains"][0]["name"], "main")
         self.assertEqual(payload["domains"][0]["direct_mount"], {"mode": "rw"})
-        self.assertIsNone(payload["domains"][1]["direct_mount"])
+        self.assertFalse(payload["domains"][1]["direct_mount"])
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ Safecor Licence — see python/lib/LICENCE.md
 import unittest
 from unittest.mock import MagicMock, patch
 
-from safecor import Constants, DirectMountManager
+from safecor import Constants, DirectMountManager, Topics
 
 
 class TestDirectMountManager(unittest.TestCase):
@@ -179,27 +179,50 @@ class TestDirectMountManager(unittest.TestCase):
             self.assertIsNone(result)
 
     def test_query_direct_mount_config_no_response(self):
-        with patch("safecor._direct_mount_manager.MqttFactory") as mock_factory:
-            mock_helper = MagicMock()
-            mock_helper.send_request.return_value = None
-            mock_factory.return_value.get_api_helper.return_value = mock_helper
+        with (
+            patch("safecor._direct_mount_manager.System"),
+            patch("safecor._direct_mount_manager.MqttFactory"),
+            patch("safecor._direct_mount_manager.Api") as mock_api_cls,
+        ):
+            mock_api = MagicMock()
+            mock_api_cls.return_value = mock_api
+
+            def mock_start(mqtt_client):
+                raise ConnectionError("MQTT broker not available")
+
+            mock_api.start.side_effect = mock_start
+
             result = self.manager._DirectMountManager__query_direct_mount_config()
             self.assertIsNone(result)
 
     def test_query_direct_mount_config_with_response(self):
+        response_data = {
+            "domains": [
+                {"name": "other", "direct_mount": None},
+                {"name": "test-domain", "direct_mount": {"mode": "ro"}},
+            ]
+        }
+        response_topic = f"{Topics.MY_CONFIG}/response"
+
         with (
             patch("safecor._direct_mount_manager.System") as mock_system,
-            patch("safecor._direct_mount_manager.MqttFactory") as mock_factory,
+            patch("safecor._direct_mount_manager.MqttFactory"),
+            patch("safecor._direct_mount_manager.Api") as mock_api_cls,
         ):
             mock_system.domain_name.return_value = "test-domain"
-            mock_helper = MagicMock()
-            mock_helper.send_request.return_value = {
-                "domains": [
-                    {"name": "other", "direct_mount": None},
-                    {"name": "test-domain", "direct_mount": {"mode": "ro"}},
-                ]
-            }
-            mock_factory.return_value.get_api_helper.return_value = mock_helper
+            mock_api = MagicMock()
+            mock_api_cls.return_value = mock_api
+
+            def mock_start(mqtt_client):
+                ready_cbs = mock_api.add_ready_callback.call_args_list
+                if ready_cbs:
+                    ready_cbs[0][0][0]()
+                msg_cbs = mock_api.add_message_callback.call_args_list
+                if msg_cbs:
+                    msg_cbs[0][0][0](response_topic, response_data)
+
+            mock_api.start.side_effect = mock_start
+
             result = self.manager._DirectMountManager__query_direct_mount_config()
             self.assertEqual(result, "ro")
 

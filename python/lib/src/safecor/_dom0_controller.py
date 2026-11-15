@@ -70,6 +70,7 @@ class Dom0Controller:
 
     __mqtt_lock = threading.Event()
     __is_shutting_down = False
+    __initialized = False
 
     def __init__(self, mqtt_client: MqttClient):
         """Instanciates the Dom0 controller.
@@ -93,7 +94,7 @@ class Dom0Controller:
     def start(self):
         """Starts the Dom0 controller.
 
-        When the Dom0 controlelr starts it automatically subscribes to the following topics:
+        When the Dom0 controller starts it automatically subscribes to the following topics:
 
         - :attr:`Topics.LIST_FILES`
         - :attr:`Topics.FILE_FOOTPRINT`
@@ -128,10 +129,10 @@ class Dom0Controller:
         self.mqtt_client.subscribe(f"{Topics.REPOSITORY_PATH}/request")
         self.mqtt_client.subscribe(f"{Topics.MY_CONFIG}/request")
 
-        # Handle the kernel's or configuration command line settings
-        self.__handle_settings()
-
-        Logger().debug("Safecor Dom0 controller is ready")
+        if not Dom0Controller._Dom0Controller__initialized:
+            Dom0Controller._Dom0Controller__initialized = True
+            self.__handle_settings()
+            Logger().debug("Safecor Dom0 controller is ready")
 
     def __on_mqtt_message(self, topic: str, payload: dict):
         # The message will be handled in a thread
@@ -174,7 +175,7 @@ class Dom0Controller:
             elif topic == f"{Topics.REPOSITORY_PATH}/request":
                 self.__handle_repository_path()
             elif topic == f"{Topics.MY_CONFIG}/request":
-                self.__handle_my_config()
+                self.__handle_my_config(payload)
         except Exception:
             Logger.print("An exception occured while handling the message")
 
@@ -467,17 +468,22 @@ class Dom0Controller:
         # Then we show the one asked
         XcbController().show_gui(new_gui)
 
-    def __handle_my_config(self):
+    def __handle_my_config(self, payload: dict):
         """Handle my_config: return the topology to the requesting domain.
 
-        The topology is read from the module-level `topology` object which was loaded
-        during Dom0Controller initialization (lazy init in __init__).
+        The topology is loaded via System.get_topology() which returns the
+        current module-level topology object (avoids stale reference issues).
 
-        NFR-1: Non-blocking (topology is already in memory).
+        The requesting domain's name is extracted from the payload and used
+        to filter the response to only include that domain's configuration.
+
+        NFR-1: Non-blocking (topology is already in memory after first load).
         NFR-2: Error handling via try/except.
         """
         try:
-            payload = ResponseFactory.create_my_config(topology)
-            self.mqtt_client.publish(f"{Topics.MY_CONFIG}/response", payload)
+            topo = System.get_topology()
+            domain_name = payload.get("domain_name", "")
+            response = ResponseFactory.create_my_config(topo, domain_name)
+            self.mqtt_client.publish(f"{Topics.MY_CONFIG}/response", response)
         except Exception as e:
             Logger().error(f"Failed to handle my_config request: {e}")

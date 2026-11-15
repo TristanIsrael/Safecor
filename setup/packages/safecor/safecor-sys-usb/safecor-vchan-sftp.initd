@@ -26,27 +26,57 @@ start() {
     mkdir -p /var/run/safecor
     eend 0
 
-    # Read topology to find domains with direct_mount enabled
-    # The topology is available as a JSON file at /etc/safecor/topology.json
-    TOPOLOGY_FILE="/etc/safecor/topology.json"
-    if [ ! -f "$TOPOLOGY_FILE" ]; then
-        eerror "Topology file not found: $TOPOLOGY_FILE"
-        return 1
-    fi
-
     ebegin "Starting vchan SFTP channels"
 
-    # Extract domain names that have direct_mount from topology
-    # Using python3 to parse JSON (available on the system)
-    domains=$(python3 -c "
-import json, sys
-with open('$TOPOLOGY_FILE') as f:
-    topo = json.load(f)
-business = topo.get('business', {})
-for d in business.get('domains', []):
-    if 'direct_mount' in d:
+    # Query topology via MQTT to find domains with direct_mount enabled
+    domains=""
+    query_ok=0
+    for i in $(seq 1 15); do
+        domains=$(python3 -c "
+import sys
+sys.path.insert(0, '/usr/lib/safecor')
+import threading
+from safecor import Api, MqttFactory, Topics
+
+result = [None]
+event = threading.Event()
+
+def on_ready():
+    Api().subscribe(f'{Topics.MY_CONFIG}/response')
+    Api().publish(f'{Topics.MY_CONFIG}/request', {})
+
+def on_message(topic, payload):
+    if topic == f'{Topics.MY_CONFIG}/response':
+        result[0] = payload
+        event.set()
+
+mqtt_client = MqttFactory.create_mqtt_client_domu('safecor-vchan-sftp')
+Api().add_ready_callback(on_ready)
+Api().add_message_callback(on_message)
+Api().start(mqtt_client)
+
+if not event.wait(timeout=10):
+    sys.exit(1)
+
+if result[0] is None:
+    sys.exit(1)
+for d in result[0].get('domains', []):
+    if d.get('direct_mount'):
         print(d['name'])
-")
+Api().stop()
+" 2>/dev/null)
+        if [ $? -eq 0 ]; then
+            query_ok=1
+            break
+        fi
+        sleep 2
+    done
+
+    if [ "$query_ok" -ne 1 ]; then
+        logger -s -t "Safecor/safecor-vchan-sftp" -p user.err "Failed to query topology via MQTT"
+        eerror "Failed to query topology via MQTT"
+        return 1
+    fi
 
     if [ -z "$domains" ]; then
         einfo "No domains with direct_mount found in topology"

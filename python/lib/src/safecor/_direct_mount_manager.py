@@ -12,9 +12,10 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 import time
 
-from . import Constants, Logger, MqttFactory, System, Topics
+from . import Api, Constants, Logger, MqttFactory, System, Topics
 
 VCHAN_SFTP_SCRIPT_PATH = "/usr/local/bin/vchan-sftp"
 DOMID_WAIT_TIMEOUT = 60
@@ -134,10 +135,32 @@ class DirectMountManager:
         Returns:
             The mount mode ("ro" or "rw"), or None if not enabled.
         """
+        domain_name = System.domain_name()
+        result = [None]
+        event = threading.Event()
+
+        def on_ready():
+            Api().subscribe(f"{Topics.MY_CONFIG}/response")
+            Api().publish(f"{Topics.MY_CONFIG}/request", {"domain_name": domain_name})
+
+        def on_message(topic, payload):
+            if topic == f"{Topics.MY_CONFIG}/response":
+                result[0] = payload
+                event.set()
+
         try:
-            domain_name = System.domain_name()
-            api_helper = MqttFactory().get_api_helper()
-            response = api_helper.send_request(Topics.MY_CONFIG, {})
+            mqtt_client = MqttFactory.create_mqtt_client_domu("direct-mount-manager")
+            Api().add_ready_callback(on_ready)
+            Api().add_message_callback(on_message)
+            Api().start(mqtt_client)
+
+            if not event.wait(timeout=10):
+                Logger().error(
+                    "DirectMountManager: timeout waiting for my_config response"
+                )
+                return None
+
+            response = result[0]
             if response:
                 for d in response.get("domains", []):
                     if d.get("name") == domain_name:
@@ -146,6 +169,8 @@ class DirectMountManager:
                             return dm.get("mode", "rw")
         except Exception as e:
             Logger().error(f"DirectMountManager: error querying my_config: {e}")
+        finally:
+            Api().stop()
         return None
 
     def __wait_for_domid(self, domain_name: str):
