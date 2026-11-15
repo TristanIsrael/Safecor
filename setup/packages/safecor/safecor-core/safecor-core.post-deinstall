@@ -4,6 +4,7 @@ echo Clean system
 rm -rf /etc/safecor
 rm -rf /usr/lib/safecor
 rm -rf /var/lib/xen/images/*
+rm -rf /var/log/safecor
 
 # Restore QEMU binary files
 rm /usr/bin/qemu-system-x86_64 /usr/bin/qemu-system-x86_64.cmd
