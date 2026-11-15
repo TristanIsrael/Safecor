@@ -88,6 +88,7 @@ The following documents **must** be read during design, planning and coding:
 - Follow the existing naming conventions. The codebase is the reference; when in doubt, match the surrounding code.
 - Use `ruff` format to format Python code consistently.
 - Do not introduce unrelated formatting changes.
+- When creating an `openrc` `.initd` file, do not write python code inside the script but write python file instead and call the python script from the `initd` script .
 
 Naming conventions:
 
@@ -103,6 +104,9 @@ Naming conventions:
 | MQTT topics | `saphir/analysis/{request,response,status,error,stop,resume,reset}`; `system/...` | — |
 
 - Comments, documentation and commits are in **English** (see *Documentation standards*).
+
+## Security rules
+- The `openrc` `.initd` scripts must execute commands with a regular user (`svc-*`) and not root. If no user matches the script's subject, create a new one in the `post-install` script of the package.
 
 ## Linting and static analysis
 
