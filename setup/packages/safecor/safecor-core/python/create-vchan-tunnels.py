@@ -51,7 +51,7 @@ def get_domid(domain_name: str) -> str:
 
 
 def vchan_endpoint_exists(domid: str, channel: str) -> bool:
-    return read_xenstore(f"/local/domain/{domid}/data/vchan/{channel}") != ""
+    return read_xenstore(f"/local/domain/{domid}/data/vchan/{channel}/ring-ref") != ""
 
 
 def start_vchan_client(domid: str, channel: str, socket_path: str) -> bool:

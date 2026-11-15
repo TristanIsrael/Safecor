@@ -7,6 +7,7 @@ name="safecor-sys-usb-controller"
 user="svc-sys-usb-controller"
 
 depend() {
+    after setup-vchan
     before udev
 }
 
