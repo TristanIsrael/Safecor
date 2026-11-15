@@ -78,6 +78,7 @@ def start_vchan_client(domid: str, channel: str, socket_path: str) -> bool:
 
 def main():
     SysLogger("create-vchan-tunnels").info("Starting vchan tunnel manager")
+    print("vchan-tunnels: starting discovery loop")
 
     while True:
         domain_names = list_domain_names()

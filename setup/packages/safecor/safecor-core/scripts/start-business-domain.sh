@@ -61,7 +61,7 @@ else
     sleep 1
 
     # Write the domid to xenstore for other domains to discover
-    domid=$(xl info "$1" | grep -w ID | awk '{print $3}')
+    domid=$(xl domid "$1")
     if [ -n "$domid" ]; then
         xenstore-write /local/domain/system/domids/$1 "$domid"
         logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "Domain $1 domid $domid written to xenstore"
@@ -90,7 +90,7 @@ umask 007 # With this mask, the sockets will be created with the mode 770
 sleep 1
 
 # Write the domid to xenstore for other domains to discover
-domid=$(xl info "$1" | grep -w ID | awk '{print $3}')
+domid=$(xl domid "$1")
 if [ -n "$domid" ]; then
     xenstore-write /local/domain/system/domids/$1 "$domid"
     logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "Domain $1 domid $domid written to xenstore"

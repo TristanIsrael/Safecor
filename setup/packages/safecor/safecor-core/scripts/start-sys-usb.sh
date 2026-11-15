@@ -12,7 +12,7 @@ umask 007 # With this mask, the sockets will be created with the mode 770
 sleep 1
 
 # Write the domid to xenstore for other domains to discover
-domid=$(xl info sys-usb | grep -w ID | awk '{print $3}')
+domid=$(xl domid sys-usb)
 if [ -n "$domid" ]; then
     xenstore-write /local/domain/system/domids/sys-usb "$domid"
     logger -s -t "Safecor/$SCRIPT_NAME" -p user.debug "sys-usb domid $domid written to xenstore"
