@@ -111,6 +111,7 @@ def make_report_services() -> Table:
         "virtlogd",
         "xenconsoled",
         "libvirtd",
+        "create-vchan-tunnels",
         "create-mqtt-tunnels",
         "splash",
         "xserver",
