@@ -139,7 +139,7 @@ class TestTopology(unittest.TestCase):
 
     def test_domain_direct_mount_default(self):
         domain = Domain("test", DomainType.BUSINESS)
-        self.assertIsNone(domain.direct_mount)
+        self.assertFalse(domain.direct_mount)
 
     def test_domain_direct_mount_rw(self):
         domain = Domain("test", DomainType.BUSINESS)

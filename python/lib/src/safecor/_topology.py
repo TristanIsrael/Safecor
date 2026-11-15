@@ -36,7 +36,7 @@ class Domain:
     temp_disk_size = 0
     swap_size = 0
     has_gui = False
-    direct_mount = None  # dict with "mode" key ("ro" or "rw"), or None if not enabled
+    direct_mount = False  # dict with "mode" key ("ro" or "rw"), or False if not enabled
 
     def __init__(self, domain_name: str, domain_type: DomainType):
         self.name = domain_name

@@ -21,26 +21,38 @@ log_error() {
 HAS_DIRECT_MOUNT=$(python3 -c "
 import sys
 sys.path.insert(0, '/usr/lib/safecor')
-from safecor import System, Constants, MqttFactory, Topics, RequestFactory
-import json, time
+import threading
+from safecor import Api, MqttFactory, System, Topics
 
-# Get the current domain name
 domain_name = System.domain_name()
+result = [None]
+event = threading.Event()
 
-# Query my_config
-api_helper = MqttFactory().get_api_helper()
-try:
-    response = api_helper.send_request(Topics.MY_CONFIG, {})
-    if response:
-        domains = response.get('domains', [])
-        for d in domains:
-            if d.get('name') == domain_name:
-                dm = d.get('direct_mount')
-                if dm:
-                    print(dm.get('mode', 'rw'))
-                    sys.exit(0)
-except Exception:
-    pass
+def on_ready():
+    Api().subscribe(f'{Topics.MY_CONFIG}/response')
+    Api().publish(f'{Topics.MY_CONFIG}/request', {'domain_name': domain_name})
+
+def on_message(topic, payload):
+    if topic == f'{Topics.MY_CONFIG}/response':
+        result[0] = payload
+        event.set()
+
+mqtt_client = MqttFactory.create_mqtt_client_domu('setup-direct-mount')
+Api().add_ready_callback(on_ready)
+Api().add_message_callback(on_message)
+Api().start(mqtt_client)
+
+if not event.wait(timeout=10):
+    sys.exit(1)
+
+response = result[0]
+if response:
+    for d in response.get('domains', []):
+        if d.get('name') == domain_name:
+            dm = d.get('direct_mount')
+            if dm:
+                print(dm.get('mode', 'rw'))
+                sys.exit(0)
 sys.exit(1)
 " 2>/dev/null)
 
