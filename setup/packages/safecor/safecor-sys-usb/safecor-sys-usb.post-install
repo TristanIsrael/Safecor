@@ -14,6 +14,10 @@ modprobe vfat
 modprobe ntfs3
 modprobe ext4
 modprobe fuse
+modprobe xen_gntalloc
+modprobe xen_gntdev
+modprobe xen_evtchn
+modprobe xen_gnttab
 
 # Create accounts and handle permissions
 echo "**** Creating service accounts"
