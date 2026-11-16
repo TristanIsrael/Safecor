@@ -189,19 +189,46 @@ Three issues combined prevented the vchan clients from connecting:
 ## Run 6
 
 Preparation:
-- [ ] Rebuild `safecor-core`, `safecor-sys-usb` and `safecor-domu-base` packages
-- [ ] Refresh local Alpine repository on Dom0
-- [ ] Boot in debug mode
+- [x] Rebuild `safecor-core`, `safecor-sys-usb` and `safecor-domu-base` packages
+- [x] Refresh local Alpine repository on Dom0
+- [x] Boot in debug mode
 
 Verification:
-- [ ] Verify `xenstore-ls /local/domain/system/vchan` lists one entry per domain (msg for all, input/tty for sys-usb)
-- [ ] Verify where `vchan-socket-proxy` (server side) actually writes the ring data — if it does not land in the shared namespace, adjust the 15 s wait / path in `setup-vchan.sh`
-- [ ] Verify `/var/run/safecor/mqtt.sock` exists in sys-usb and in the business domains
-- [ ] Verify the mosquitto listeners exist on Dom0: `/tmp/mqtt-dom0.sock`, `/tmp/mqtt-local.sock`, `/tmp/mqtt-sys-usb.sock`, and one per business domain
-- [ ] Verify `/var/log/safecor/vchan-tunnels.log` shows client connections
-- [ ] Verify MQTT communication between sys-usb and Dom0
-- [ ] Verify the boot is not blocked: `setup-vchan` and `safecor-vchan-sftp` return immediately and the clients keep running detached
-- [ ] Verify the debugging tty on sys-usb
-- [ ] Validate the file read on a USB storage from a Domain (direct mount)
-- [ ] Validate the GUI display
+- [x] Verify `xenstore-ls /local/domain/system/vchan` lists one entry per domain (msg for all, input/tty for sys-usb) -> `xenstore-ls /local/domain/system/vchan` returns `xenstore-ls: xs_directory (/local/domain/system/vchan): No such file or directory`
+- [x] Verify where `vchan-socket-proxy` (server side) actually writes the ring data — if it does not land in the shared namespace, adjust the 15 s wait / path in `setup-vchan.sh` -> See the previous point
+- [x] Verify `/var/run/safecor/mqtt.sock` exists in sys-usb and in the business domains -> It exists in sys-usb.
+- [x] Verify the mosquitto listeners exist on Dom0: `/tmp/mqtt-dom0.sock`, `/tmp/mqtt-local.sock`, `/tmp/mqtt-sys-usb.sock`, and one per business domain -> OK
+- [x] Verify `/var/log/safecor/vchan-tunnels.log` shows client connections -> No connection showed. See the connection problem below.
+- [x] Verify MQTT communication between sys-usb and Dom0 -> not working
+- [x] Verify the boot is not blocked: `setup-vchan` and `safecor-vchan-sftp` return immediately and the clients keep running detached -> OK in `sys-usb` but not the others business domains including `sys-gui`.
+- [x] Verify the debugging tty on sys-usb -> I get no console.
+- [x] Validate the file read on a USB storage from a Domain (direct mount) -> No business domain usable.
+- [x] Validate the GUI display -> Not working
 
+- Mosquitto does not start because of `mosquitto.conf` file syntax. The correct syntax is `include_dir /etc/mosquitto/conf.d` and it automatically loads the `.conf` files from that dir.
+- In the log file `/var/log/safecor/vchan-sftp.log` on `sys-usb` there are python error. The client seems to try to connect to a TCP socket instead of a UNIX socket.
+```
+Traceback (most recent call last):
+  File "/usr/lib/safecor/bin/safecor-vchan-sftp.py", line 174, in <module>
+    main()
+    ~~~~^^
+  File "/usr/lib/safecor/bin/safecor-vchan-sftp.py", line 147, in main
+    domains = query_direct_mount_domains()
+  File "/usr/lib/safecor/bin/safecor-vchan-sftp.py", line 59, in query_direct_mount_domains
+    Api().start(mqtt_client)
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/site-packages/safecor/_api.py", line 167, in start
+    self.__mqtt_client.start()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/site-packages/safecor/_mqtt_client.py", line 137, in start
+    self.mqtt_client.loop_start()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/site-packages/paho/mqtt/client.py", line 2343, in loop_start
+    self._sockpairR, self._sockpairW = _socketpair_compat()
+                                       ~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/site-packages/paho/mqtt/client.py", line 453, in _socketpair_compat
+    sock1.connect(("127.0.0.1", port))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 101] Network unreachable
+```
+- The business domains are stucked during their start and the console cannot be connected, probably because of the vchan connection script blocking (see preivous `sys-usb` fix)
