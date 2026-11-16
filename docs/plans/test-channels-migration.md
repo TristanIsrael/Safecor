@@ -259,3 +259,23 @@ OSError: [Errno 101] Network unreachable
       with the POSIX `socket.socketpair()` (needs no loopback)
 - [ ] Run 7: verify where the vchan ring data is published and adjust the
       client/server paths if needed
+
+## Run 7
+
+Preparation:
+- [ ] Rebuild `safecor-core` (mosquitto.conf) and `safecor-lib` (paho socketpair fix) packages
+- [ ] Refresh local Alpine repository on Dom0
+- [ ] Boot in debug mode
+
+Verification:
+- [ ] Verify mosquitto starts on Dom0 (no config error in syslog)
+- [ ] Verify the mosquitto listeners exist on Dom0: `/tmp/mqtt-dom0.sock`, `/tmp/mqtt-local.sock`, `/tmp/mqtt-sys-usb.sock`, and one per business domain
+- [ ] Verify `/var/log/safecor/vchan-sftp.log` has no more paho traceback (the topology query succeeds)
+- [ ] **Locate the vchan ring data** — on Dom0 run `xenstore-ls /local/domain/system/vchan`, `xenstore-ls /local/domain/0/data/vchan` and, for each DomU, `xenstore-ls /local/domain/<domid>/data/vchan`: the ring data must be found exactly once, and the client/server paths (`setup-vchan.sh`, `create-vchan-tunnels.py`, SFTP client scripts) must be aligned with where `vchan-socket-proxy` actually publishes it
+- [ ] Verify `/var/run/safecor/mqtt.sock` exists in sys-usb and in the business domains
+- [ ] Verify `/var/log/safecor/vchan-tunnels.log` shows client connections
+- [ ] Verify MQTT communication between sys-usb and Dom0 (ping)
+- [ ] Verify the boot is not blocked in every domain (sys-usb, business domains, sys-gui): `setup-vchan` and `safecor-vchan-sftp` return immediately and the domains fully boot
+- [ ] Verify the debugging tty on sys-usb
+- [ ] Validate the file read on a USB storage from a Domain (direct mount)
+- [ ] Validate the GUI display
