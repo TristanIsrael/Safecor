@@ -67,7 +67,7 @@ package() {
     install -D -m755 "$srcdir"/safecor-vchan-sftp.py "$pkgdir"/$BINDIR/safecor-vchan-sftp.py
 
     # Vchan servers
-    install -D -m755 "$srcdir"/setup-vchan.sh "$pkgdir"/usr/lib/safecor/scripts/setup-vchan.sh
+    install -D -m755 "$srcdir"/setup-vchan.sh "$pkgdir"/$BINDIR/setup-vchan.sh
     install -D -m755 "$srcdir"/setup-vchan.initd "$pkgdir"/etc/init.d/setup-vchan
 }
 

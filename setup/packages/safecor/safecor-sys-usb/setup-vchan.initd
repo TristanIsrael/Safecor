@@ -15,7 +15,7 @@ depend() {
 
 start() {
     ebegin "Starting vchan clients"
-    /usr/lib/safecor/scripts/setup-vchan.sh
+    /usr/lib/safecor/bin/setup-vchan.sh
     eend $?
 }
 
