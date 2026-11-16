@@ -1,6 +1,3 @@
-9pnet
-9pnet_xen
-9p
 exfat
 vfat
 ntfs3
@@ -8,3 +5,7 @@ usbcore
 usb-storage
 ehci_hcd
 fuse
+xen_gntalloc
+xen_gntdev
+xen_evtchn
+xen_gnttab

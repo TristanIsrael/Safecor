@@ -1,5 +1,15 @@
 # Validation tests for the migration from channels to pvchan
 
+## Objectives
+
+The objectives are:
+
+[ ] Validate the channels replacement for the messaging on all Domains
+[ ] Validate the channels replacement for the inputs on sys-usb
+[ ] Validate the channels replacement for the debugging tty on sys-usb
+[ ] Validate the file read on a USB storage from a Domain
+[ ] Validate the GUI display
+
 ## Run 1
 
 - There is no log for the new services, we should have a dedicated log for each service in `/var/log/safecor`.
@@ -108,10 +118,25 @@ Dom0 never started the vchan client.
 
 ## Run 4
 
-- [ ] Rebuild `safecor-core` and `safecor-sys-usb` packages
-- [ ] Refresh local Alpine repository on Dom0
-- [ ] Boot in debug mode
+- [x] Rebuild `safecor-core` and `safecor-sys-usb` packages
+- [x] Refresh local Alpine repository on Dom0
+- [x] Boot in debug mode
+- [x] Verify `/var/run/safecor/mqtt.sock` exists in sys-usb -> No
+- [x] Verify `/var/run/safecor/sys-usb-msg.sock` exists on Dom0 -> Does not exist
+- [x] Verify `/var/log/safecor/vchan-tunnels.log` shows client connections -> No
+- [x] Verify MQTT communication between sys-usb and Dom0 -> There is no connection in the file
+
+
+## Run 5
+
+- [x] Rebuild `safecor-core` and `safecor-sys-usb` packages
+- [x] Refresh local Alpine repository on Dom0
+- [x] Boot in debug mode
 - [ ] Verify `/var/run/safecor/mqtt.sock` exists in sys-usb
-- [ ] Verify `/var/run/safecor/sys-usb-msg.sock` exists on Dom0
+- [x] Verify `/var/run/safecor/sys-usb-msg.sock` exists on Dom0 -> Does not exist but `sys-usb-input.sock` and `sys-usb-tty.sock` exist. Now the vchan server connects to `/tmp/msqt_msg_1.sock` (verified).
 - [ ] Verify `/var/log/safecor/vchan-tunnels.log` shows client connections
-- [ ] Verify MQTT communication between sys-usb and Dom0
+- [x] Verify MQTT communication between sys-usb and Dom0 -> There is no connection in the file
+
+- Sys-usb is to long to fail on socket connection. It waits 2 or 3 minutes a first time then it is blocked on `Starting vchan SFTP channels`. Maybe the vchan is created but the process is blocking because of a `wait` and should be started detached?
+- in `safecor-sys-usb`, the file `safecor-vchan-sftp.initd` should be split into one `initd` file and one shell ou python script with the logic. 
+

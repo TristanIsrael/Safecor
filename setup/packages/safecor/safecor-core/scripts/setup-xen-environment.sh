@@ -10,6 +10,13 @@ logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Setup XEN environment"
 
+# Load kernel modules
+modprobe xen_gntalloc
+modprobe xen_gntdev
+modprobe xen_evtchn
+modprobe xen_blkback
+modprobe xen_privcmd
+
 # Setup the replacement script for qemu-system to patch the command
 # line sent by XEN
 # Setup QEMU proxy for XEN display
