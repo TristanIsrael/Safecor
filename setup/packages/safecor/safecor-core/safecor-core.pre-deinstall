@@ -1,7 +1,6 @@
 #!/bin/sh
 
 rc-service safecor-core-controller stop
-rc-service create-mqtt-tunnels stop
 rc-service create-vchan-tunnels stop
 rc-service mosquitto stop
 rc-service xserver stop
@@ -16,7 +15,6 @@ rc-update del apparmor boot
 rc-update del xenconsoled
 rc-update del mosquitto
 rc-update del create-vchan-tunnels
-rc-update del create-mqtt-tunnels
 rc-update del safecor-core-controller
 rc-update del xserver
 rc-update del orchestrator

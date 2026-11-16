@@ -31,7 +31,6 @@ init/safecor-core-controller.initd
 init/splash.initd
 init/orchestrator.initd
 init/xserver.initd
-init/create-mqtt-tunnels.initd
 init/create-vchan-tunnels.initd
 init/debug.initd
 init/hardening.initd
@@ -78,7 +77,6 @@ python/start-safecor-core-controller.py
 python/write-screen-information-to-xenstore.py
 python/generate-x-config.py
 python/get-total-memory.py
-python/create-mqtt-tunnels.py
 python/create-vchan-tunnels.py
 python/orchestrator.py
 python/create-splash.py
@@ -183,7 +181,6 @@ package() {
     install -D -m640 "$srcdir"/generate-x-config.py "$pkgdir/$BINDIR"/generate-x-config.py
     install -D -m640 "$srcdir"/create-domains.py "$pkgdir/$BINDIR"/create-domains.py
     install -D -m750 "$srcdir"/start-safecor-core-controller.py "$pkgdir/$BINDIR"/start-safecor-core-controller.py 
-    install -D -m750 "$srcdir"/create-mqtt-tunnels.py "$pkgdir/$BINDIR"/create-mqtt-tunnels.py
     install -D -m750 "$srcdir"/create-vchan-tunnels.py "$pkgdir/$BINDIR"/create-vchan-tunnels.py
     install -D -m755 "$srcdir"/create-splash.py "$pkgdir/$BINDIR"/create-splash.py 
     install -D -m755 "$srcdir"/check-system.py "$pkgdir/$BINDIR"/check-system
@@ -199,7 +196,6 @@ package() {
 
     # Mosquitto
     install -D -m644 "$srcdir"/mosquitto.conf "$pkgdir"/etc/mosquitto/mosquitto.conf
-    install -D -m755 "$srcdir"/create-mqtt-tunnels.initd "$pkgdir"/etc/init.d/create-mqtt-tunnels
     install -D -m755 "$srcdir"/create-vchan-tunnels.initd "$pkgdir"/etc/init.d/create-vchan-tunnels
 
     # Debugging
@@ -224,8 +220,7 @@ c6d7fd6e6a6d25be416ea3982b3ea41838547c2f0d6de29ef1f4042385e33b0f2b8998902a8c4318
 e75dbba1024005dbea4f7aa57351a50cde3331652c1c7aa3302f9ed7311d9a71554b5de65ad86978a62a165084a2f6db131528cfea9e8a9d38827164653adf4f  splash.initd
 68c83cab0b309ed7ddb6e49a39acd281fb630a35e812b66c19e4b7db3bca757f10951ec01a6e491b2dcac99f101b18f71f41c8521db9432d7c3c6abfe9a9a43c  orchestrator.initd
 3b4a9bebd21eb756e057cb28b9194b110a4045cffa3d2ea9e231888960c2a989dc4bbbc72056eb5f7edb60a52c760067c437125b7cba99f55aef7e6f43e2f6c1  xserver.initd
-e8098118c70853e9ca1bc09a54c22d436243e4d397a26980d8a464c83467926c4ef8eb69c1856f5a5c6f6a08d17c48287d71026c66a2118df9f7d385d70d782c  create-mqtt-tunnels.initd
-0f6c263373d0722a4e460c8ce000bb40bf51a9de34678a2fbc108a95a850d1d78d19a5ed04e8a43a36183988a1fe90178cb3eba1fd25728fc0a1354fa1ac573c  create-vchan-tunnels.initd
+9a22b0a58ca6cc8c5579b273a7a056f777336c814e756ced7157e0808e0098f5c365aaad3e71cd8cf9acdabc181ea64e22fda2e5f926cad49ba3d0ea0cd6164e  create-vchan-tunnels.initd
 4dc10793c5b7bd2da756fe9399d2ec97bc38e84d969b4980f407a3ab1250cf3a028aad4ae87bc96daad3e9c77a3ae8e40b3ba5183424537ae823db9fcc743deb  debug.initd
 4693fc05f0e6ad2b7f180375d21a7ccd51bf66bac945917c8c41aaee0c217ed81bd66b3a764d6261f9ff297b87c5eb88067150fe855d277bb61e0290b743a009  hardening.initd
 7184b716021c2324537c9b9ae13077cec0f5828de13247b32d20e30d283bfb47442df56373fabf119de6e03e77fbda5ec5d8d72c4e09cf15abcc1fb92352ecb8  create-local-alpine-repository.sh
@@ -268,15 +263,14 @@ dff4c20c1b4195095824bfbff01e0fccb4818798b82693b1e039d9e7a79dec7e9479603f9c988cab
 ed448802addbba1195ee3044ddf3719c6f92985de5054f4098d6fcdb04d0609772e84890c215c82e14e68d9e0b392136d49533ac7c0000e184812b7d40343d9a  write-screen-information-to-xenstore.py
 8b1d43e818d2a3dd0d85fa88acfb12dbccd1aa4b0b02f02be7946bea06e73f4ca20c2d5fac813cf625dac557e23dd3f4c422a1935712d126313ab0f1bc87c707  generate-x-config.py
 9ad5625b5b1421e2e66bee206a88a35d3c4a9b11ef57f9eeb74845a9d505a6256c1f6c61e51a2d08ac29d20eb860cef63905b3bd19639695863d31a586748153  get-total-memory.py
-09af4dd4b47753256973774f643d40ad27ec760b0314976e51b5756662fdea08e05c435013e2dd3222f082bfe06b37f457880066bfe01c0b9418c37c6bb53f76  create-mqtt-tunnels.py
-fa9a4ee9e56f3dc8212527a67afcbdd82e994263484064dd7a246888336cc9242b2ad97847d28ef3e7483eb7335fa99314d10dd00ec0069a2a7e8340d4b1ffd4  create-vchan-tunnels.py
-55068fbecc6350ca84f91e11f8b9ebceac624c519ebf4762599830b8d3558be6bed445ddb1475989bf40f702bf4a57f9da341fcbf8ce7454a28aac5a00ca63e8  orchestrator.py
+308eeebc55743a7d2429aa659127ddc45de8ea5624e0c6d76fd87dd672250b45c72923968c102532e0fcf0b80ad5af2bb82afe258820f400a2843fb9eee1edb0  create-vchan-tunnels.py
+7acf0da0e8b9f6499c44ac38a128dce2e2f6042291d5037b3848a1b4a6e828ed348a39faf785349b78abf87917657adc24ba91c1e2b01ed431401e09879c18cc  orchestrator.py
 d54f19bd5af419c75169331ae9fd5e579dc664d402633dd47deac9e708e1e3a37e36407565d76e0c9e067db870538e909bccdf463cd24a7b242bce02d6bb736f  create-splash.py
-1ac8b0e47d49754096b62c9e32e3b2868e2fe4447e9194114417f4982c38f9d59f546cad8bb6bfb7b66e6d21ba0b3a71820ad660cb9241ddf4236cd071f14f54  check-system.py
-c7bc5bff21406d6348fc871b952fef26c0516a47f26c426d812e3c1726ee74648b799f734e9ac4e00f5c68f5292223d9c908433065e9d28f37e66bcb6758afe7  inputs_proxy.py
+ea21fa6631afdadc0768ee0425d65297f441c9f8bf85ed3f521d990f4604fe7a170d4fbfbc610f8df008af4679a8753ea74fe79b48d7a67a08654c29dd088cfc  check-system.py
+bafd658ad8fd293b3d0f0fce315fa213d8e0661609fe9f5d42c5e82fd8a7f7639b8a78443490be859b716a357e0b8530eb48c3871995892173b1dcf73fbee3db  inputs_proxy.py
 0b50a10d5473fd4f9260e394eaafe7185fea2426c6ce011047140f19776435a29f518f07c9b545a8f3480aeb1f1fa522a918de25d26bf8d85cd7e8dfb5f8b896  splash_ng.png
 5fdc99303683bfcc1c374145f50885bfb655867d8bea599dbdd99d69bf706c4a7e0d2816a056fbd12aeb85134065d9f08c1e9caea31b25dd9dbd51828ca2bb1d  qemu-system-x86_64.cmd
-e490d2dc0e421416984f1971187622c3a75d7a3b086039d271fb7af909acad0ea09bd659c00d925fd642d6f22ec4def09a7276ddc8daa0264650c0df4922ae02  create-tty-tunnel.sh
+d4366e14742c87d1e4ce78f17cb2f67bf32c58066b63169652ea1c7d3112248c82b503bbed7ff94b8bc3386606f91d114875819d443e9fe964fd50b4a525318e  create-tty-tunnel.sh
 a83ef70b695b23c2fe1c5469f8e42a41b7cffc9cb3fefd99d13e4b73f8487d2aaa79b564b5eb9e95357179f77281cc08da4b5fd019544426488b769d15c5e59f  create-tty-terminal.sh
 0442d08442cdde29e1911e4fefa3e5ea3dea9605f28d4ac013630b7950cc24646617d8667b833fc73b221c5a734a824a2d3311d63db9acec8420192165285f0d  start-mqtt-logger.sh
 e1c484a578a1590c2f83944a233f1cc5e90613f341b5bc65ab52b197c6decdea53e1200b8f9062e56abf9389b8d35cc7092bad7c6ef927fb060517a8a46d7d2c  domu.apkovl.tar.gz.tmpl

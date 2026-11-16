@@ -74,7 +74,6 @@ rc-service xenconsoled start
 rc-update add xenconsoled
 rc-update add mosquitto
 rc-update add create-vchan-tunnels
-rc-update add create-mqtt-tunnels
 rc-update add safecor-core-controller
 rc-update add xserver
 rc-update add orchestrator

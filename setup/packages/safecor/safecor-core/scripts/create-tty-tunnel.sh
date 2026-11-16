@@ -6,17 +6,10 @@
 SCRIPT_NAME=$(basename "$0")
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
 
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Waiting for the socket sys-usb-tty.sock..."
-while [ ! -e "/var/run/safecor/sys-usb-tty.sock" ]; do
-    sleep 1
-done
+mkdir -p /var/run/safecor
 
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "The socket sys-usb-tty-sock is ready"
-
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Creating a tunnel between the socket sys-usb-tty-sock and the device tty-admin..."
-#socat UNIX-CONNECT:/var/run/safecor/sys-usb-tty.sock PTY,link=/var/run/safecor/tty-admin,raw,echo=0,ctty
+logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Creating TTY tunnel (listen mode)..."
 while true; do
-    socat PTY,link=/var/run/safecor/tty-admin,raw,echo=0,waitslave UNIX-CONNECT:/var/run/safecor/sys-usb-tty.sock
+    socat PTY,link=/var/run/safecor/tty-admin,raw,echo=0,ctty UNIX-LISTEN:/var/run/safecor/sys-usb-tty.sock,reuseaddr
     sleep 1
 done
-logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... the tunnel is now closed"

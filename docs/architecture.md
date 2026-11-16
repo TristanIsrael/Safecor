@@ -100,10 +100,10 @@ Dom0 is not only the `safecor` control side; it runs the whole orchestration sta
 (Wiki `Safecor-core.md`):
 - **Mosquitto** — the MQTT broker (core of the messaging).
 - **Safecor vchan tunnels** — `create-vchan-tunnels.py` discovers DomUs in xenstore and runs
-  `vchan-socket-proxy` clients that bridge each DomU's PV channels (msg, input, tty) to local
-  UNIX sockets in `/var/run/safecor/`.
-- **Safecor MQTT tunnels** — `create-mqtt-tunnels.py` proxies MQTT messages between the DomUs'
-  UNIX sockets (created by the vchan tunnels) and the Mosquitto broker.
+  `vchan-socket-proxy` servers that bridge each DomU's PV channels (msg, input, tty) to local
+  UNIX sockets. The `msg` channel connects directly to a Mosquitto broker socket
+  (`/tmp/mqtt_msg_<domid>.sock`); the `input` and `tty` channels connect to their respective
+  local sockets in `/var/run/safecor/`.
 - **Safecor orchestrator** — creates the virtual inputs (keyboard/mouse/touch), the Xen config
   files, and starts the Domains.
 - **Safecor inputs proxy** — filters and copies input data between the Domains and the physical
@@ -167,7 +167,8 @@ configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remainin
    OpenRC `localmount` mounts the 9p shares from `/etc/fstab`.
    `safecor-core-init` (boot runlevel) fixes permissions, runs `apk add` from the 9p repo.
     Domain-specific package post-install (e.g. `safecor-sys-usb`, `safecor-domu-base`).
-    `setup-vchan` (default runlevel) starts `vchan-socket-proxy` servers (msg, input, tty).
+    `setup-vchan` (default runlevel) starts `vchan-socket-proxy` clients (msg, input, tty)
+    connecting to the Dom0 vchan servers.
     Controller process starts, connects to MQTT over the vchan UNIX socket
     (`/var/run/safecor/mqtt.sock`).
 
@@ -192,10 +193,11 @@ a `doas` config permits it to run `xl`, `xenstore-read`, and the start scripts a
 ### 3.1 Transports
 `MqttClient` supports two transports (`ConnectionType`):
 - **UNIX socket** — used by both Dom0 (`/tmp/mqtt_msg_dom0.sock`) and DomU
-  (`/var/run/safecor/mqtt.sock`). On the DomU side, the socket is bridged to Dom0 via
-  `vchan-socket-proxy` (PV channel). On the Dom0 side, `create-vchan-tunnels.py` runs
-  `vchan-socket-proxy` clients that expose each DomU's vchan as a local UNIX socket
-  (`/var/run/safecor/<name>-msg.sock`), which `create-mqtt-tunnels.py` then forwards to Mosquitto.
+  (`/var/run/safecor/mqtt.sock`). On the DomU side, `vchan-socket-proxy` runs as a **client**
+  that creates the local UNIX socket and connects to the Dom0 vchan server. On the Dom0 side,
+  `create-vchan-tunnels.py` runs `vchan-socket-proxy` **servers** that connect directly to the
+  Mosquitto broker sockets (`/tmp/mqtt_msg_<domid>.sock`). The vchan xenstore path is
+  `/local/domain/0/data/vchan/<domid>/msg`.
 - **TCP on localhost** — `TCP_DEBUG`, development only. **This is what the emulator uses**
   (all peers and the product under test connect to a local `mosquitto` on port 1883).
 

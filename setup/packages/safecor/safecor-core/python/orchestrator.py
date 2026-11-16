@@ -686,16 +686,11 @@ def on_mqtt_ready():
     # Attach PCI devices
     expose_pci_devices()
 
+    # Start input proxy (creates and listens on the input socket)
+    inputs_proxy.start()
+
     # Start sys-usb
     if can_create_domains():
-        # The monitor will look at the inputs file from sys-usb
-        # and when sys-usb is rebooted, the events listener will stop and start
-        # back after the reboor
-        SysLogger("Orchestrator").info("Wait for the input socket to be ready")
-        System().monitor_file(
-            INPUTS_SOCKET_PATH, INPUTS_SOCKET_FILENAME, on_inputs_socket_file_changed
-        )
-
         cmd = ["/usr/bin/doas", "/usr/lib/safecor/bin/start-sys-usb.sh"]
         res = subprocess.run(cmd, check=True)
 
@@ -706,15 +701,6 @@ def on_mqtt_ready():
 
         # Start all other domains
         start_business_domains()
-
-        # When the domain sys-usb is rebooted, the socket is list
-        # so we need to loop
-        # while True:
-        #    # Wait for the inputs socket to be ready
-        #    wait_for_file(INPUTS_SOCKET)
-        #
-        #    # Start listening for events from sys-usb
-        #    start_events_listener(virtual_mouse, virtual_keyboard, virtual_touch)
 
 
 if __name__ == "__main__":

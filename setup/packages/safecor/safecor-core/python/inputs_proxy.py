@@ -6,6 +6,7 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
+import os
 import socket
 import threading
 
@@ -36,6 +37,7 @@ class InputsProxy:
     __can_run = False
     __is_running = False
     __thread = None
+    __listener = None
     INPUTS_SOCKET = "/var/run/safecor/sys-usb-input.sock"
 
     def start(self):
@@ -77,6 +79,18 @@ class InputsProxy:
         self.__can_run = False
         self.__xenstore.stop()
 
+        if self.__listener is not None:
+            try:
+                self.__listener.close()
+            except OSError:
+                pass
+            self.__listener = None
+
+        try:
+            os.unlink(self.INPUTS_SOCKET)
+        except OSError:
+            pass
+
     def events_proxy_worker(self):
         """Starts the Inputs-proxy"""
 
@@ -85,25 +99,43 @@ class InputsProxy:
 
         self.__is_running = True
 
-        while self.__can_run and self.__is_running:
-            # If the connection is lost accidentaly we have to recreate it
+        # Remove stale socket file
+        try:
+            os.unlink(self.INPUTS_SOCKET)
+        except OSError:
+            pass
+
+        # Create listening socket
+        self.__listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.__listener.bind(self.INPUTS_SOCKET)
+        self.__listener.listen(1)
+        self.__listener.settimeout(1.0)
+
+        while self.__can_run:
+            try:
+                conn, _ = self.__listener.accept()
+            except TimeoutError:
+                continue
+            except OSError:
+                break
+
+            self.__is_running = True
             buffer.clear()
 
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.connect(self.INPUTS_SOCKET)
-            self.__is_running = True
-
             while self.__can_run:
-                raw_data = sock.recv(128)
+                try:
+                    raw_data = conn.recv(128)
+                except OSError:
+                    break
 
                 if not raw_data:
                     SysLogger("Input proxy").error("Connection with inputs socket lost")
-                    break  # We get out of this loop to recreate the connection
+                    break
 
                 buffer.extend(raw_data)
 
                 while b"\n" in buffer:
-                    # Find the firt occurence of the delimiter '\n'
+                    # Find the first occurrence of the delimiter '\n'
                     delim_pos = buffer.find(b"\n")
 
                     # Extract the complete frame until the delimiter
@@ -141,7 +173,20 @@ class InputsProxy:
                     except Exception as e:
                         SysLogger("Input proxy").error(f"Error in the frame: {e}")
 
+            conn.close()
             self.__is_running = False
+
+        # Cleanup
+        try:
+            self.__listener.close()
+        except OSError:
+            pass
+        self.__listener = None
+
+        try:
+            os.unlink(self.INPUTS_SOCKET)
+        except OSError:
+            pass
 
     def set_virtual_devices_for_domain(
         self,
