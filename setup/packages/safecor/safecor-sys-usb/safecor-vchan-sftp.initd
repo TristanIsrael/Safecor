@@ -1,11 +1,14 @@
 #!/sbin/openrc-run
-# Start per-DomU vchan+SFTP channels on sys-usb for direct USB mount.
+# Start the per-DomU vchan+SFTP channels on sys-usb for direct USB mount.
+#
+# The logic lives in /usr/lib/safecor/bin/safecor-vchan-sftp.py, which is
+# started detached so that the boot is never blocked (the topology query
+# needs MQTT, which may not be available right after boot).
 #
 # Copyright (c) 2024-2026, Tristan Israël
 # Safecor Licence — see python/lib/LICENCE.md
 
 name="safecor-vchan-sftp"
-command_background="yes"
 pidfile="/var/run/safecor/vchan-sftp.pid"
 user="root"
 group="safecor"
@@ -13,120 +16,28 @@ logfile="/var/log/safecor/vchan-sftp.log"
 
 depend() {
     after bootlocal
+    after setup-vchan
 }
 
 start() {
-    ebegin "Loading Xen vchan modules"
+    ebegin "Starting vchan SFTP channels"
     modprobe xen_gntdev
     modprobe xen_gntalloc
     modprobe xen_evtchn
-    eend 0
-
-    ebegin "Preparing runtime directory"
     mkdir -p /var/run/safecor
-    eend 0
-
-    ebegin "Starting vchan SFTP channels"
-
-    # Query topology via MQTT to find domains with direct_mount enabled
-    domains=""
-    query_ok=0
-    for i in $(seq 1 15); do
-        domains=$(python3 -c "
-import sys
-sys.path.insert(0, '/usr/lib/safecor')
-import threading
-from safecor import Api, MqttFactory, Topics
-
-result = [None]
-event = threading.Event()
-
-def on_ready():
-    Api().subscribe(f'{Topics.MY_CONFIG}/response')
-    Api().publish(f'{Topics.MY_CONFIG}/request', {})
-
-def on_message(topic, payload):
-    if topic == f'{Topics.MY_CONFIG}/response':
-        result[0] = payload
-        event.set()
-
-mqtt_client = MqttFactory.create_mqtt_client_domu('safecor-vchan-sftp')
-Api().add_ready_callback(on_ready)
-Api().add_message_callback(on_message)
-Api().start(mqtt_client)
-
-if not event.wait(timeout=10):
-    sys.exit(1)
-
-if result[0] is None:
-    sys.exit(1)
-for d in result[0].get('domains', []):
-    if d.get('direct_mount'):
-        print(d['name'])
-Api().stop()
-" 2>/dev/null)
-        if [ $? -eq 0 ]; then
-            query_ok=1
-            break
-        fi
-        sleep 2
-    done
-
-    if [ "$query_ok" -ne 1 ]; then
-        logger -s -t "Safecor/safecor-vchan-sftp" -p user.err "Failed to query topology via MQTT"
-        eerror "Failed to query topology via MQTT"
-        return 1
-    fi
-
-    if [ -z "$domains" ]; then
-        einfo "No domains with direct_mount found in topology"
-        eend 0
-        return 0
-    fi
-
-    for domain_name in $domains; do
-        # Wait for the domid to appear in xenstore (domain may not be started yet)
-        domid=""
-        for i in $(seq 1 30); do
-            domid=$(xenstore-read /local/domain/system/domids/$domain_name 2>/dev/null)
-            if [ -n "$domid" ]; then
-                break
-            fi
-            sleep 2
-        done
-
-        if [ -z "$domid" ]; then
-            ewarn "No domid found for domain $domain_name, skipping"
-            continue
-        fi
-
-        vchan_sock="/var/run/safecor/vchan-${domain_name}.sock"
-        vchan_path="/local/domain/${domid}/data/vchan/sftp"
-
-        # Start vchan-socket-proxy in server mode
-        einfo "Starting vchan channel for $domain_name (domid $domid)"
-        start-stop-daemon --start --background --make-pidfile \
-            --pidfile "/var/run/safecor/vchan-${domain_name}.pid" \
-            --exec /usr/bin/vchan-socket-proxy \
-            -- -m server "$domid" "$vchan_path" "$vchan_sock" \
-            >> "$logfile" 2>&1
-
-        # Start socat to bridge the unix socket to the chrooted sftp-server
-        start-stop-daemon --start --background --make-pidfile \
-            --pidfile "/var/run/safecor/socat-${domain_name}.pid" \
-            --exec /usr/bin/socat \
-            -- UNIX-LISTEN:$vchan_sock,fork EXEC:"chroot /media /usr/lib/ssh/sftp-server" \
-            >> "$logfile" 2>&1
-    done
-
-    eend 0
+    start-stop-daemon --start --background --make-pidfile \
+        --pidfile "$pidfile" \
+        --stdout "$logfile" --stderr "$logfile" \
+        --exec /usr/bin/python3 \
+        -- /usr/lib/safecor/bin/safecor-vchan-sftp.py
+    eend $?
 }
 
 stop() {
     ebegin "Stopping vchan SFTP channels"
-    rm -f /var/run/safecor/vchan-*.pid /var/run/safecor/socat-*.pid
+    start-stop-daemon --stop --pidfile "$pidfile" --signal TERM --retry 5 2>/dev/null
     pkill -f "vchan-socket-proxy.*-m server" 2>/dev/null
     pkill -f "socat.*UNIX-LISTEN:/var/run/safecor/vchan-" 2>/dev/null
-    rm -f /var/run/safecor/vchan-*.sock
+    rm -f /var/run/safecor/vchan-*.pid /var/run/safecor/socat-*.pid /var/run/safecor/vchan-*.sock
     eend 0
 }

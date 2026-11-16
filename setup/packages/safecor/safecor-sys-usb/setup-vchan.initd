@@ -1,26 +1,29 @@
 #!/sbin/openrc-run
-# Start/stop the vchan servers in a DomU.
+# Start/stop the vchan clients (msg, input, tty) in a DomU.
+#
+# The clients are detached daemons (one pidfile per channel, created by
+# setup-vchan.sh); this service only supervises their lifecycle.
 #
 # Copyright (c) 2024-2026, Tristan Israël
 # Safecor Licence — see python/lib/LICENCE.md
 
 name="setup-vchan"
-pidfile="/var/run/safecor-vchan.pid"
 
 depend() {
     after network
 }
 
 start() {
-    ebegin "Starting vchan servers"
-    start-stop-daemon --start --background --make-pidfile \
-        --pidfile "$pidfile" \
-        --exec /usr/lib/safecor/scripts/setup-vchan.sh
+    ebegin "Starting vchan clients"
+    /usr/lib/safecor/scripts/setup-vchan.sh
     eend $?
 }
 
 stop() {
-    ebegin "Stopping vchan servers"
-    start-stop-daemon --stop --pidfile "$pidfile" --signal TERM
+    ebegin "Stopping vchan clients"
+    start-stop-daemon --stop --pidfile /var/run/safecor/vchan-msg.pid --signal TERM 2>/dev/null
+    start-stop-daemon --stop --pidfile /var/run/safecor/vchan-input.pid --signal TERM 2>/dev/null
+    start-stop-daemon --stop --pidfile /var/run/safecor/vchan-tty.pid --signal TERM 2>/dev/null
+    rm -f /var/run/safecor/vchan-msg.pid /var/run/safecor/vchan-input.pid /var/run/safecor/vchan-tty.pid
     eend 0
 }
