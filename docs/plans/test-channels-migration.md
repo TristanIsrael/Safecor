@@ -232,3 +232,30 @@ Traceback (most recent call last):
 OSError: [Errno 101] Network unreachable
 ```
 - The business domains are stucked during their start and the console cannot be connected, probably because of the vchan connection script blocking (see preivous `sys-usb` fix)
+
+### Root cause (Run 6)
+
+1. **Mosquitto did not start.** The `mosquitto.conf` used an `include`
+   directive, which is not valid mosquitto syntax, so the broker refused to
+   start. The correct directive is `include_dir /etc/mosquitto/conf.d`
+   (loads every `*.conf` file of the directory).
+2. **paho-mqtt cannot start any client in a DomU.** paho 2.x creates the
+   network-loop thread wake-up pipe with a **TCP socketpair over
+   127.0.0.1** (`_socketpair_compat` in `loop_start()`), not a POSIX
+   socketpair. DomUs have no loopback interface, so `loop_start()` raises
+   `OSError: [Errno 101] Network unreachable` and every `Api().start()`
+   fails (vchan-sftp, domain controllers, direct mount). This also explains
+   the business domains stuck at boot: their controller crashes before the
+   GUI comes up.
+3. **Vchan ring data not in the shared namespace** —
+   `/local/domain/system/vchan` does not exist. It must be verified where
+   `vchan-socket-proxy` actually publishes the ring data (see the Run 7
+   verification item) and the client/server paths adjusted accordingly.
+
+### Quick fix applied
+
+- [x] `mosquitto.conf`: `include` -> `include_dir /etc/mosquitto/conf.d`
+- [x] `safecor` library (`_mqtt_client.py`): replace paho's `_socketpair_compat`
+      with the POSIX `socket.socketpair()` (needs no loopback)
+- [ ] Run 7: verify where the vchan ring data is published and adjust the
+      client/server paths if needed

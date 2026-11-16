@@ -47,11 +47,22 @@ class TestMqttClient(unittest.TestCase):
         )
         self.assertEqual(get(), "unix")
 
+    def test_paho_socketpair_uses_posix_socketpair(self):
+        # paho-mqtt 2.x creates its network-loop wake-up pipe with a TCP
+        # socketpair over 127.0.0.1, which fails in DomUs (no loopback).
+        # Importing the module must replace it with the POSIX socketpair().
+        import socket
+
+        import paho.mqtt.client as paho_client
+
+        self.assertIs(paho_client._socketpair_compat, socket.socketpair)
+
     # --- callback registration -------------------------------------------
 
     def test_message_callback_registration(self):
         def cb(t, p):
             pass
+
         self.client.add_message_callback(cb)
         self.assertIn(cb, self.client._MqttClient__message_callbacks)
         # reset clears them
@@ -61,6 +72,7 @@ class TestMqttClient(unittest.TestCase):
     def test_del_message_callback(self):
         def cb(t, p):
             pass
+
         self.client.add_message_callback(cb)
         self.assertIn(cb, self.client._MqttClient__message_callbacks)
         self.client.del_message_callback(cb)
@@ -69,6 +81,7 @@ class TestMqttClient(unittest.TestCase):
     def test_connected_callback_registration(self):
         def cb():
             pass
+
         self.client.add_connected_callback(cb)
         self.assertIn(cb, self.client._MqttClient__connected_callbacks)
 

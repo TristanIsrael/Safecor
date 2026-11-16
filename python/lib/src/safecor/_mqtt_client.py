@@ -7,6 +7,7 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import json
+import socket
 from enum import StrEnum
 from typing import Callable, Literal, Optional
 
@@ -14,6 +15,14 @@ import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion, MQTTErrorCode
 
 from . import SysLogger
+
+# paho-mqtt 2.x creates the network-loop thread wake-up pipe with a TCP
+# socketpair over 127.0.0.1 (_socketpair_compat). DomUs have no loopback
+# interface, so the connect() call fails with ENETUNREACH and no MQTT client
+# can start (loop_start). Use the POSIX socketpair() instead, which needs no
+# network at all.
+if hasattr(socket, "socketpair"):
+    mqtt._socketpair_compat = socket.socketpair
 
 DEBUG = False
 TYPE_CHECKING = True
@@ -137,7 +146,8 @@ class MqttClient:
         self.mqtt_client.loop_start()
 
     def add_connected_callback(self, callback):
-        """Registers a callback invoked every time the client (re)connects to the broker.
+        """Registers a callback invoked every time the client (re)connects
+        to the broker.
 
         Args:
             callback: A callable with no argument.
