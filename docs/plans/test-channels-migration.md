@@ -139,4 +139,5 @@ Dom0 never started the vchan client.
 
 - Sys-usb is to long to fail on socket connection. It waits 2 or 3 minutes a first time then it is blocked on `Starting vchan SFTP channels`. Maybe the vchan is created but the process is blocking because of a `wait` and should be started detached?
 - in `safecor-sys-usb`, the file `safecor-vchan-sftp.initd` should be split into one `initd` file and one shell ou python script with the logic. 
+- The Domains don't have access to `/local/domain/0` so the vchan information should not be written in this scope. Instead, write them into `/local/domain/system/vchan/<domain name>/<channel>` which is already shared with all the domains. 
 
