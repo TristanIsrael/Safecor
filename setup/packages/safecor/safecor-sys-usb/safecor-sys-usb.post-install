@@ -14,10 +14,6 @@ modprobe vfat
 modprobe ntfs3
 modprobe ext4
 modprobe fuse
-modprobe xen_gntalloc
-modprobe xen_gntdev
-modprobe xen_evtchn
-modprobe xen_gnttab
 
 # Create accounts and handle permissions
 echo "**** Creating service accounts"
@@ -36,12 +32,12 @@ rc-update add safecor-sys-usb-controller
 rc-service safecor-sys-usb-controller start
 
 # Start vchan SFTP server for direct mount
-rc-update add safecor-vchan-sftp
-rc-service safecor-vchan-sftp start
+#rc-update add safecor-vchan-sftp
+#rc-service safecor-vchan-sftp start
 
 # Start vchan servers (msg, input, tty)
-rc-update add setup-vchan default
-rc-service setup-vchan start
+#rc-update add setup-vchan default
+#rc-service setup-vchan start
 
 # Manage udev
 echo Start udev service
