@@ -66,6 +66,33 @@ class TestCreateVchanTunnels(unittest.TestCase):
             "/local/domain/system/vchan/test-domain/sftp",
         )
 
+    def test_reap_dead_servers_removes_and_reaps_exited_processes(self):
+        class FakePopen:
+            def __init__(self, exit_code):
+                self._exit_code = exit_code
+                self.waited = False
+
+            def poll(self):
+                return self._exit_code
+
+            def wait(self):
+                self.waited = True
+                return self._exit_code
+
+        exited = FakePopen(1)
+        running = FakePopen(None)
+        active = {("1", "msg"): exited, ("2", "msg"): running}
+
+        removed = self.mod.reap_dead_servers(active)
+
+        self.assertEqual(removed, [("1", "msg")])
+        self.assertEqual(list(active.keys()), [("2", "msg")])
+        self.assertTrue(exited.waited)
+        self.assertFalse(running.waited)
+
+    def test_reap_dead_servers_empty(self):
+        self.assertEqual(self.mod.reap_dead_servers({}), [])
+
 
 class TestGenerateMosquittoListeners(unittest.TestCase):
     @classmethod

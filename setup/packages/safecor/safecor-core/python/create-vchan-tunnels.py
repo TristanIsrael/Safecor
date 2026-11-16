@@ -14,6 +14,7 @@ Safecor Licence — see python/lib/LICENCE.md
 import os
 import subprocess
 import time
+from typing import TextIO
 
 from safecor import SysLogger
 
@@ -21,6 +22,9 @@ VCHAN_POLL_INTERVAL = 1
 XENSTORE_DOMIDS_PATH = "/local/domain/system/domids"
 SYS_USB_NAME = "sys-usb"
 SYS_USB_EXTRA_CHANNELS = ["input", "tty"]
+# Standard error of every vchan server is appended to this file so that a
+# startup failure (e.g. missing /dev/gntdev access) is visible in the logs.
+SERVER_LOG_PATH = "/var/log/safecor/vchan-servers.log"
 
 
 def read_xenstore(path: str) -> str:
@@ -67,7 +71,7 @@ def get_vchan_path(name: str, channel: str) -> str:
 
 
 def start_vchan_server(
-    domid: str, name: str, channel: str, socket_path: str
+    domid: str, name: str, channel: str, socket_path: str, server_log: TextIO
 ) -> subprocess.Popen | None:
     if not os.path.exists(socket_path):
         return None
@@ -81,9 +85,7 @@ def start_vchan_server(
         socket_path,
     ]
     try:
-        proc = subprocess.Popen(
-            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=server_log)
         SysLogger("create-vchan-tunnels").info(
             f"vchan server started: domid={domid} channel={channel} sock={socket_path}"
         )
@@ -103,9 +105,41 @@ def stop_server(proc: subprocess.Popen):
         pass
 
 
+def reap_dead_servers(
+    active_servers: dict[tuple[str, str], subprocess.Popen],
+) -> list[tuple[str, str]]:
+    """Reap the vchan servers that have exited.
+
+    A server that has exited (for instance a ``libxenvchan_server_init``
+    failure) is removed from the tracking dictionary so that the discovery
+    loop restarts it on the next iteration.  Waiting on the process also
+    clears the zombie process.
+
+    Returns:
+        The list of (domid, channel) keys that were removed.
+    """
+    removed: list[tuple[str, str]] = []
+    for key in list(active_servers.keys()):
+        proc = active_servers[key]
+        exit_code = proc.poll()
+        if exit_code is not None:
+            proc.wait()
+            SysLogger("create-vchan-tunnels").error(
+                f"vchan server exited: domid={key[0]} channel={key[1]} "
+                f"exit_code={exit_code} — see {SERVER_LOG_PATH} — will restart"
+            )
+            del active_servers[key]
+            removed.append(key)
+    return removed
+
+
 def main():
     SysLogger("create-vchan-tunnels").info("Starting vchan tunnel manager")
     print("vchan-tunnels: starting discovery loop")
+
+    # Every vchan server inherits this handle for its standard error so that
+    # a startup failure is logged instead of being lost.
+    server_log = open(SERVER_LOG_PATH, "a")
 
     # Track active vchan server processes: {(domid, channel): Popen}
     active_servers: dict[tuple[str, str], subprocess.Popen] = {}
@@ -113,6 +147,9 @@ def main():
     logged_missing_sockets: set[tuple[str, str]] = set()
 
     while True:
+        # Reap the servers that have exited so that they are restarted.
+        reap_dead_servers(active_servers)
+
         domain_names = list_domain_names()
         current: dict[tuple[str, str], tuple[str, str, str]] = {}
 
@@ -143,7 +180,7 @@ def main():
                 socket_path = get_socket_path(channel, name)
                 if not socket_path:
                     continue
-                proc = start_vchan_server(domid, name, channel, socket_path)
+                proc = start_vchan_server(domid, name, channel, socket_path, server_log)
                 if proc is not None:
                     active_servers[key] = proc
                 elif not os.path.exists(socket_path) and (name, channel) not in (

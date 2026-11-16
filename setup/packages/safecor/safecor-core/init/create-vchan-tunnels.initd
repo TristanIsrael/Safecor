@@ -14,6 +14,19 @@ depend() {
 start() {
     ebegin "Create vchan tunnels"
 
+    # The vchan servers (running as $user) need read/write access to the Xen
+    # grant-table and event-channel device nodes, which are created by the
+    # kernel when the modules are loaded.
+    modprobe xen_gntdev
+    modprobe xen_evtchn
+    chgrp safecor /dev/gntdev /dev/evtchn
+    chmod 660 /dev/gntdev /dev/evtchn
+
+    # The msg servers must also be able to connect to the Mosquitto UNIX
+    # listeners of /tmp (one per domain).
+    addgroup svc-vchan-tunnels mosquitto 2>/dev/null || true
+    chmod g+w /tmp/mqtt-*.sock 2>/dev/null || true
+
     if grep -iq "DEBUG=ON" "/proc/cmdline"; then
         rm -f $logfile
         start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --pidfile /var/run/$name.pid --background --stdout $logfile --stderr $logfile --user $user -- -u /usr/lib/safecor/bin/create-vchan-tunnels.py
@@ -28,6 +41,7 @@ stop() {
     ebegin "Destroy vchan tunnels"
 
     kill -9 $(cat /var/run/$name.pid)
+    pkill -f "vchan-socket-proxy.*-m server" 2>/dev/null
 
     eend $?
 }
