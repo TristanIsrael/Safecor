@@ -144,9 +144,9 @@ No data passes through Dom0. No 9p storage share is used.
 │                                 │     │     → gets sys-usb's domid           │
 │  3. For each authorized DomU:   │     │  4. Writes /usr/local/bin/vchan-sftp:│
 │     a. vchan-socket-proxy       │     │     exec vchan-socket-proxy          │
-│        -m server <domid_domu>   │     │       -m client <domid_sys_usb>      │
-│        /local/domain/<domid>/   │     │       /local/domain/<domid>/         │
-│         data/vchan/sftp -       │     │         data/vchan/sftp -            │
+│        -m server <domid_domu>   │     │       -m client $(domids/sys-usb)    │
+│        /local/domain/system/    │     │       /local/domain/system/          │
+│         vchan/<name>/sftp -     │     │         vchan/$(hostname)/sftp -     │
 │     b. socat ...                │     │  5. Runs:                            │
 │        EXEC:"chroot /media      │     │     sshfs -f                         │
 │         /usr/lib/ssh/           │     │       -o ssh_command=/usr/local/     │
@@ -163,8 +163,8 @@ No data passes through Dom0. No 9p storage share is used.
                                         │  sys-usb (per-DomU)      │
                                         │  vchan-socket-proxy      │
                                         │    -m server <domid_domu>│
-                                        │    /local/domain/<domid> │
-                                        │     /data/vchan/sftp -   │
+                                        │    /local/domain/system/ │
+                                        │     vchan/<name>/sftp -  │
                                         └──────────────────────────┘
 ```
 
@@ -302,8 +302,10 @@ that has access (declared in `topology.json`) gets its own vchan channel.
 ```bash
 # <domid_client>: the Xen domain ID of the connecting DomU
 #   (read from /local/domain/system/domids/<domain_name>)
-# <domid_server>: sys-usb's own domain ID
-vchan-socket-proxy -m server <domid_client> /local/domain/<domid_server>/data/vchan/sftp -
+# The vchan channel data is published in the shared xenstore namespace
+# /local/domain/system/vchan/<domain name>/<channel> (a DomU cannot read
+# /local/domain/0).
+vchan-socket-proxy -m server <domid_client> /local/domain/system/vchan/<domain_name>/sftp -
 
 # socat: spawn sftp-server in a chroot jail for each connection
 socat -b 131072 UNIX-LISTEN:/tmp/sftp-{domid_client}.sock,fork \
@@ -316,10 +318,12 @@ The client side does **not** use socat. Instead, sshfs is configured with the
 `ssh_command` option, which replaces the SSH transport with our vchan script.
 
 ```bash
-# /usr/local/bin/vchan-sftp (generated at boot with the correct domid):
+# /usr/local/bin/vchan-sftp (the sys-usb domid is resolved at runtime,
+# so the script stays valid across sys-usb restarts):
 #!/bin/sh
 # sshfs adds its own arguments, we ignore them
-exec vchan-socket-proxy -m client <domid_sys_usb> /local/domain/<domid_sys_usb>/data/vchan/sftp -
+exec vchan-socket-proxy -m client $(xenstore-read /local/domain/system/domids/sys-usb) \
+  /local/domain/system/vchan/$(hostname)/sftp -
 
 # Mount command:
 sshfs -f -o ssh_command=/usr/local/bin/vchan-sftp,noexec,nosuid,nodev,default_permissions,max_read=131072 none:/ /media/usb
@@ -330,9 +334,9 @@ sshfs -f -o ssh_command=/usr/local/bin/vchan-sftp,noexec,nosuid,nodev,default_pe
 - **Client (DomU)**: sshfs → `ssh_command` → `vchan-socket-proxy` → vchan (XEN)
 
 **Key parameters:**
-- Per-DomU isolation: each DomU gets its own vchan channel, identified by the DomU's `domid`
+- Per-DomU isolation: each DomU gets its own vchan channel, identified by the DomU's name
 - UNIX socket path (sys-usb side): `/tmp/sftp-{domid_client}.sock` (one per DomU)
-- The vchan identifier in xenstore: `/local/domain/<domid_server>/data/vchan/sftp`
+- The vchan identifier in xenstore: `/local/domain/system/vchan/<domain name>/sftp`
 - Buffer size: 131072 bytes (128 KiB) for the socat tunnel (server side only)
 - `sftp-server` is executed directly (no SSH daemon layer) — it speaks the SFTP protocol
   over the raw vchan stream
@@ -389,10 +393,11 @@ sshfs → ssh_command (/usr/local/bin/vchan-sftp) → vchan-socket-proxy → FUS
 
 **Boot-time steps (init script or `DirectMountManager`):**
 1. Read sys-usb's domid from xenstore: `xenstore-read /local/domain/system/domids/sys-usb`
-2. Generate `/usr/local/bin/vchan-sftp` with the correct domid:
+2. Generate `/usr/local/bin/vchan-sftp` (the domid is resolved at runtime):
    ```sh
    #!/bin/sh
-   exec vchan-socket-proxy -m client <domid_sys_usb> /local/domain/<domid_sys_usb>/data/vchan/sftp -
+   exec vchan-socket-proxy -m client $(xenstore-read /local/domain/system/domids/sys-usb) \
+     /local/domain/system/vchan/$(hostname)/sftp -
    ```
 3. Create mount point: `mkdir -p /media/usb`
 4. Mount (adding `ro` to the options if the topology specifies `"mode": "ro"`):
