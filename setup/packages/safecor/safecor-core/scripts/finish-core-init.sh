@@ -31,6 +31,9 @@ logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Starting..."
     /usr/lib/safecor/bin/create-local-alpine-repository.sh
     /usr/lib/safecor/bin/setup-xen-environment.sh
 
+    logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Generating mosquitto listeners from the topology..."
+    /usr/bin/python3 /usr/lib/safecor/bin/generate-mosquitto-listeners.py
+
     #echo ... Start initd scripts
     #rc-service setup-pci start
     

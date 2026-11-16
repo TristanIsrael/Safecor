@@ -50,9 +50,9 @@ def get_domid(domain_name: str) -> str:
     return read_xenstore(f"{XENSTORE_DOMIDS_PATH}/{domain_name}")
 
 
-def get_socket_path(channel: str, domid: str) -> str:
+def get_socket_path(channel: str, name: str) -> str:
     if channel == "msg":
-        return f"/tmp/mqtt_msg_{domid}.sock"
+        return f"/tmp/mqtt-{name}.sock"
     if channel == "input":
         return "/var/run/safecor/sys-usb-input.sock"
     if channel == "tty":
@@ -60,8 +60,14 @@ def get_socket_path(channel: str, domid: str) -> str:
     return ""
 
 
+def get_vchan_path(name: str, channel: str) -> str:
+    # The vchan data lives in the shared xenstore namespace, which is readable
+    # by all DomUs (DomUs cannot read /local/domain/0).
+    return f"/local/domain/system/vchan/{name}/{channel}"
+
+
 def start_vchan_server(
-    domid: str, channel: str, socket_path: str
+    domid: str, name: str, channel: str, socket_path: str
 ) -> subprocess.Popen | None:
     if not os.path.exists(socket_path):
         return None
@@ -71,7 +77,7 @@ def start_vchan_server(
         "-m",
         "server",
         domid,
-        f"/local/domain/0/data/vchan/{domid}/{channel}",
+        get_vchan_path(name, channel),
         socket_path,
     ]
     try:
@@ -103,6 +109,8 @@ def main():
 
     # Track active vchan server processes: {(domid, channel): Popen}
     active_servers: dict[tuple[str, str], subprocess.Popen] = {}
+    # Track (name, channel) pairs for which a missing socket was already logged
+    logged_missing_sockets: set[tuple[str, str]] = set()
 
     while True:
         domain_names = list_domain_names()
@@ -132,17 +140,28 @@ def main():
         # Start servers for newly discovered domains
         for key, (name, domid, channel) in current.items():
             if key not in active_servers:
-                socket_path = get_socket_path(channel, domid)
+                socket_path = get_socket_path(channel, name)
                 if not socket_path:
                     continue
-                proc = start_vchan_server(domid, channel, socket_path)
+                proc = start_vchan_server(domid, name, channel, socket_path)
                 if proc is not None:
                     active_servers[key] = proc
-                elif not os.path.exists(socket_path):
-                    SysLogger("create-vchan-tunnels").info(
-                        f"Socket not ready for domid={domid} channel={channel}, "
-                        f"will retry: {socket_path}"
-                    )
+                elif not os.path.exists(socket_path) and (name, channel) not in (
+                    logged_missing_sockets
+                ):
+                    logged_missing_sockets.add((name, channel))
+                    if channel == "msg":
+                        SysLogger("create-vchan-tunnels").error(
+                            f"No mosquitto listener for domain {name} at "
+                            f"{socket_path} — regenerate "
+                            f"/etc/mosquitto/conf.d/safecor-listeners.conf "
+                            f"from the topology"
+                        )
+                    else:
+                        SysLogger("create-vchan-tunnels").info(
+                            f"Socket not ready for domain={name} "
+                            f"channel={channel}, will retry: {socket_path}"
+                        )
 
         time.sleep(VCHAN_POLL_INTERVAL)
 

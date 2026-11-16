@@ -3,4 +3,4 @@
 # Safecor Licence — see python/lib/LICENCE.md
 
 
-mosquitto_sub --unix /tmp/mqtt_msg_local.sock -t '#' --pretty -v
+mosquitto_sub --unix /tmp/mqtt-local.sock -t '#' --pretty -v
