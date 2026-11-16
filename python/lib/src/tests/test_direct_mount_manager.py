@@ -148,17 +148,26 @@ class TestDirectMountManager(unittest.TestCase):
 
     def test_generate_vchan_script(self):
         with (
-            patch("builtins.open", return_value=MagicMock()),
+            patch("builtins.open", return_value=MagicMock()) as mock_open,
             patch("os.makedirs"),
             patch("os.chmod") as mock_chmod,
         ):
-            result = self.manager._DirectMountManager__generate_vchan_script(5)
+            result = self.manager._DirectMountManager__generate_vchan_script()
             self.assertTrue(result)
             mock_chmod.assert_called_once()
+            content = mock_open.return_value.__enter__.return_value.write.call_args[0][
+                0
+            ]
+            # The peer domid is resolved at runtime (survives domid changes)
+            self.assertIn("xenstore-read /local/domain/system/domids/sys-usb", content)
+            # The vchan data lives in the shared xenstore namespace
+            self.assertIn("/local/domain/system/vchan/$(hostname)/sftp", content)
+            # The Dom0-private namespace must not be used
+            self.assertNotIn("/local/domain/0", content)
 
     def test_generate_vchan_script_os_error(self):
         with patch("builtins.open", side_effect=OSError("test")):
-            result = self.manager._DirectMountManager__generate_vchan_script(5)
+            result = self.manager._DirectMountManager__generate_vchan_script()
             self.assertFalse(result)
 
     def test_wait_for_domid_found_immediately(self):

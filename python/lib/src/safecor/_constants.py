@@ -40,8 +40,8 @@ class DiskState(Enum):
 class Constants:
     """This class defined constants for the whole system"""
 
-    MQTT_MSG_BROKER_SOCKET = "/tmp/mqtt_msg_dom0.sock"
-    MQTT_MSG_BROKER_SOCKETS = "/tmp/mqtt_msg*.sock"
+    MQTT_MSG_BROKER_SOCKET = "/tmp/mqtt-dom0.sock"
+    MQTT_MSG_BROKER_SOCKETS = "/tmp/mqtt-*.sock"
     MQTT_LOG_BROKER_SOCKET = "/tmp/mqtt_log.sock"
     MQTT_MSG_SOCKET_FILTER = "/var/run/safecor/*-msg.sock"
     MQTT_LOG_SOCKET_FILTER = "/var/run/safecor/*-log.sock"

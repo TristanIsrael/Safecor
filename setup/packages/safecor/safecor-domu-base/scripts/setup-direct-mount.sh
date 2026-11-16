@@ -81,9 +81,12 @@ fi
 log "sys-usb domid: $SYS_USB_DOMID"
 
 # Step 3: Generate the vchan-sftp client script
+# The peer (sys-usb) domid is resolved at runtime so the script stays valid
+# across sys-usb restarts, and the vchan channel data lives in the shared
+# xenstore namespace /local/domain/system/vchan/<domain>/<channel>.
 cat > "$VCHAN_SFTP_SCRIPT" << EOF
 #!/bin/sh
-exec vchan-socket-proxy -m client $SYS_USB_DOMID /local/domain/$SYS_USB_DOMID/data/vchan/sftp -
+exec vchan-socket-proxy -m client \$(xenstore-read /local/domain/system/domids/sys-usb) /local/domain/system/vchan/\$(hostname)/sftp -
 EOF
 chmod +x "$VCHAN_SFTP_SCRIPT"
 log "Generated $VCHAN_SFTP_SCRIPT"

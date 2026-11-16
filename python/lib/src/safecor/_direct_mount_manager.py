@@ -73,7 +73,7 @@ class DirectMountManager:
         Logger().info(f"DirectMountManager: sys-usb domid is {domid}")
 
         # Step 3: Generate vchan-sftp script
-        if not self.__generate_vchan_script(domid):
+        if not self.__generate_vchan_script():
             Logger().error("DirectMountManager: failed to generate vchan-sftp script")
             return False
 
@@ -187,14 +187,22 @@ class DirectMountManager:
             time.sleep(DOMID_POLL_INTERVAL)
         return None
 
-    def __generate_vchan_script(self, domid: int) -> bool:
-        """Generate the vchan-socket-proxy client script."""
+    def __generate_vchan_script(self) -> bool:
+        """Generate the vchan-socket-proxy client script.
+
+        The peer (sys-usb) domid is resolved at runtime so the script stays
+        valid when sys-usb is restarted with a different domid. The vchan
+        channel data lives in the shared xenstore namespace
+        /local/domain/system/vchan/<domain>/<channel>, which is readable by
+        all DomUs (a DomU cannot read /local/domain/0).
+        """
         try:
             os.makedirs(os.path.dirname(VCHAN_SFTP_SCRIPT_PATH), exist_ok=True)
             content = (
-                f"#!/bin/sh\n"
-                f"exec vchan-socket-proxy -m client {domid} "
-                f"/local/domain/{domid}/data/vchan/sftp -\n"
+                "#!/bin/sh\n"
+                "exec vchan-socket-proxy -m client "
+                "$(xenstore-read /local/domain/system/domids/sys-usb) "
+                "/local/domain/system/vchan/$(hostname)/sftp -\n"
             )
             with open(VCHAN_SFTP_SCRIPT_PATH, "w") as f:
                 f.write(content)
