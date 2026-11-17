@@ -59,7 +59,7 @@ udevadm control --reload-rules
 udevadm trigger
 
 # Call hardening script
-/usr/lib/safecor/bin/hardening.sh
+#/usr/lib/safecor/bin/hardening.sh
 
 # Optimize the kernel RAM usage for 9P performance and stability
 sysctl vm.vfs_cache_pressure=200
