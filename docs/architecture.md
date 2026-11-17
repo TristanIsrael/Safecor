@@ -107,12 +107,15 @@ Dom0 is not only the `safecor` control side; it runs the whole orchestration sta
   domain (`/tmp/mqtt-<domain name>.sock`); the per-domain listeners are generated from the
   product topology at install time (`generate-mosquitto-listeners.py`), along with the static
   `/tmp/mqtt-local.sock` (debug) and `/tmp/mqtt-dom0.sock` (Dom0) listeners. The `input` and
-  `tty` channels connect to their respective local sockets in `/var/run/safecor/`. The
-servers run as `svc-vchan-tunnels`: creating a vchan requires opening the Xen device
-nodes `/dev/gntdev` and `/dev/evtchn`, so the service's initd loads the corresponding
-kernel modules and grants the `safecor` group read/write access to those nodes. The
-servers' standard error is logged in `/var/log/safecor/vchan-servers.log` and a server
-that exits is reaped and restarted by the discovery loop.
+    `tty` channels connect to their respective local sockets in `/var/run/safecor/`. The
+  servers run as `svc-vchan-tunnels`: creating a vchan requires opening the Xen device
+  nodes (under `/dev/xen/` on Xen 4.19) — `gntalloc` (the server allocates the ring page
+  from the grant allocator), `gntdev` (the client maps the ring page through the grant
+  table) and `evtchn` (event channels, both sides) — so the service's initd loads the
+  `xen_gntdev`/`xen_gntalloc`/`xen_evtchn` kernel modules and grants the `safecor` group
+  read/write access to those nodes. The servers' standard error is logged in
+  `/var/log/safecor/vchan-servers.log` and a server that exits is reaped and restarted by
+  the discovery loop.
 - **Safecor orchestrator** — creates the virtual inputs (keyboard/mouse/touch), the Xen config
   files, and starts the Domains.
 - **Safecor inputs proxy** — filters and copies input data between the Domains and the physical

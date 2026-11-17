@@ -23,7 +23,7 @@ XENSTORE_DOMIDS_PATH = "/local/domain/system/domids"
 SYS_USB_NAME = "sys-usb"
 SYS_USB_EXTRA_CHANNELS = ["input", "tty"]
 # Standard error of every vchan server is appended to this file so that a
-# startup failure (e.g. missing /dev/gntdev access) is visible in the logs.
+# startup failure (e.g. missing /dev/xen/gntalloc access) is visible in the logs.
 SERVER_LOG_PATH = "/var/log/safecor/vchan-servers.log"
 
 

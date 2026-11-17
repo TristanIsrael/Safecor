@@ -15,12 +15,19 @@ start() {
     ebegin "Create vchan tunnels"
 
     # The vchan servers (running as $user) need read/write access to the Xen
-    # grant-table and event-channel device nodes, which are created by the
-    # kernel when the modules are loaded.
+    # device nodes, which are created by the kernel when the modules are
+    # loaded. Under Xen 4.19 these nodes live in /dev/xen/:
+    #   gntalloc  grant allocator: the server allocates the ring page from it
+    #   gntdev    grant table: the client maps the shared ring page through it
+    #   evtchn    event channels: used by both the server and the client
     modprobe xen_gntdev
+    modprobe xen_gntalloc
     modprobe xen_evtchn
-    chgrp safecor /dev/gntdev /dev/evtchn
-    chmod 660 /dev/gntdev /dev/evtchn
+    for node in /dev/xen/gntdev /dev/xen/evtchn /dev/xen/gntalloc; do
+        [ -e "$node" ] || continue
+        chgrp safecor "$node"
+        chmod 660 "$node"
+    done
 
     # The msg servers must also be able to connect to the Mosquitto UNIX
     # listeners of /tmp (one per domain).
