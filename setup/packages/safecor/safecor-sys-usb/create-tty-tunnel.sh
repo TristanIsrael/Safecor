@@ -41,8 +41,14 @@ if [ "$ACTION" = "add" ] || [ "$ACTION" = "change" ] ; then
     fi
 
     if [ -e "$DEVNAME" ]; then 
+        # The tunnel target is the vchan tty client socket (started by the
+        # setup-vchan service). Wait for it to appear before bridging.
+        for i in $(seq 1 15); do
+            [ -S /var/run/safecor/tty.sock ] && break
+            sleep 2
+        done
         echo Create TTY tunnel for "$DEVNAME"
-        socat $DEVNAME,raw,echo=0,b115200 /dev/hvc3,raw,echo=0,b115200 &
+        socat $DEVNAME,raw,echo=0,b115200 UNIX-CONNECT:/var/run/safecor/tty.sock &
     else
         echo "The device $DEVNAME does not exist"
         exit 1
