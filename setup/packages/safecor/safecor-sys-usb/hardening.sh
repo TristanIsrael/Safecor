@@ -18,7 +18,7 @@ modprobe -r simpledrm
 modprobe -r drm_shmem_helper
 
 # Disable module loading after this point
-sysctl -w kernel.modules_disabled=1
+#sysctl -w kernel.modules_disabled=1
 
 debug=$(xenstore-read /local/domain/system/debug_on)
 
