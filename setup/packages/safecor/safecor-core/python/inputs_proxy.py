@@ -108,6 +108,11 @@ class InputsProxy:
         # Create listening socket
         self.__listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.__listener.bind(self.INPUTS_SOCKET)
+        # The vchan servers (group safecor) must be able to connect to this
+        # socket. /var/run/safecor is a setgid safecor directory on Dom0, so
+        # the socket already belongs to the safecor group: only the mode
+        # needs the group write bit.
+        os.chmod(self.INPUTS_SOCKET, 0o660)
         self.__listener.listen(1)
         self.__listener.settimeout(1.0)
 
