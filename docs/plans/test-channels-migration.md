@@ -662,15 +662,15 @@ code is not in this repository).
 ## Run 10
 
 Preparation:
-- [ ] Rebuild the `safecor-core` and `safecor-sys-usb` packages
-- [ ] On Dom0: `apk update && apk add safecor-core`, then verify
+- [x] Rebuild the `safecor-core` and `safecor-sys-usb` packages
+- [x] On Dom0: `apk update && apk add safecor-core`, then verify
       `apk info -v safecor-core` and `ls /etc/udev/rules.d/` (to rule out
-      the "stale package" hypothesis)
-- [ ] Full cold boot in debug mode
+      the "stale package" hypothesis) -> `ls /etc/udev/rules.d/` gives an error event after `apk del saphir && apk update && apk add saphir` and a cold reboot in debug mode
+- [x] Full cold boot in debug mode
 
 Verification:
-- [ ] Verify `/dev/xen/gntdev`, `/dev/xen/evtchn`, `/dev/xen/gntalloc` are
-      group `safecor`, mode `0660` right after boot (no manual fix)
+- [x] Verify `/dev/xen/gntdev`, `/dev/xen/evtchn`, `/dev/xen/gntalloc` are
+      group `safecor`, mode `0660` right after boot (no manual fix) -> `/dev/xen/gntalloc` is still owned by root:root. -> I fixed the problem by adding udev in the dependencies and make it start during boot.
 - [ ] Verify the `vchan-socket-proxy` servers are alive with no restart
       loop (no `Permission denied` in `/var/log/safecor/vchan-servers.log`)
 - [ ] Verify the input/tty servers are alive (no `connect: Permission
