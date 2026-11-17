@@ -1,1 +1,9 @@
-SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", ENV{ID_FS_USAGE}=="filesystem", KERNEL!="xvd*", RUN+="/usr/lib/safecor/bin/mdev-usb-storage.sh"
+SUBSYSTEM!="block", GOTO="safecor_end"
+KERNEL=="xvd*", GOTO="safecor_end"
+ENV{DEVTYPE}!="partition", GOTO="safecor_end"
+ENV{ID_FS_USAGE}!="filesystem", GOTO="safecor_end"
+ENV{ID_BUS}!="usb", GOTO="safecor_end"
+
+RUN+="/usr/lib/safecor/bin/mdev-usb-storage.sh"
+
+LABEL="safecor_end"
