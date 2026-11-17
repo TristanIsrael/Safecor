@@ -16,16 +16,14 @@ if [ "$DEBUG_ON" = "0" ]; then
     exit 0
 fi 
 
+# Marker identifying the tunnel loop of this device in the process list.
+TUNNEL_MARKER="safecor-tty-tunnel $DEVNAME"
+
 # If the device was removed
 if [ "$ACTION" = "remove" ]; then 
     echo "Destroying existing tunnel on $DEVNAME"
-    SOCAT_PID=$(pgrep -f "socat.*$DEVNAME")
-
-    if [ $SOCAT_PID -gt 0 ]; then 
-        echo "Killing process $SOCAT_PID"
-        kill $SOCAT_PID
-    fi
-
+    pkill -f "$TUNNEL_MARKER" 2>/dev/null
+    pkill -f "socat.*$DEVNAME" 2>/dev/null
     exit 0
 fi 
 
@@ -33,26 +31,29 @@ fi
 if [ "$ACTION" = "add" ] || [ "$ACTION" = "change" ] ; then 
     echo "Debugging is enabled. Creating a tunnel on serial port $DEVNAME"
 
-    SOCAT_PID=$(pgrep -f "socat.*$DEVNAME")
-
-    if [ $SOCAT_PID -gt 0 ]; then 
-        echo "Another tunnel already exists. Aborting."
+    if [ -n "$(pgrep -f "$TUNNEL_MARKER")" ]; then 
+        echo "A tunnel already exists for $DEVNAME. Aborting."
         exit 0
     fi
 
-    if [ -e "$DEVNAME" ]; then 
-        # The tunnel target is the vchan tty client socket (started by the
-        # setup-vchan service). Wait for it to appear before bridging.
-        for i in $(seq 1 15); do
-            [ -S /var/run/safecor/tty.sock ] && break
-            sleep 2
-        done
-        echo Create TTY tunnel for "$DEVNAME"
-        socat $DEVNAME,raw,echo=0,b115200 UNIX-CONNECT:/var/run/safecor/tty.sock &
-    else
+    if [ ! -e "$DEVNAME" ]; then
         echo "The device $DEVNAME does not exist"
         exit 1
-    fi 
+    fi
+
+    # Kill a leftover bridge from a previous boot or a crashed tunnel.
+    pkill -f "socat.*$DEVNAME" 2>/dev/null
+
+    # Bridge the serial port to the vchan tty client socket in a supervised
+    # loop: the socket is created by the setup-vchan service, which starts
+    # after the udev events, and may be recreated if the vchan client
+    # restarts, so the tunnel must be (re)established automatically.
+    LOOP="while true; do
+        while [ ! -S /var/run/safecor/tty.sock ]; do sleep 2; done
+        socat $DEVNAME,raw,echo=0,b115200 UNIX-CONNECT:/var/run/safecor/tty.sock
+        sleep 1
+    done"
+    setsid sh -c "$LOOP" "$TUNNEL_MARKER" >/dev/null 2>&1 &
 fi
 
 exit 0
