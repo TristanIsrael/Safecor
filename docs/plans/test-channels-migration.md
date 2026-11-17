@@ -295,8 +295,9 @@ The command is stucked and nothing happens.
 ### Root cause (Run 7)
 
 `vchan-socket-proxy -m server` (Dom0 side) calls `libxenvchan_server_init()`, which
-opens **`/dev/gntdev`** (grant table sharing) and **`/dev/evtchn`** (event channels)
-before writing `ring-ref`/`event-channel` to xenstore. The `create-vchan-tunnels`
+opens **`/dev/xen/gntalloc`** (grant allocator — the server allocates the shared ring
+page from it) and **`/dev/xen/evtchn`** (event channels) before writing
+`ring-ref`/`event-channel` to xenstore. The `create-vchan-tunnels`
 service runs as `svc-vchan-tunnels` (non-root) and those device nodes were not
 accessible to that user, so every server died with `EACCES` right after startup:
 
@@ -337,23 +338,194 @@ root) and nowhere in Runs 4-7 (the Dom0 server, running unprivileged, crashed).
 ## Run 8
 
 Preparation:
-- [ ] Rebuild `safecor-core` package
+- [x] Rebuild `safecor-core` package
+- [x] Refresh local Alpine repository on Dom0
+- [x] Boot in debug mode
+
+Verification:
+- [x] Verify `/dev/gntdev` and `/dev/evtchn` are group `safecor`, mode `0660` -> They are both 660 and group root. They are in `/dev/xen`, not in `/dev`. 
+- [x] Verify the `vchan-socket-proxy` servers are alive on Dom0 (full command line
+      in `ps ax`, no `[vchan-socket-pr]` zombies). They are still zombies.
+- [x] Verify `xenstore-ls /local/domain/system/vchan` lists one entry per domain
+      (msg for all, input/tty for sys-usb) -> It does not exist.
+- [x] Verify `/var/log/safecor/vchan-tunnels.log` shows client connections -> It does not
+- [x] Verify `/tmp/mqtt-*.sock` is connectable by `svc-vchan-tunnels`
+      (`ls -l /tmp/mqtt-*.sock`; the fix adds `addgroup svc-vchan-tunnels mosquitto`
+      and `chmod g+w /tmp/mqtt-*.sock` at service start) -> It was not but when I added `xen_gntalloc` it succesfully connected.
+- [x] Verify MQTT communication between sys-usb and Dom0 (ping) -> No connection
+- [x] Verify the boot is not blocked in every domain (sys-usb, business domains,
+      sys-gui) -> still blocked.
+- [x] Verify the debugging tty on sys-usb -> No connection
+- [x] Validate the file read on a USB storage from a Domain (direct mount) -> cannot connect console to business domain
+- [x] Validate the GUI display -> No GUI
+
+Additional information:
+- The module `xen_gntalloc` is mandatory to create the vchan. After `modprobe xen_gntalloc` and `chgrp safecor /dev/xen/gntalloc`, the vchan tunnels are created succesfully.
+- When I run `xenstore-ls /local/domain/system/vchan` from inside `sys-usb` I get
+```
+xenstore-ls /local/domain/system/vchan
+sys-usb = ""
+ msg = ""
+  ring-ref = "8"
+  event-channel = "84"
+ input = ""
+  ring-ref = "9"
+  event-channel = "85"
+ tty = ""
+  ring-ref = "10"
+  event-channel = "86"
+saphir-gui = ""
+ msg = ""
+  ring-ref:
+
+xenstore-ls: xs_directory (/local/domain/system/vchan/saphir-gui/msg/ring-ref): Permission denied
+```
+which seems normal but the return code is 1 in this case. (The `Permission denied` on
+the `saphir-gui` leaf is expected: each ring grants READ only to its peer domain, so a
+sibling DomU cannot read another domain's `ring-ref`.)
+
+### Root cause (Run 8)
+
+Run 8 confirmed the device nodes live under `/dev/xen/` (not `/dev/`) and exposed two
+defects in the Run 7 fix, plus a deeper third bug that is the real reason the business
+domains are still stuck.
+
+**1. Wrong device paths (the Run 7 fix no-oped).** The Run 7 fix ran
+`chgrp safecor /dev/gntdev /dev/evtchn` and `chmod 660 ...`, but on Xen 4.19 the nodes
+are `/dev/xen/gntdev` and `/dev/xen/evtchn`. The `chgrp`/`chmod` therefore targeted
+nonexistent paths, the real nodes stayed group `root` mode `0660`, and
+`svc-vchan-tunnels` still got `EACCES` — the servers remained zombies.
+
+**2. Missing `xen_gntalloc` module.** The Dom0 server allocates the vchan ring page from
+the grant allocator: `libxenvchan_server_init()` → `xengntshr_open()` →
+`open("/dev/xen/gntalloc", O_RDWR)` (Xen `tools/libs/gnttab/linux.c`). The Run 7 fix
+never loaded `xen_gntalloc`, so even with correct permissions the server could not open
+`/dev/xen/gntalloc`. Manually confirmed: after `modprobe xen_gntalloc` +
+`chgrp safecor /dev/xen/gntalloc` the rings were created and are visible in xenstore.
+
+Device access (Xen 4.19, from `tools/libs/gnttab/linux.c` + `tools/libs/vchan/init.c`):
+
+| side        | nodes opened                            | kernel modules           |
+|-------------|-----------------------------------------|--------------------------|
+| Dom0 server | `/dev/xen/gntalloc`, `/dev/xen/evtchn`  | `xen_gntalloc`, `xen_evtchn` |
+| DomU client | `/dev/xen/gntdev`, `/dev/xen/evtchn`    | `xen_gntdev`, `xen_evtchn`   |
+
+The DomU client runs as **root** (the `setup-vchan` initd has no `user=`), so the DomU
+side is not blocked by permissions; only the Dom0 server side needs the `safecor` group
+on the nodes.
+
+**3. The `xs_watch` race — the real blocker.** This is why MQTT is still down and the
+business domains are still stuck at boot, *even after* the device fix above.
+
+The vchan **server** (Dom0) calls `libxenvchan_server_init()` **at service start**, which
+creates the ring and writes `ring-ref`/`event-channel` to xenstore immediately. The Dom0
+`create-vchan-tunnels` service starts right after the orchestrator registers the domain,
+i.e. **before the DomU has finished booting**.
+
+The vchan **client** (DomU) only sets up its xenstore watch lazily, inside
+`connect_vchan()`, which runs **after a local app connects** to the client's UNIX socket
+(`accept()` → `connect_vchan()` → `xs_watch(path)`). By that time (DomU booted + app
+started) the ring **already exists**, because the Dom0 server created it earlier.
+
+Xenstore watches are edge-triggered: `xs_watch(path)` only fires when the path is created
+or modified *after* the watch is registered. Since the ring path already exists and is
+never changed again, the watch **never fires**, and the client blocks forever in
+`xs_read_watch()` → `libxenvchan_client_init()` is never called → no vchan connection →
+no MQTT → business domain stuck at boot.
+
+This also explains why the manual root test "worked": the Dom0 server was started
+*after* the DomU client had already registered its watch, so the ring was created after
+the watch and it fired. At real boot the order is reversed, so it deterministically
+deadlocks.
+
+### Quick fix applied (Run 8)
+
+- [x] `create-vchan-tunnels.initd`: load `xen_gntdev`/`xen_gntalloc`/`xen_evtchn` and
+      `chgrp safecor` + `chmod 660` on `/dev/xen/gntdev`, `/dev/xen/evtchn` and
+      `/dev/xen/gntalloc` (each guarded by `[ -e ]`), before starting the service.
+
+### Remaining blocker (requires a Xen patch)
+
+The `xs_watch` race (bug 3) can only be fixed by patching `connect_vchan()` in Xen's
+`tools/vchan/vchan-socket-proxy.c`: try `libxenvchan_client_init()` **immediately**
+(before the watch loop), and only fall back to the watch if the ring does not exist yet.
+This is a small patch that makes the client work whether or not the ring pre-exists. It
+requires rebuilding the `xen-tools` package — **needs a decision on the Xen build**
+(see Run 9).
+
+> **Status (intermediate run 8-9): refuted.** The vchan `msg` tunnel works
+> end-to-end at boot (the sftp script received the topology answer over MQTT),
+> so the client connects fine when the ring pre-exists. No Xen patch is
+> needed. The real remaining blocker is the permissions on the DomU bridge
+> sockets (see the intermediate run 8-9 root cause below).
+
+## Intermediate run 8-9
+
+Actions:
+- Changed the permissions on `/dev/xen/gntalloc` in Dom0
+- Disabled hardening is `sys-usb`
+
+Observations:
+- The vchan tunnels start correctly in Dom0 (no zombie)
+- When `sys-usb` starts it sends the request `system/topology/my_config/request` and Dom0 answers:
+```
+{"product_name": "Saphir", "use_usb": 1, "repository_disabled": false, "domains": [{"name": "sys-usb", "domain_type": 1, "direct_mount": false}, {"name": "saphir-gui", "domain_type": 2, "direct_mount": false}, {"name": "saphir-av-clamav", "domain_type": 2, "direct_mount": false}, {"name": "saphir-av-eset", "domain_type": 2, "direct_mount": false}], "direct_mount_domains": [], "screen": {"width": 800, "height": 1280, "rotation": 90, "enabled": 1, "default_focus": "saphir-gui"}, "languages": [], "default_language": "en", "pci_blacklist": []}
+```
+  - This command seems to be sent by the script `safecor-vchan-sftp`
+- After that, in `sys-usb` the file `/var/log/safecor/vchan-sftp.log` contains: 
+```
+safecor-vchan-sftp: starting
+safecor-vchan-sftp: no domains with direct_mount found in topology
+```
+- The `sys-usb controller` does not answer nor send any message
+  - Maybe there is a conflicts between the controller and the `safecor-vchan-sftp` script for the access to the vchan?
+  - Additional information: when I start the sys-usb controller manually with the command `python3 /usr/lib/safecor/bin/safecor-sys-usb-controller.py` it works well and messages are sent but when I start it with the command `/etc/init.d/safecor-sys-usb-controller start` the process is started but no message is sent. The difference is that when I run manually it is ran as `root` and the `initd` starts as `svc-sys-usb-controller`. When I run the command `su -s /bin/sh svc-sys-usb-controller -c '/usr/bin/python3 /usr/lib/sa
+fecor/bin/safecor-sys-usb-controller.py'` I get the error `Could not connect to the MQTT broker on /var/run/safecor/mqtt.sock  [Errno 13] Permission denied`
+
+Root cause:
+- The error `[Errno 13] Permission denied` on `/var/run/safecor/mqtt.sock` is the
+  blocker. The vchan `msg` bridge socket is created by `vchan-socket-proxy` (started
+  as root by `setup-vchan.sh`) with mode `0755 root:root` — the Xen tool never
+  chmods the socket. Connecting to a UNIX socket requires write permission on the
+  socket file, so the `svc-*` users get `EACCES` and their MQTT connection never
+  completes (`on_connect` never fires, no message is sent). Root bypasses the
+  permission check, which explains the manual test result. `safecor-vchan-sftp`
+  runs as root too, which is why it could query the topology.
+- The controller/sftp conflict hypothesis is rejected: the `vchan-socket-proxy`
+  client mode accepts multiple UNIX connections, each with its own vchan
+  connection.
+- Fix: `setup-vchan.sh` (both copies: `safecor-domu-base` and `safecor-sys-usb`)
+  now waits for each socket to appear, then applies `chgrp safecor` + `chmod 660`.
+  All `svc-*` users are already members of the `safecor` group (package
+  post-installs), so no new users or groups are needed.
+- Known limitation: if a `vchan-socket-proxy` process were restarted, the socket
+  would be recreated with mode `0755` and nothing would re-apply the group
+  permissions (no supervisor on these processes yet).
+
+## Run 9
+
+Preparation:
+- [ ] Rebuild `safecor-core` package (with the `/dev/xen/*` + `xen_gntalloc` fix)
+- [ ] Rebuild `safecor-sys-usb` and `safecor-domu-base` packages (with the
+      vchan bridge socket permissions fix)
 - [ ] Refresh local Alpine repository on Dom0
 - [ ] Boot in debug mode
 
 Verification:
-- [ ] Verify `/dev/gntdev` and `/dev/evtchn` are group `safecor`, mode `0660`
-- [ ] Verify the `vchan-socket-proxy` servers are alive on Dom0 (full command line
-      in `ps ax`, no `[vchan-socket-pr]` zombies)
+- [ ] Verify `/dev/xen/gntdev`, `/dev/xen/evtchn`, `/dev/xen/gntalloc` are group
+      `safecor`, mode `0660`
+- [ ] Verify the `vchan-socket-proxy` servers are alive on Dom0 (full command line in
+      `ps ax`, no `[vchan-socket-pr]` zombies)
 - [ ] Verify `xenstore-ls /local/domain/system/vchan` lists one entry per domain
       (msg for all, input/tty for sys-usb)
-- [ ] Verify `/var/log/safecor/vchan-tunnels.log` shows client connections
-- [ ] Verify `/tmp/mqtt-*.sock` is connectable by `svc-vchan-tunnels`
-      (`ls -l /tmp/mqtt-*.sock`; the fix adds `addgroup svc-vchan-tunnels mosquitto`
-      and `chmod g+w /tmp/mqtt-*.sock` at service start)
+- [ ] Verify the DomU vchan clients connect: the Dom0 servers connect to the mosquitto
+      sockets (no more zombies in `ps ax`; `/var/log/safecor/vchan-tunnels.log` clean)
+- [ ] Verify `/var/run/safecor/*.sock` in sys-usb are group `safecor`, mode `0660`
+      (`ls -l /var/run/safecor`)
+- [ ] Verify the sys-usb controller (user `svc-sys-usb-controller`, started through
+      its initd) sends `discover_components/response` and answers pings
 - [ ] Verify MQTT communication between sys-usb and Dom0 (ping)
-- [ ] Verify the boot is not blocked in every domain (sys-usb, business domains,
-      sys-gui)
+- [ ] Verify the boot is not blocked in every domain (sys-usb, business domains, sys-gui)
 - [ ] Verify the debugging tty on sys-usb
 - [ ] Validate the file read on a USB storage from a Domain (direct mount)
 - [ ] Validate the GUI display

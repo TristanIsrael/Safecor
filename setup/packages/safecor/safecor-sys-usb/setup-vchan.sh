@@ -46,6 +46,10 @@ if ! xenstore-read /local/domain/system/vchan/$MY_NAME/msg/ring-ref >/dev/null 2
 fi
 
 # Start one vchan client per channel, detached, with its own pidfile.
+#
+# vchan-socket-proxy creates its UNIX socket as root with mode 0755
+# (it never chmods it), so the domain's svc-* users cannot connect to
+# it. Once the socket exists, make it accessible to the safecor group.
 start_vchan_client() {
     channel="$1"
     sock="$2"
@@ -53,6 +57,16 @@ start_vchan_client() {
         --pidfile "/var/run/safecor/vchan-${channel}.pid" \
         --exec /usr/bin/vchan-socket-proxy \
         -- -m client 0 "/local/domain/system/vchan/$MY_NAME/$channel" "$sock"
+    for i in $(seq 1 20); do
+        [ -S "$sock" ] && break
+        sleep 0.5
+    done
+    if [ -S "$sock" ]; then
+        chgrp safecor "$sock"
+        chmod 660 "$sock"
+    else
+        logger -t "Safecor/$SCRIPT_NAME" -p user.err "Socket $sock was not created (channel $channel)"
+    fi
     logger -t "Safecor/$SCRIPT_NAME" -p user.info "vchan $channel client started (domid=$MY_DOMID, sock=$sock)"
 }
 
