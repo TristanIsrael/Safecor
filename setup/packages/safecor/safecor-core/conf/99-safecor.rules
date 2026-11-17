@@ -14,3 +14,4 @@
 # Safecor Licence — see python/lib/LICENCE.md
 
 KERNEL=="gntdev|gntalloc|evtchn", GROUP="safecor", MODE="0660"
+KERNEL=="uinput", GROUP="safecor", MODE="0660"

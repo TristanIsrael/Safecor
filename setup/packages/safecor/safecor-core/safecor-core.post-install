@@ -16,6 +16,8 @@ ln -s /var/lib/xen/images/alpine-safecor-virt-x86_64.iso /var/lib/xen/images/alp
 rc-update del syslog boot
 rc-update add syslog-ng boot
 rc-service syslog-ng restart
+rc-update add udev default
+rc-service udev start
 
 logger -t "Safecor/core-post-install" "Setting environment"
 hostname safecor.local
