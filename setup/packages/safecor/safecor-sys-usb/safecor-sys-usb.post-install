@@ -14,6 +14,18 @@ modprobe vfat
 modprobe ntfs3
 modprobe ext4
 modprobe fuse
+modprobe usbcore
+modprobe fat
+modprobe usb-storage
+modprobe sd_mod
+modprobe nls_cp437
+modprobe nls_iso8859-1
+modprobe uas
+modprobe ehci_hcd
+modprobe xen_gntalloc
+modprobe xen_gntdev
+modprobe xen_evtchn
+modprobe xen_gnttab
 
 # Create accounts and handle permissions
 echo "**** Creating service accounts"

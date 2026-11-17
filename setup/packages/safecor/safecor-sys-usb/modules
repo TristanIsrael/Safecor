@@ -3,9 +3,15 @@ vfat
 ntfs3
 usbcore
 usb-storage
+sd_mod
+ext4
+fat
+nls_cp437
+nls_iso8859-1
 ehci_hcd
 fuse
 xen_gntalloc
 xen_gntdev
 xen_evtchn
 xen_gnttab
+uas
