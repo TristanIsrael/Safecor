@@ -17,7 +17,7 @@ start() {
     start-stop-daemon --start --background --make-pidfile \
         --pidfile "$pidfile" \
         --exec /usr/bin/python3 \
-        -- /usr/lib/safecor/scripts/start-direct-mount.py
+        -- /usr/lib/safecor/bin/start-direct-mount.py
     eend $?
 }
 

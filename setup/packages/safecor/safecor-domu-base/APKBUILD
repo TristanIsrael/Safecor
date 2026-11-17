@@ -25,11 +25,11 @@ source=""
 package() {
     mkdir -p "$pkgdir"/usr/lib/safecor/etc
     echo "$pkgname" >> "$pkgdir"/usr/lib/safecor/etc/installed
-    mkdir -p "$pkgdir"/usr/lib/safecor/scripts
+    mkdir -p "$pkgdir"/usr/lib/safecor/bin
     mkdir -p "$pkgdir"/etc/init.d
-    install -m 755 scripts/setup-direct-mount.sh "$pkgdir"/usr/lib/safecor/scripts/setup-direct-mount.sh
-    install -m 755 scripts/start-direct-mount.py "$pkgdir"/usr/lib/safecor/scripts/start-direct-mount.py
-    install -m 755 scripts/setup-vchan.sh "$pkgdir"/usr/lib/safecor/scripts/setup-vchan.sh
+    install -m 755 scripts/setup-direct-mount.sh "$pkgdir"/usr/lib/safecor/bin/setup-direct-mount.sh
+    install -m 755 scripts/start-direct-mount.py "$pkgdir"/usr/lib/safecor/bin/start-direct-mount.py
+    install -m 755 scripts/setup-vchan.sh "$pkgdir"/usr/lib/safecor/bin/setup-vchan.sh
     install -m 755 init/direct-mount.initd "$pkgdir"/etc/init.d/direct-mount
     install -m 755 init/setup-vchan.initd "$pkgdir"/etc/init.d/setup-vchan
 }
