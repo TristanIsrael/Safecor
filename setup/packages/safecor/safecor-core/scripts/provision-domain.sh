@@ -18,7 +18,7 @@ if [ $# -lt 4 ]; then
   logger -s -t "Safecor/$SCRIPT_NAME" -p user.err "Mandatory arguments missing..."
 
   echo "Mandatory arguments missing."
-  echo "$0 [Domain name] [Main package] [Alpine branch (virt|lts)] [blacklist.conf file path]"
+  echo "$0 [Domain name] [Main package] [Alpine branch (virt|lts)] [blacklist.conf file path] [hvm]"
   exit 1
 fi
 
@@ -27,6 +27,8 @@ MAIN_PACKAGE=$2
 ALPINE_BRANCH=$3
 ALPINE_BRANCH=${ALPINE_BRANCH:-virt}
 BLACKLIST_CONF=$4
+# Optional fifth argument: "hvm" when the Domain is a full virtual machine.
+IS_HVM="${5:-}"
 CONFIG_IMG="$WORKDIR/$DOMAIN-config.img"
 
 # Vérifier la valeur de $ALPINE_BRANCH et définir $BOOTISO_FILENAME en conséquence
@@ -68,6 +70,14 @@ $MAIN_PACKAGE" >> $WORKDIR/apkovl/etc/apk/world
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Configure hostname"
 echo "$DOMAIN" > $WORKDIR/apkovl/etc/hostname
+
+# HVM Domains get their console from the emulated serial port (xl pty),
+# so enable the ttyS0 getty that the template keeps disabled (it would
+# spam the log on PV/PVH Domains, which have no usable ttyS0).
+if [ "$IS_HVM" = "hvm" ]; then
+    logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Enable the ttyS0 getty (HVM Domain)"
+    sed -i 's|^#ttyS0::respawn|ttyS0::respawn|' $WORKDIR/apkovl/etc/inittab
+fi
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... Copy local PGP key"
 cp $LOCAL_PGP_PUBKEY $WORKDIR/apkovl/etc/apk/keys

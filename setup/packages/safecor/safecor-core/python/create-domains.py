@@ -89,14 +89,15 @@ class DomainsFactory:
 
                 blacklist_conf = DomainsFactory.__create_blacklist_conf()
                 DomainsFactory.__provision_domain(
-                    domain.name, package, "virt", blacklist_conf
+                    domain.name,
+                    package,
+                    "virt",
+                    blacklist_conf,
+                    is_hvm=domain.has_gui,
                 )
                 conf = DomainsFactory.__create_xl_conf_domain(
                     domain,
                     boot_iso_location=f"bootiso-{domain.name}.iso",
-                    share_packages=True,
-                    share_storage=not topology.repository_disabled,
-                    share_system=False,
                 )
 
                 filename = f"/etc/safecor/xen/{domain.name}.conf"
@@ -136,10 +137,10 @@ kernel = "/var/lib/xen/boot/vmlinuz-safecor-virt"
 ramdisk = "/var/lib/xen/boot/initramfs-safecor-virt"
 modloop = "/var/lib/xen/boot/modloop-safecor-virt"
 driver_domain = 1
-extra = "alpine_dev=xvdc:iso9660 apkovl=/media/xvdd/sys-usb.apkovl.tar.gz modules=loop,squashfs,ext4,sd-mod,usb-storage,9p,xen_blkfront,xen_evtchn,xen_gntdev,xen_gntalloc"
+extra = "console=hvc0 alpine_dev=xvdc:iso9660 apkovl=/media/xvdd/sys-usb.apkovl.tar.gz modules=loop,squashfs,ext4,xen_blkfront,sd-mod,usb-storage"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-usb-config.img',
+    'format=raw, vdev=xvdd, access=r, target=/usr/lib/safecor/system/sys-usb-config.img',
     'format=raw, vdev=xvde, access=r, target=/usr/lib/safecor/packages.squashfs'
 ]
 vif=[]
@@ -164,7 +165,7 @@ vcpus = {sys_gui.vcpus}
 cpus = "{System.cpu_affinity_to_string(sys_gui.cpu_affinity)}"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/sys-gui-config.img'
+    'format=raw, vdev=xvdd, access=r, target=/usr/lib/safecor/system/sys-gui-config.img'
 ]
 vga = "none"
 device_model_override = "/usr/bin/qemu-system-x86_64"
@@ -187,31 +188,21 @@ vif=[]
     def __create_xl_conf_domain(
         domain: Domain,
         boot_iso_location: str,
-        share_packages: bool = True,
-        share_storage: bool = True,
-        share_system: bool = False,
     ):
-        "Generates the xl configuration string for a generic Domain with optional 9p shares."
+        "Generates the xl configuration string for a generic Domain."
         topology = System.get_topology()
 
         dom = topology.domain(domain.name)
 
         if domain.has_gui:
-            return DomainsFactory.__create_xl_conf_hvm(
-                domain, boot_iso_location, share_packages, share_storage, share_system
-            )
+            return DomainsFactory.__create_xl_conf_hvm(domain, boot_iso_location)
         else:
-            return DomainsFactory.__create_xl_conf_pvh(
-                domain, boot_iso_location, share_packages, share_storage, share_system
-            )
+            return DomainsFactory.__create_xl_conf_pvh(domain, boot_iso_location)
 
     @staticmethod
     def __create_xl_conf_pvh(
         domain: Domain,
         boot_iso_location: str,
-        share_packages: bool = True,
-        share_storage: bool = True,
-        share_system: bool = False,
     ):
         "Generates the PVH xl configuration for a non-GUI Domain."
         dom = System.get_topology().domain(domain.name)
@@ -226,35 +217,29 @@ cpus = "{System.cpu_affinity_to_string(dom.cpu_affinity)}"
 kernel = "/var/lib/xen/boot/vmlinuz-safecor-virt"
 ramdisk = "/var/lib/xen/boot/initramfs-safecor-virt"
 modloop = "/var/lib/xen/boot/modloop-safecor-virt"
-extra = "alpine_dev=xvdc:iso9660 apkovl=/media/xvdd/sys-usb.apkovl.tar.gz modules=loop,squashfs,ext4,sd-mod,usb-storage,9p,xen_blkfront,xen_evtchn,xen_gntdev,xen_gntalloc"
+extra = "console=hvc0 alpine_dev=xvdc:iso9660 apkovl=/media/xvdd/{domain.name}.apkovl.tar.gz modules=loop,squashfs,ext4,xen_blkfront"
 disk = [
-	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img',
+	'format=raw, vdev=xvdc, access=r, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
+    'format=raw, vdev=xvdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img',
     'format=raw, vdev=xvde, access=r, target=/usr/lib/safecor/packages.squashfs'
 '''
         if domain.temp_disk_size > 0:
-            txt += f", 'format=raw, vdev=sde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
+            txt += f", 'format=raw, vdev=xvdg, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
 
         if domain.swap_size > 0:
-            txt += f", 'format=raw, vdev=sdf, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
+            txt += f", 'format=raw, vdev=xvdf, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
 
         txt += """
 ]
 vif=[]
 """
 
-        txt += DomainsFactory.__generate_p9_shares(
-            domain, share_packages, share_storage, share_system
-        )
         return txt
 
     @staticmethod
     def __create_xl_conf_hvm(
         domain: Domain,
         boot_iso_location: str,
-        share_packages: bool = True,
-        share_storage: bool = True,
-        share_system: bool = False,
     ):
         "Generates the HVM xl configuration for a GUI Domain."
         dom = System.get_topology().domain(domain.name)
@@ -269,14 +254,14 @@ vcpus = {domain.vcpus}
 cpus = "{System.cpu_affinity_to_string(dom.cpu_affinity)}"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=sdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img',
-    'format=raw, vdev=sde, access=r, target=/usr/lib/safecor/packages.squashfs'
+    'format=raw, vdev=xvdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img',
+    'format=raw, vdev=xvde, access=r, target=/usr/lib/safecor/packages.squashfs'
 '''
         if domain.temp_disk_size > 0:
-            txt += f", 'format=raw, vdev=xvdd, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
+            txt += f", 'format=raw, vdev=xvdg, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
 
         if domain.swap_size > 0:
-            txt += f", 'format=raw, vdev=xvde, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
+            txt += f", 'format=raw, vdev=xvdf, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
 
         txt += f"""
 ]
@@ -295,36 +280,6 @@ usb=0
 vif=[]
 """
 
-        txt += DomainsFactory.__generate_p9_shares(
-            domain, share_packages, share_storage, share_system
-        )
-        return txt
-
-    @staticmethod
-    def __generate_p9_shares(
-        domain: Domain,
-        share_packages: bool,
-        share_storage: bool,
-        share_system: bool,
-    ) -> str:
-        "Generates the p9 shares section shared by both HVM and PVH configs."
-        shares = []
-        if share_packages:
-            shares.append(
-                "'tag=packages, path=/usr/lib/safecor/packages, backend=0, security_model=none'"
-            )
-        if share_storage:
-            shares.append(
-                "'tag=storage, path=/usr/lib/safecor/storage, backend=0, security_model=none'"
-            )
-        if share_system:
-            shares.append(
-                "'tag=system, path=/usr/lib/safecor/system, backend=0, security_model=none'"
-            )
-
-        txt = ""
-        if len(shares) > 0:
-            txt += "p9 = [\n{}\n]\n".format(",\n".join(shares))
         return txt
 
     @staticmethod
@@ -333,15 +288,16 @@ vif=[]
         main_package: str,
         alpine_branch: str = "virt",
         blacklist_conf: str = None,
+        is_hvm: bool = False,
     ):
         "Provisions a Domain by creating its boot ISO from the Alpine repository."
         cmd = "/usr/lib/safecor/bin/provision-domain.sh"
+        args = [cmd, domain_name, main_package, alpine_branch, blacklist_conf]
+        if is_hvm:
+            args.append("hvm")
 
         try:
-            subprocess.run(
-                [cmd, domain_name, main_package, alpine_branch, blacklist_conf],
-                check=True,
-            )
+            subprocess.run(args, check=True)
 
             # When finished we remove the blacklist.conf file
             os.unlink(blacklist_conf)
