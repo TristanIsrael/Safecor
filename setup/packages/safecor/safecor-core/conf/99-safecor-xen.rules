@@ -1,0 +1,16 @@
+# Safecor - Permissions on the Xen device nodes used by the vchan tunnels.
+#
+# The vchan servers (running as svc-vchan-tunnels, group safecor) need
+# read/write access to these nodes:
+#   gntalloc  grant allocator: the server allocates the vchan ring page from it
+#   gntdev    grant table: the client maps the shared ring page through it
+#   evtchn    event channels: used by both the server and the client
+#
+# udev applies the group and mode every time a node is (re)created, so the
+# permissions are in place as soon as the node exists, with no race between
+# the module load and the node permission setup.
+#
+# Copyright (c) 2024-2026, Tristan Israël
+# Safecor Licence — see python/lib/LICENCE.md
+
+KERNEL=="gntdev|gntalloc|evtchn", GROUP="safecor", MODE="0660"

@@ -20,13 +20,26 @@ start() {
     #   gntalloc  grant allocator: the server allocates the ring page from it
     #   gntdev    grant table: the client maps the shared ring page through it
     #   evtchn    event channels: used by both the server and the client
+    #
+    # The udev rule 99-safecor-xen.rules already applies the group and mode
+    # when a node is created; udev creates the nodes asynchronously after the
+    # module load, so wait for them to appear and apply the permissions as a
+    # fallback (idempotent if udev already did it).
     modprobe xen_gntdev
     modprobe xen_gntalloc
     modprobe xen_evtchn
+    for i in $(seq 1 20); do
+        [ -e /dev/xen/gntdev ] && [ -e /dev/xen/evtchn ] && [ -e /dev/xen/gntalloc ] && break
+        sleep 0.5
+    done
     for node in /dev/xen/gntdev /dev/xen/evtchn /dev/xen/gntalloc; do
-        [ -e "$node" ] || continue
-        chgrp safecor "$node"
-        chmod 660 "$node"
+        if [ -e "$node" ]; then
+            chgrp safecor "$node"
+            chmod 660 "$node"
+            logger -t "Safecor/create-vchan-tunnels" -p user.info "Device node ready: $node"
+        else
+            logger -t "Safecor/create-vchan-tunnels" -p user.err "Device node missing after module load: $node"
+        fi
     done
 
     # The msg servers must also be able to connect to the Mosquitto UNIX
