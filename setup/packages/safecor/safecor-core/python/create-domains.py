@@ -254,27 +254,27 @@ vcpus = {domain.vcpus}
 cpus = "{System.cpu_affinity_to_string(dom.cpu_affinity)}"
 disk = [
 	'format=raw, vdev=xvdc, access=r, devtype=cdrom, target={DEFAULT_SAFECOR_VIRT_ISO_FILEPATH}',
-    'format=raw, vdev=xvdd, access=r, target=/usr/lib/safecor/system/{domain.name}-config.img',
-    'format=raw, vdev=xvde, access=r, target=/usr/lib/safecor/packages.squashfs'
+    'format=raw, vdev=sdd, access=r, devtype=cdrom, target=/usr/lib/safecor/system/{domain.name}-config.img',
+    'format=raw, vdev=sde, access=r, target=/usr/lib/safecor/packages.squashfs'
 '''
         if domain.temp_disk_size > 0:
-            txt += f", 'format=raw, vdev=xvdg, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
+            txt += f", 'format=raw, vdev=sdg, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-tmp.img'"
 
         if domain.swap_size > 0:
-            txt += f", 'format=raw, vdev=xvdf, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
+            txt += f", 'format=raw, vdev=sdf, access=rw, target=/usr/lib/safecor/tmp/{domain.name}-swap.img'"
 
         txt += f"""
 ]
 device_model_override = "/usr/bin/qemu-system-x86_64"
 device_model_version = "qemu-xen"
 device_model_args = [
-      '-device', 'virtio-gpu-pci',
-      '-display', 'gtk,full-screen=on,zoom-to-fit=on,gl=on',
+      #'-device', 'virtio-gpu-pci',
+      '-display', 'gtk,full-screen=on,zoom-to-fit=on',
       '-device', 'virtio-input-host,id=virtio-mouse,evdev=/var/run/safecor/virtual_mouse_{domain.name}',
       '-device', 'virtio-input-host,id=virtio-keyboard,evdev=/var/run/safecor/virtual_keyboard_{domain.name}',
       '-device', 'virtio-input-host,id=virtio-touch,evdev=/var/run/safecor/virtual_touch_{domain.name}'
 ]
-vga = "none"
+vga = "stdvga"
 vnc=0
 usb=0
 vif=[]
