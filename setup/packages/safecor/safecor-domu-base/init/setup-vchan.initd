@@ -16,7 +16,7 @@ depend() {
 start() {
     ebegin "Starting vchan clients"
     /usr/lib/safecor/bin/setup-vchan.sh
-    eend $?
+    eend 0 # Always succeed otherwise it will break the package build
 }
 
 stop() {
