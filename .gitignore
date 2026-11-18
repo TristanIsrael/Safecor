@@ -144,3 +144,4 @@ bin/*.*
 ### Xorg conf files ###
 !**/xorg.conf.d
 **/.coverage
+Safecor.code-workspace
