@@ -14,10 +14,14 @@ depend() {
 start() {
     ebegin "Setting up direct USB mount"
     modprobe fuse 2>/dev/null
+    # The manager mirrors its diagnostics on standard error. By default they
+    # are discarded to keep the boot console clean; start
+    # /usr/lib/safecor/bin/start-direct-mount.py manually in the domain
+    # console to see them.
     start-stop-daemon --start --background --make-pidfile \
         --pidfile "$pidfile" \
-        --exec /usr/bin/python3 \
-        -- /usr/lib/safecor/bin/start-direct-mount.py
+        --exec /bin/sh \
+        -- -c 'exec /usr/bin/python3 /usr/lib/safecor/bin/start-direct-mount.py >/dev/null 2>&1'
     eend $?
 }
 

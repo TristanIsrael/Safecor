@@ -41,6 +41,18 @@ class DirectMountManager:
     __sshfs_process = None
     __mount_mode = "rw"
 
+    def __log(self, level: str, message: str) -> None:
+        """Logs a message and mirrors it on standard error.
+
+        The openrc instance (``direct-mount``) redirects its output to
+        ``/dev/null`` by default, and the MQTT log messages of this
+        standalone process can be lost (short-lived client). The mirror on
+        standard error is what makes a manually started process report its
+        diagnostics on the domain console.
+        """
+        getattr(Logger(), level)(message)
+        print(f"direct-mount: {message}", file=sys.stderr)
+
     def start(self) -> bool:
         """Initiates the direct mount flow.
 
@@ -56,34 +68,41 @@ class DirectMountManager:
         # Step 1: Check if this domain has direct_mount enabled
         mount_mode = self.__query_direct_mount_config()
         if mount_mode is None:
-            Logger().info(
-                "DirectMountManager: this domain does not have direct_mount enabled"
+            self.__log(
+                "info",
+                "DirectMountManager: this domain does not have direct_mount enabled",
             )
             return False
 
         self.__mount_mode = mount_mode
-        Logger().info(f"DirectMountManager: direct_mount enabled (mode={mount_mode})")
+        self.__log(
+            "info", f"DirectMountManager: direct_mount enabled (mode={mount_mode})"
+        )
 
         # Step 2: Get sys-usb domid
         domid = self.__wait_for_domid("sys-usb")
         if domid is None:
-            Logger().error("DirectMountManager: could not find sys-usb domid")
+            self.__log("error", "DirectMountManager: could not find sys-usb domid")
             return False
 
-        Logger().info(f"DirectMountManager: sys-usb domid is {domid}")
+        self.__log("info", f"DirectMountManager: sys-usb domid is {domid}")
 
         # Step 3: Generate vchan-sftp script
         if not self.__generate_vchan_script():
-            Logger().error("DirectMountManager: failed to generate vchan-sftp script")
+            self.__log(
+                "error", "DirectMountManager: failed to generate vchan-sftp script"
+            )
             return False
 
         # Step 4: Mount
         if not self.__mount():
-            Logger().error("DirectMountManager: failed to mount")
+            self.__log("error", "DirectMountManager: failed to mount")
             return False
 
         self.__mounted = True
-        Logger().info(f"DirectMountManager: mounted at {Constants.USB_MOUNT_POINT}")
+        self.__log(
+            "info", f"DirectMountManager: mounted at {Constants.USB_MOUNT_POINT}"
+        )
         return True
 
     def stop(self) -> None:
@@ -98,7 +117,7 @@ class DirectMountManager:
 
         self.__unmount()
         self.__mounted = False
-        Logger().info("DirectMountManager: unmounted")
+        self.__log("info", "DirectMountManager: unmounted")
 
     def is_mounted(self) -> bool:
         """Returns True if the direct mount is active."""
@@ -125,7 +144,7 @@ class DirectMountManager:
 
     def __handle_signal(self, signum, frame):
         """Handle SIGTERM/SIGINT: stop the mount and exit."""
-        Logger().info("DirectMountManager: received termination signal")
+        self.__log("info", "DirectMountManager: received termination signal")
         self.stop()
         sys.exit(0)
 
@@ -155,8 +174,9 @@ class DirectMountManager:
             Api().start(mqtt_client)
 
             if not event.wait(timeout=10):
-                Logger().error(
-                    "DirectMountManager: timeout waiting for my_config response"
+                self.__log(
+                    "error",
+                    "DirectMountManager: timeout waiting for my_config response",
                 )
                 return None
 
@@ -168,7 +188,7 @@ class DirectMountManager:
                         if dm:
                             return dm.get("mode", "rw")
         except Exception as e:
-            Logger().error(f"DirectMountManager: error querying my_config: {e}")
+            self.__log("error", f"DirectMountManager: error querying my_config: {e}")
         finally:
             Api().stop()
         return None
@@ -209,7 +229,7 @@ class DirectMountManager:
             os.chmod(VCHAN_SFTP_SCRIPT_PATH, 0o755)
             return True
         except OSError as e:
-            Logger().error(f"DirectMountManager: cannot write vchan script: {e}")
+            self.__log("error", f"DirectMountManager: cannot write vchan script: {e}")
             return False
 
     def __mount(self) -> bool:
@@ -235,13 +255,14 @@ class DirectMountManager:
             if self.__sshfs_process.poll() is None:
                 return True
             else:
-                Logger().error(
+                self.__log(
+                    "error",
                     f"DirectMountManager: sshfs exited with code "
-                    f"{self.__sshfs_process.returncode}"
+                    f"{self.__sshfs_process.returncode}",
                 )
                 return False
         except (OSError, FileNotFoundError) as e:
-            Logger().error(f"DirectMountManager: sshfs failed to start: {e}")
+            self.__log("error", f"DirectMountManager: sshfs failed to start: {e}")
             return False
 
     def __unmount(self) -> None:
