@@ -220,14 +220,17 @@ a `doas` config permits it to run `xl`, `xenstore-read`, and the start scripts a
 | vdev | Domain type | Target (Dom0) | Purpose |
 |------|-------------|---------------|---------|
 | `xvdc` | all | `alpine-virt.iso` (PVH: plain block disk, HVM: `devtype=cdrom`) | root ISO |
-| `xvdd` | all | `/usr/lib/safecor/system/<name>-config.img` | apkovl (read by the initramfs) |
-| `xvde` | all | `/usr/lib/safecor/packages.squashfs` | local Alpine repository → `/mnt/packages` |
-| `xvdf` | optional | `/usr/lib/safecor/tmp/<name>-swap.img` | swap |
-| `xvdg` | optional | `/usr/lib/safecor/tmp/<name>-tmp.img` | temporary storage → `/tmp` |
+| `xvdd` / `sdd` | PVH / HVM | `/usr/lib/safecor/system/<name>-config.img` (HVM: `devtype=cdrom`) | apkovl (read by the initramfs) |
+| `xvde` / `sde` | PVH / HVM | `/usr/lib/safecor/packages.squashfs` | local Alpine repository → `/mnt/packages` |
+| `xvdf` / `sdf` | optional | `/usr/lib/safecor/tmp/<name>-swap.img` | swap |
+| `xvdg` / `sdg` | optional | `/usr/lib/safecor/tmp/<name>-tmp.img` | temporary storage → `/tmp` |
 
 XL conventions: PVH domains have **no** `devtype=cdrom` and use `console=hvc0` in the
 `extra` kernel line (PV console, reachable from Dom0 with `xl console <domid>`); HVM
-domains boot from the CD-ROM (`boot = "d"`) and keep `devtype=cdrom`.
+domains boot from the CD-ROM (`boot = "d"`) and use the SCSI vdevs `sdd`/`sde`/`sdf`/`sdg`
+(with `xvd*` vdevs qemu-xen refuses to start the domain with "qemu-xen doesn't support
+read-only IDE disk drivers"). HVM domains use `vga = "stdvga"`: virtio-gpu does not
+expose the physical resolution's mode, so the GUI display setup (`xrandr`) fails.
 
 **Debug TTY chain** (with `DEBUG=ON` on the Dom0 kernel command line, started by
 `debug.initd`): the USB serial console cable is passed through to `sys-usb` and bridged
