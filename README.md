@@ -73,13 +73,13 @@ The [public key file](https://alefbet.net/github/safecor/safecor.rsa.pub) must b
 
 ## 🖥️ Compatibility
 
-| Alpine | Status | Comment |
+| Alpine | Safecor<br/>v1 | Safecor<br/>v2 (edge) |
 |--|--|--|
-| v3.20 | ![Working](https://img.shields.io/badge/Working-109900) | |
+| v3.20 | ![Working](https://img.shields.io/badge/Working-109900) | | 
 | v3.21 | ![Working](https://img.shields.io/badge/Working-109900) | |
-| v3.22 | ![Not tested](https://img.shields.io/badge/Not%20tested-ffa500) | |
-| v3.23 | ![Not tested](https://img.shields.io/badge/Not%20tested-ffa500) | |
-| v3.24 | ![Not working](https://img.shields.io/badge/Not%20working-ff3333) | Grub 2.14 is buggy in `multiboot2`. Needs downgrade to 2.12. |
+| v3.22 | ![Not tested](https://img.shields.io/badge/Not_tested-ffa500) | |
+| v3.23 | ![Not tested](https://img.shields.io/badge/Not_tested-ffa500) | |
+| v3.24 | ![Not tested](https://img.shields.io/badge/Not_tested-ffa500) | ![In progress](https://img.shields.io/badge/In_progress-303099)<br/>Grub 2.14 is buggy in `multiboot2`. Needs downgrade to 2.12.|
 
 ## 🏁 Getting started
 
