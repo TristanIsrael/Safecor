@@ -7,8 +7,10 @@
 # Set up a couple of getty's
 tty1::respawn:/sbin/getty 38400 tty1
 
-# Put a getty on the serial port (for HVM)
-ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100
+# Put a getty on the serial port (for HVM).
+# Enabled at provisioning time for HVM domains only (see provision-domain.sh):
+# PV/PVH Domains have no usable ttyS0 and this getty would spam the log.
+#ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100
 
 # Stuff to do for the 3-finger salute
 ::ctrlaltdel:/sbin/reboot

@@ -12,6 +12,9 @@ TTY_SOCK=/var/run/safecor/sys-usb-tty.sock
 
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "Creating TTY tunnel (listen mode)..."
 while true; do
+    # Remove a stale PTY symlink left by a previous instance so that socat
+    # can (re)create the link and the getty does not open a dead pty.
+    rm -f /var/run/safecor/tty-admin
     socat PTY,link=/var/run/safecor/tty-admin,raw,echo=0,ctty UNIX-LISTEN:$TTY_SOCK,reuseaddr &
     SOCAT_PID=$!
 
