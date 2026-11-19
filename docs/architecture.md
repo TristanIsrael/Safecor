@@ -170,7 +170,7 @@ configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remainin
 
 **Boot** (every boot, via `orchestrator.initd` → `orchestrator.py`):
 1. Writes screen size/rotation to xenstore (`/local/domain/system/`).
-2. Runs `set-xenstore-permissions.sh` (`xenstore-chmod -r /local/domain/system r`).
+2. Runs `set-xenstore-permissions.sh` (`xenstore-chmod -r /local/domain/system b`).
 3. Creates per-domain virtual input devices (`uinput`).
 4. PCI-passthrough USB controllers to `sys-usb` (`xl pci-assignable-add`).
 5. Starts `sys-usb`: `doas start-sys-usb.sh` → `xl create -f /etc/safecor/xen/sys-usb.conf`.
@@ -193,9 +193,11 @@ configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remainin
    `safecor-core-init` (boot runlevel) fixes permissions, runs `apk add` from
    `/mnt/packages`.
     Domain-specific package post-install (e.g. `safecor-sys-usb`, `safecor-domu-base`).
-    `setup-vchan` (default runlevel) starts `vchan-socket-proxy` clients (msg, input, tty)
+    `setup-vchan` (default runlevel) starts the local mosquitto broker of the domain (msg
+    channel: the broker's upstream bridge is tunneled to the Dom0 vchan server through socat
+    + `vchan-socket-proxy`) and, for `sys-usb`, the `vchan-socket-proxy` clients (input, tty)
     connecting to the Dom0 vchan servers.
-    Controller process starts, connects to MQTT over the vchan UNIX socket
+    Controller process starts, connects to MQTT on the local broker's UNIX socket
     (`/var/run/safecor/mqtt.sock`).
 
 **Xenstore key model** (`/local/domain/system/` — Dom0 writes, all DomUs read):
@@ -209,8 +211,10 @@ configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remainin
 | `domids/<name>` *(v2)* | orchestrator (after `xl create`) | DomUs (vchan peer discovery) |
 | `vchan/<name>/<channel>/{ring-ref,event-channel}` *(v2)* | the `vchan-socket-proxy` server (Dom0; the server side creates the channel and grants read to the peer domain) | DomUs (`setup-vchan.sh`, vchan SFTP clients) |
 
-Permissions: `set-xenstore-permissions.sh` grants recursive read on the entire
-`/local/domain/system` subtree, allowing any DomU to read these keys.
+Permissions: `set-xenstore-permissions.sh` grants recursive read + write (`b`) on the entire
+`/local/domain/system` subtree: the DomUs read these keys and the DomU-side vchan services
+write their channel nodes under `/local/domain/system/vchan`. Restricting the write grants to
+the vchan subtree only is tracked as a follow-up (issue #261).
 
 **Orchestrator privilege model**: the orchestrator runs unprivileged as `svc-orchestrator`;
 a `doas` config permits it to run `xl`, `xenstore-read`, and the start scripts as root.
@@ -220,7 +224,7 @@ a `doas` config permits it to run `xl`, `xenstore-read`, and the start scripts a
 | vdev | Domain type | Target (Dom0) | Purpose |
 |------|-------------|---------------|---------|
 | `xvdc` | all | `alpine-virt.iso` (PVH: plain block disk, HVM: `devtype=cdrom`) | root ISO |
-| `xvdd` / `sdd` | PVH / HVM | `/usr/lib/safecor/system/<name>-config.img` (HVM: `devtype=cdrom`) | apkovl (read by the initramfs) |
+| `xvdd` / `sdd` | PVH / HVM | `/usr/lib/safecor/system/<name>-config.img` | apkovl (read by the initramfs) |
 | `xvde` / `sde` | PVH / HVM | `/usr/lib/safecor/packages.squashfs` | local Alpine repository → `/mnt/packages` |
 | `xvdf` / `sdf` | optional | `/usr/lib/safecor/tmp/<name>-swap.img` | swap |
 | `xvdg` / `sdg` | optional | `/usr/lib/safecor/tmp/<name>-tmp.img` | temporary storage → `/tmp` |
@@ -249,12 +253,18 @@ host debug terminal → USB cable → sys-usb /dev/ttyUSB0 (udev rule 99-usbseri
 ### 3.1 Transports
 `MqttClient` supports two transports (`ConnectionType`):
 - **UNIX socket** — used by both Dom0 (`/tmp/mqtt-dom0.sock`) and DomU
-  (`/var/run/safecor/mqtt.sock`). On the DomU side, `vchan-socket-proxy` runs as a **client**
-  that creates the local UNIX socket and connects to the Dom0 vchan server. On the Dom0 side,
-  `create-vchan-tunnels.py` runs `vchan-socket-proxy` **servers** that connect directly to the
-  Mosquitto broker UNIX listeners, named after the domain (`/tmp/mqtt-<domain name>.sock`) and
-  generated from the product topology at install time. The vchan data lives in the shared
-  xenstore namespace `/local/domain/system/vchan/<domain name>/<channel>`.
+  (`/var/run/safecor/mqtt.sock`). On the DomU side, `/var/run/safecor/mqtt.sock` is the UNIX
+  listener of the domain's **local mosquitto broker**: the domain's applications connect to it
+  (the broker multiplexes every local client) and a single upstream bridge carries the domain's
+  traffic over the vchan `msg` channel: the bridge connects to a TCP loopback endpoint
+  (`127.0.0.1:18860`), socat accepts the connection and spawns one `vchan-socket-proxy` client
+  (stdio mode) per connection, which connects to the Dom0 vchan server. The loopback interface
+  is brought up by `setup-vchan.sh` (the DomUs have no network interface by default). On the
+  Dom0 side, `create-vchan-tunnels.py` runs `vchan-socket-proxy` **servers** that connect
+  directly to the Mosquitto broker UNIX listeners, named after the domain
+  (`/tmp/mqtt-<domain name>.sock`) and generated from the product topology at install time.
+  The vchan data lives in the shared xenstore namespace
+  `/local/domain/system/vchan/<domain name>/<channel>`.
 - **TCP on localhost** — `TCP_DEBUG`, development only. **This is what the emulator uses**
   (all peers and the product under test connect to a local `mosquitto` on port 1883).
 

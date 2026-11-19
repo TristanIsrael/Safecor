@@ -31,6 +31,9 @@ cd $ALPINE_ARCH_DIR
 apk fetch -R safecor-lib safecor-sys-usb 
 # Récupération de dépendances supplémentaires
 apk fetch -R libtirpc-conf krb5-conf eudev-openrc udev-init-scripts udev-init-scripts-openrc
+# Local MQTT broker of the DomUs (mosquitto bridges the msg vchan channel)
+# and the socat tunnel between the bridge and the vchan-socket-proxy client.
+apk fetch -R mosquitto socat
 logger -s -t "Safecor/$SCRIPT_NAME" -p user.info "... done"
 
 /usr/lib/safecor/bin/reindex-and-sign-repository.sh

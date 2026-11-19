@@ -65,7 +65,7 @@ Produce a High Level Design (HLD) and a Low Level Design (LLD) of the messaging 
 
 | Issue | Title | Status |
 |---|---|---|
-| #258 | DomU local MQTT broker with an upstream vchan bridge | Ready |
+| #258 | DomU local MQTT broker with an upstream vchan bridge | In review |
 | #259 | Enforce MQTT client ID naming convention and broker authentication | Ready |
 | #260 | Fix the SFTP vchan channel startup order and package the sftp-server chroot | Ready |
 | #261 | Restrict xenstore write grants to the vchan subtree | Ready |

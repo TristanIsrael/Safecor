@@ -83,7 +83,9 @@ class MosquittoBroker:
             sock_dir = os.path.dirname(self.unix_socket)
             if sock_dir:
                 os.makedirs(sock_dir, exist_ok=True)
-            lines.append(f"listener {self.unix_socket}")
+            # Mosquitto 2.x requires the port to be 0 for a UNIX socket
+            # listener: "listener 0 <path>".
+            lines.append(f"listener 0 {self.unix_socket}")
         config = self._workdir / "mosquitto.conf"
         config.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return config
