@@ -9,6 +9,11 @@ depend() {
 start() {
     ebegin "Finalizing Safecor initialization"
 
+    # The diskless boot can leave /etc with restrictive permissions (0700),
+    # which blocks the non-root service users from traversing it. Restore
+    # the standard mode.
+    chmod 0755 /etc
+
     # Remount special devices
     mount -o remount,size=5% /dev/shm
     mount -o remount,size=1M /run
