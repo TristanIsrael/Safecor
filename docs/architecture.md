@@ -40,6 +40,100 @@ Three actors exist:
 
 ## 2. Deployment architecture
 
+The deployment architecture at a glance (High Level Design):
+
+```mermaid
+flowchart LR
+
+    %% ---------------- Physical platform ----------------
+    subgraph HW["Physical platform (host)"]
+        HWUSB["USB buses + peripherals<br/>keyboard · mouse · touch · storage"]
+        HWGPU["GPU + display"]
+        HWDSK["System storage<br/>boot ISO · domain images · local Alpine repository"]
+    end
+
+    %% ---------------- Dom0 ----------------
+    subgraph D0["Dom0 — privileged management domain (trust: high)"]
+        direction TB
+        VTUN["vchan tunnel manager<br/>vchan-socket-proxy servers:<br/>msg · input · tty per domain"]
+        BRK0["Mosquitto broker<br/>product message bus<br/>UNIX listeners: dom0, local,<br/>one per domain"]
+        ORCH["Safecor orchestrator<br/>domain lifecycle · virtual inputs<br/>xl configs · vCPU groups"]
+        CTRL["Safecor core controller<br/>file API · workflow · monitoring<br/>sensors · energy · logging"]
+        XORG0["Xorg display manager<br/>shows the focused GUI domain"]
+        REPO["Encrypted local storage<br/>repository, shared by every DomU"]
+        VTUN -->|UNIX sockets, per domain| BRK0
+        BRK0 <-->|/tmp/mqtt-dom0.sock| ORCH
+        BRK0 <-->|/tmp/mqtt-dom0.sock| CTRL
+    end
+
+    %% ---------------- DomUs ----------------
+    subgraph DOMUS["User domains (DomU) — recreated at every boot"]
+        direction TB
+
+        subgraph SYSUSB["sys-usb — USB controller domain (trust: low)"]
+            USBC["sys-usb controller<br/>inputs daemon · USB storage manager<br/>direct-mount manager"]
+            BRKU1["Local Mosquitto broker<br/>UNIX socket, multiplexes<br/>every local client"]
+            SFTPD["SFTP server<br/>chroot /media/usb<br/>read-only channels, filters, umask"]
+            USBST["USB storage devices<br/>/media/usb/&lt;label&gt;"]
+            USBST --> SFTPD
+        end
+
+        subgraph BUS["Business domain (e.g. saphir-av-eset)"]
+            APP1["Product application"]
+            BRKU2["Local Mosquitto broker<br/>UNIX socket, multiplexes<br/>every local client"]
+            SSHFS["sshfs client<br/>direct USB mount"]
+            SSHFS -->|/media/usb mounted| APP1
+        end
+
+        subgraph GUI["GUI domain (e.g. saphir-gui)"]
+            APP2["Product GUI application (PySide6 + QML)"]
+            BRKU3["Local Mosquitto broker<br/>UNIX socket, multiplexes<br/>every local client"]
+            XORGU["Xorg server (virtual display)"]
+        end
+    end
+
+    %% ---------------- Message bus (vchan msg channel) ----------------
+    BRKU1 -->|vchan msg channel| VTUN
+    BRKU2 -->|vchan msg channel| VTUN
+    BRKU3 -->|vchan msg channel| VTUN
+
+    %% ---------------- Inputs ----------------
+    HWUSB -->|PCI passthrough| USBC
+    USBC -->|vchan input channel| VTUN
+    VTUN -->|input.sock| ORCH
+    ORCH -->|virtual keyboard · mouse · touch| GUI
+
+    %% ---------------- Display ----------------
+    HWGPU -->|PCI passthrough| XORG0
+    XORGU -->|framebuffer| XORG0
+
+    %% ---------------- SFTP / direct mount ----------------
+    SFTPD -->|vchan sftp channel| SSHFS
+
+    %% ---------------- Storage & packages ----------------
+    REPO -->|shared block disk, /mnt/storage| BUS
+    REPO -->|shared block disk, /mnt/storage| GUI
+    HWDSK -->|packages.squashfs read-only, /mnt/packages| BUS
+    HWDSK -->|packages.squashfs read-only, /mnt/packages| GUI
+
+    %% ---------------- Styling (Safecor palette) ----------------
+    classDef dom0svc fill:#e8f1fa,stroke:#1f5e97,color:#0b1f4d
+    classDef broker fill:#1f5e97,stroke:#0b1f4d,color:#fdfdfd
+    classDef domusvc fill:#e8f1fa,stroke:#3399d9,color:#0b1f4d
+    classDef ext fill:#fdf3cf,stroke:#E0CA3C,color:#0b1f4d
+    class BRK0,VTUN,ORCH,CTRL,XORG0,REPO dom0svc
+    class BRKU1,BRKU2,BRKU3 broker
+    class USBC,SFTPD,USBST,APP1,SSHFS,APP2,XORGU domusvc
+    class HWUSB,HWGPU,HWDSK ext
+    style HW fill:#fdfdfd,stroke:#9C0D38,stroke-width:2px,color:#001c6c
+    style D0 fill:#f5f8fc,stroke:#001c6c,stroke-width:2px,color:#001c6c
+    style SYSUSB fill:#fdfdfd,stroke:#9C0D38,stroke-width:2px,color:#001c6c
+    style BUS fill:#f5f8fc,stroke:#3399d9,stroke-width:2px,color:#001c6c
+    style GUI fill:#f5f8fc,stroke:#3399d9,stroke-width:2px,color:#001c6c
+    style DOMUS fill:none,stroke:#1f5e97,stroke-width:1px,stroke-dasharray: 5 5,color:#001c6c
+```
+Diagram source: [`diagrams/hld.mmd`](diagrams/hld.mmd); the rendered image is available in the Safecor Wiki.
+
 ### 2.1 The topology file
 The deployment is described by **`/etc/safecor/topology.json`** (one per product). It defines:
 - `product` — name, splash background colour, `languages`, `default_language`.
@@ -136,6 +230,67 @@ Each Domain is a **volatile** VM, re-created at every boot (stateless system):
   9p repository. Managed by `DirectMountManager` (see §4). The mount mode is controlled
   by the `direct_mount.mode` field (`ro` or `rw`).
 - A GUI Domain (`has_gui: 1`) additionally gets a virtual keyboard, mouse and touch screen.
+
+The SFTP and input channels in detail (Low Level Design):
+
+```mermaid
+flowchart LR
+
+    %% ---------------- Authorized domain (SFTP client) ----------------
+    subgraph BUS["Authorized business/GUI domain — direct USB mount"]
+        direction TB
+        APP["Product application<br/>access to the USB disk files"]
+        SSHFS["sshfs, mounted /media/usb<br/>ssh_command = vchan-sftp script<br/>read-only option for ro channels"]
+        VCC["vchan-socket-proxy, client mode, stdio<br/>-m client &lt;sys-usb domid&gt; /local/domain/system/vchan/&lt;domain&gt;/sftp -"]
+        APP -->|open files| SSHFS
+        SSHFS -->|spawn| VCC
+    end
+
+    %% ---------------- sys-usb (SFTP server + input/tty clients) ----------------
+    subgraph SYSUSB["sys-usb — USB controller domain, trust low"]
+        direction TB
+        USBST["USB storage devices<br/>mounted /media/usb/&lt;label&gt;"]
+        SFTPS["vchan-socket-proxy, server mode<br/>one per authorized domain, sftp channel<br/>started by safecor-vchan-sftp.py"]
+        SOCAT["socat<br/>UNIX-LISTEN /var/run/safecor/vchan-&lt;domain&gt;.sock, fork<br/>spawns the sftp-server per connection"]
+        SFTP["openssh sftp-server<br/>chroot /media/usb<br/>read-only, request filters, umask"]
+        INPD["sys-usb controller<br/>inputs daemon, evdev<br/>keyboard, mouse, touch"]
+        VCIN["vchan-socket-proxy, client mode<br/>input channel<br/>socket /var/run/safecor/input.sock"]
+        VCTY["vchan-socket-proxy, client mode<br/>tty channel, debug mode only"]
+        USBST -->|root of the chroot| SFTP
+        SFTPS -->|UNIX socket| SOCAT
+        SOCAT -->|spawn, chroot| SFTP
+        INPD -->|UNIX socket input.sock| VCIN
+    end
+
+    %% ---------------- Dom0 (input/tty servers) ----------------
+    subgraph DOM0["Dom0"]
+        direction TB
+        VCS["vchan-socket-proxy servers<br/>input and tty channels, per domain<br/>started by create-vchan-tunnels.py"]
+        ORCH["Safecor orchestrator<br/>virtual keyboard, mouse, touch"]
+        TTYD["debug tty terminal<br/>debug mode only"]
+        GUIAPP["GUI domain application<br/>receives the virtual inputs"]
+        VCS -->|input.sock| ORCH
+        VCS -->|tty.sock| TTYD
+        ORCH -->|virtual inputs| GUIAPP
+    end
+
+    %% ---------------- The vchan hops ----------------
+    VCC <-->|PV channel sftp<br/>ring in xenstore /local/domain/system/vchan/&lt;domain&gt;/sftp| SFTPS
+    VCIN <-->|PV channel input<br/>ring in xenstore /local/domain/system/vchan/&lt;domain&gt;/input| VCS
+    VCTY <-->|PV channel tty, debug mode only| VCS
+
+    %% ---------------- Styling (Safecor palette) ----------------
+    classDef dom0svc fill:#e8f1fa,stroke:#1f5e97,color:#0b1f4d
+    classDef domusvc fill:#e8f1fa,stroke:#3399d9,color:#0b1f4d
+    classDef ext fill:#fdf3cf,stroke:#E0CA3C,color:#0b1f4d
+    class VCS,ORCH,TTYD,GUIAPP dom0svc
+    class APP,SSHFS,VCC,SFTPS,SOCAT,SFTP,INPD,VCIN,VCTY domusvc
+    class USBST ext
+    style BUS fill:#f5f8fc,stroke:#3399d9,stroke-width:2px,color:#001c6c
+    style SYSUSB fill:#fdfdfd,stroke:#9C0D38,stroke-width:2px,color:#001c6c
+    style DOM0 fill:#f5f8fc,stroke:#001c6c,stroke-width:2px,color:#001c6c
+```
+Diagram source: [`diagrams/lld-sftp-inputs.mmd`](diagrams/lld-sftp-inputs.mmd).
 
 **vCPU allocation** (Wiki `Topology.md` "Resource management"): Dom0 and `sys-usb` are not
 configurable (≈ 15 % of the system, shared, minimum 1 vCPU each); the remaining ≈ 75 % is split
@@ -267,6 +422,58 @@ host debug terminal → USB cable → sys-usb /dev/ttyUSB0 (udev rule 99-usbseri
   `/local/domain/system/vchan/<domain name>/<channel>`.
 - **TCP on localhost** — `TCP_DEBUG`, development only. **This is what the emulator uses**
   (all peers and the product under test connect to a local `mosquitto` on port 1883).
+
+The `msg` vchan channel end-to-end (Low Level Design):
+
+```mermaid
+flowchart LR
+
+    %% ---------------- DomU side (local broker + bridge) ----------------
+    subgraph DOMU["DomU — local broker, msg channel"]
+        direction TB
+        A1["Component A<br/>e.g. core controller"]
+        A2["Component B<br/>e.g. direct-mount manager"]
+        A3["Component C<br/>e.g. GUI application"]
+        LB["Local Mosquitto broker<br/>user mosquitto, conf /var/run/safecor/mosquitto.conf<br/>UNIX listener /var/run/safecor/mqtt.sock<br/>every local client multiplexed"]
+        BRG["Upstream bridge<br/>connection safecor-&lt;domain&gt;-bridge<br/>address 127.0.0.1:18860<br/>topic # both 0"]
+        SOCAT["socat<br/>TCP-LISTEN:18860, bind 127.0.0.1, fork<br/>one vchan-socket-proxy per connection"]
+        VCP["vchan-socket-proxy, stdio mode<br/>-m client 0 /local/domain/system/vchan/&lt;domain&gt;/msg -<br/>one process per bridge reconnection"]
+        LO["loopback interface lo<br/>brought up by setup-vchan.sh<br/>precondition of the TCP loopback hop"]
+        A1 -->|UNIX socket| LB
+        A2 -->|UNIX socket| LB
+        A3 -->|UNIX socket| LB
+        LB --> BRG
+        BRG -->|TCP 127.0.0.1:18860| SOCAT
+        SOCAT -->|spawn, stdio| VCP
+        SOCAT -.-> LO
+    end
+
+    %% ---------------- Dom0 side (central bus) ----------------
+    subgraph DOM0["Dom0 — central message bus"]
+        direction TB
+        VCS["vchan-socket-proxy, server mode<br/>started by create-vchan-tunnels.py<br/>one server per domain, msg channel"]
+        LB0["Dom0 Mosquitto broker<br/>UNIX listener /tmp/mqtt-&lt;domain&gt;.sock per domain<br/>+ /tmp/mqtt-dom0.sock and /tmp/mqtt-local.sock<br/>+ TCP 1883 listener, debug mode only"]
+        C0["Dom0 components<br/>orchestrator, core controller, ...<br/>connect on /tmp/mqtt-dom0.sock"]
+        VCS -->|UNIX socket /tmp/mqtt-&lt;domain&gt;.sock| LB0
+        C0 <-->|/tmp/mqtt-dom0.sock| LB0
+    end
+
+    %% ---------------- The vchan hop ----------------
+    VCP <-->|PV channel msg<br/>ring in xenstore /local/domain/system/vchan/&lt;domain&gt;/msg| VCS
+
+    %% ---------------- Styling (Safecor palette) ----------------
+    classDef dom0svc fill:#e8f1fa,stroke:#1f5e97,color:#0b1f4d
+    classDef broker fill:#1f5e97,stroke:#0b1f4d,color:#fdfdfd
+    classDef domusvc fill:#e8f1fa,stroke:#3399d9,color:#0b1f4d
+    classDef note fill:#fdfdfd,stroke:#1f5e97,color:#0b1f4d,stroke-dasharray: 5 5
+    class VCS,C0 dom0svc
+    class LB0,LB broker
+    class A1,A2,A3,BRG,SOCAT,VCP domusvc
+    class LO note
+    style DOMU fill:#f5f8fc,stroke:#3399d9,stroke-width:2px,color:#001c6c
+    style DOM0 fill:#f5f8fc,stroke:#001c6c,stroke-width:2px,color:#001c6c
+```
+Diagram source: [`diagrams/lld-messaging.mmd`](diagrams/lld-messaging.mmd).
 
 ### 3.2 Topic model
 Topics use a `group/verb` structure (see `_topics.py`). Every **query/answer** pair uses the

@@ -58,6 +58,10 @@ The following documents **must** be read during design, planning and coding:
 - `docs/architecture.md` - The architecture of the product
 - The Safecor Wiki project available locally in the folder `safecor.wiki` or on Github.
 
+## Graphical design
+
+The graphical design of Safecor (colors, font) is described in the page [Graphical Design on the wiki](https://github.com/TristanIsrael/Safecor/wiki/Graphical-design).
+
 ## Installation packages
 
 - Safecor components are packaged into Alpine Linux packages (APK).

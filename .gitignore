@@ -153,3 +153,6 @@ bin/*.*
 
 # Opencode
 .opencode
+
+# Rendered diagram previews (the images live in the Safecor Wiki)
+docs/diagrams/preview/

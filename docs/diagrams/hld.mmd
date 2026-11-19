@@ -1,0 +1,88 @@
+flowchart LR
+
+    %% ---------------- Physical platform ----------------
+    subgraph HW["Physical platform (host)"]
+        HWUSB["USB buses + peripherals<br/>keyboard · mouse · touch · storage"]
+        HWGPU["GPU + display"]
+        HWDSK["System storage<br/>boot ISO · domain images · local Alpine repository"]
+    end
+
+    %% ---------------- Dom0 ----------------
+    subgraph D0["Dom0 — privileged management domain (trust: high)"]
+        direction TB
+        VTUN["vchan tunnel manager<br/>vchan-socket-proxy servers:<br/>msg · input · tty per domain"]
+        BRK0["Mosquitto broker<br/>product message bus<br/>UNIX listeners: dom0, local,<br/>one per domain"]
+        ORCH["Safecor orchestrator<br/>domain lifecycle · virtual inputs<br/>xl configs · vCPU groups"]
+        CTRL["Safecor core controller<br/>file API · workflow · monitoring<br/>sensors · energy · logging"]
+        XORG0["Xorg display manager<br/>shows the focused GUI domain"]
+        REPO["Encrypted local storage<br/>repository, shared by every DomU"]
+        VTUN -->|UNIX sockets, per domain| BRK0
+        BRK0 <-->|/tmp/mqtt-dom0.sock| ORCH
+        BRK0 <-->|/tmp/mqtt-dom0.sock| CTRL
+    end
+
+    %% ---------------- DomUs ----------------
+    subgraph DOMUS["User domains (DomU) — recreated at every boot"]
+        direction TB
+
+        subgraph SYSUSB["sys-usb — USB controller domain (trust: low)"]
+            USBC["sys-usb controller<br/>inputs daemon · USB storage manager<br/>direct-mount manager"]
+            BRKU1["Local Mosquitto broker<br/>UNIX socket, multiplexes<br/>every local client"]
+            SFTPD["SFTP server<br/>chroot /media/usb<br/>read-only channels, filters, umask"]
+            USBST["USB storage devices<br/>/media/usb/&lt;label&gt;"]
+            USBST --> SFTPD
+        end
+
+        subgraph BUS["Business domain (e.g. saphir-av-eset)"]
+            APP1["Product application"]
+            BRKU2["Local Mosquitto broker<br/>UNIX socket, multiplexes<br/>every local client"]
+            SSHFS["sshfs client<br/>direct USB mount"]
+            SSHFS -->|/media/usb mounted| APP1
+        end
+
+        subgraph GUI["GUI domain (e.g. saphir-gui)"]
+            APP2["Product GUI application (PySide6 + QML)"]
+            BRKU3["Local Mosquitto broker<br/>UNIX socket, multiplexes<br/>every local client"]
+            XORGU["Xorg server (virtual display)"]
+        end
+    end
+
+    %% ---------------- Message bus (vchan msg channel) ----------------
+    BRKU1 -->|vchan msg channel| VTUN
+    BRKU2 -->|vchan msg channel| VTUN
+    BRKU3 -->|vchan msg channel| VTUN
+
+    %% ---------------- Inputs ----------------
+    HWUSB -->|PCI passthrough| USBC
+    USBC -->|vchan input channel| VTUN
+    VTUN -->|input.sock| ORCH
+    ORCH -->|virtual keyboard · mouse · touch| GUI
+
+    %% ---------------- Display ----------------
+    HWGPU -->|PCI passthrough| XORG0
+    XORGU -->|framebuffer| XORG0
+
+    %% ---------------- SFTP / direct mount ----------------
+    SFTPD -->|vchan sftp channel| SSHFS
+
+    %% ---------------- Storage & packages ----------------
+    REPO -->|shared block disk, /mnt/storage| BUS
+    REPO -->|shared block disk, /mnt/storage| GUI
+    HWDSK -->|packages.squashfs read-only, /mnt/packages| BUS
+    HWDSK -->|packages.squashfs read-only, /mnt/packages| GUI
+
+    %% ---------------- Styling (Safecor palette) ----------------
+    classDef dom0svc fill:#e8f1fa,stroke:#1f5e97,color:#0b1f4d
+    classDef broker fill:#1f5e97,stroke:#0b1f4d,color:#fdfdfd
+    classDef domusvc fill:#e8f1fa,stroke:#3399d9,color:#0b1f4d
+    classDef ext fill:#fdf3cf,stroke:#E0CA3C,color:#0b1f4d
+    class BRK0,VTUN,ORCH,CTRL,XORG0,REPO dom0svc
+    class BRKU1,BRKU2,BRKU3 broker
+    class USBC,SFTPD,USBST,APP1,SSHFS,APP2,XORGU domusvc
+    class HWUSB,HWGPU,HWDSK ext
+    style HW fill:#fdfdfd,stroke:#9C0D38,stroke-width:2px,color:#001c6c
+    style D0 fill:#f5f8fc,stroke:#001c6c,stroke-width:2px,color:#001c6c
+    style SYSUSB fill:#fdfdfd,stroke:#9C0D38,stroke-width:2px,color:#001c6c
+    style BUS fill:#f5f8fc,stroke:#3399d9,stroke-width:2px,color:#001c6c
+    style GUI fill:#f5f8fc,stroke:#3399d9,stroke-width:2px,color:#001c6c
+    style DOMUS fill:none,stroke:#1f5e97,stroke-width:1px,stroke-dasharray: 5 5,color:#001c6c

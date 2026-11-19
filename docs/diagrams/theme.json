@@ -1,0 +1,17 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "DejaVu Sans, sans-serif",
+    "fontSize": "16px",
+    "primaryColor": "#e8f1fa",
+    "primaryTextColor": "#0b1f4d",
+    "primaryBorderColor": "#1f5e97",
+    "lineColor": "#1f5e97",
+    "secondaryColor": "#f5f8fc",
+    "tertiaryColor": "#fdfdfd",
+    "clusterBkg": "#f5f8fc",
+    "clusterBorder": "#1f5e97",
+    "titleColor": "#001c6c",
+    "edgeLabelBackground": "#fdfdfd"
+  }
+}
