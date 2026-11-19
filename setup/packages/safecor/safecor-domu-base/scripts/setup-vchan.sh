@@ -64,19 +64,19 @@ fi
 
 # Start the local MQTT broker for the msg channel.
 #
-# The broker is installed by the "apk add" of the boot runlevel and this
-# script may be started from a package post-install before the mosquitto
-# package (binary and mosquitto user) is fully in place, so wait for it.
+# mosquitto and socat are apk dependencies of this package, so they are
+# installed before the post-install runs this script. The wait below is a
+# defensive safety net (e.g. a package installed without its dependencies).
 start_msg_broker() {
     for i in $(seq 1 60); do
-        if [ -x /usr/sbin/mosquitto ] && id mosquitto >/dev/null 2>&1; then
+        if [ -x /usr/sbin/mosquitto ] && [ -x /usr/bin/socat ] && id mosquitto >/dev/null 2>&1; then
             break
         fi
         sleep 1
     done
 
-    if [ ! -x /usr/sbin/mosquitto ]; then
-        logger -t "Safecor/$SCRIPT_NAME" -p user.err "mosquitto is not installed, the msg channel is unavailable"
+    if [ ! -x /usr/sbin/mosquitto ] || [ ! -x /usr/bin/socat ]; then
+        logger -t "Safecor/$SCRIPT_NAME" -p user.err "mosquitto or socat is not installed, the msg channel is unavailable"
         return 1
     fi
 
@@ -95,7 +95,9 @@ start_msg_broker() {
 
     # Local broker configuration: a UNIX listener for the domain's
     # applications and a single upstream bridge to the socat endpoint.
-    cat > /var/run/safecor/mosquitto.conf <<EOF
+    # It is domain specific (the bridge name embeds the domain name), so it
+    # is generated at boot in the package's etc directory.
+    cat > /usr/lib/safecor/etc/mosquitto.conf <<EOF
 log_dest syslog
 allow_anonymous true
 listener 0 $BROKER_SOCK
@@ -110,7 +112,7 @@ EOF
         --pidfile "/var/run/safecor/mosquitto-domu.pid" \
         --user mosquitto --group mosquitto \
         --exec /usr/sbin/mosquitto \
-        -- -c /var/run/safecor/mosquitto.conf
+        -- -c /usr/lib/safecor/etc/mosquitto.conf
 
     # The broker creates $BROKER_SOCK as mosquitto:mosquitto, so the
     # domain's svc-* users cannot connect to it. Once the socket exists,

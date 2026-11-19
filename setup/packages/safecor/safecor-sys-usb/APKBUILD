@@ -12,7 +12,7 @@ pkgdesc="Safecor - USB proxy virtual machine"
 url="https://www.alefbet.net/"
 arch="all"
 license="MIT"
-depends="openrc safecor-lib eudev socat fuse-archive fuse3 doas coreutils ntfs-3g xen openssh-sftp-server"
+depends="openrc safecor-lib safecor-domu-base eudev socat fuse-archive fuse3 doas coreutils ntfs-3g xen openssh-sftp-server"
 makedepends="python3-dev py3-build py3-installer git"
 builddir="$srcdir/$pkgname-$pkgver"
 checkdepends=""
@@ -34,8 +34,6 @@ options="!check"  # no tests provided
   doas-svc-sys-usb-controller.conf
   safecor-vchan-sftp.initd
   safecor-vchan-sftp.py
-  setup-vchan.sh
-  setup-vchan.initd
   "
 
 CONFDIR="/etc/safecor"
@@ -66,9 +64,8 @@ package() {
     install -D -m755 "$srcdir"/safecor-vchan-sftp.initd "$pkgdir"/etc/init.d/safecor-vchan-sftp
     install -D -m755 "$srcdir"/safecor-vchan-sftp.py "$pkgdir"/$BINDIR/safecor-vchan-sftp.py
 
-    # Vchan servers
-    install -D -m755 "$srcdir"/setup-vchan.sh "$pkgdir"/$BINDIR/setup-vchan.sh
-    install -D -m755 "$srcdir"/setup-vchan.initd "$pkgdir"/etc/init.d/setup-vchan
+    # The vchan clients (msg, input, tty) come from safecor-domu-base
+    # (a dependency of this package).
 }
 
 sha512sums="
@@ -86,6 +83,4 @@ ba274975e3c728b600dc828024f14d880183e1ca5a1214f121d20424398c402791bb85ae7eddf111
 3060d310c49aab0ca87d69fd5c6dda3ad6c35724ebdac29fa72f05980e40deed0d9d68bb618535a514123c49485b4f4b6f68b9b4104b9f40c09e3f711e041aa3  doas-svc-sys-usb-controller.conf
 29d2b068cbde2309c3556406a60d4fe9a7247cc11c217589e62b327a518df466d05dc0609b5ec30596ac601e09d4ecb57b39299a281b0daaf7c3129e05e044a1  safecor-vchan-sftp.initd
 bd210ab9a9bb14fa2298711ee471f255193b420856475364bb123be86fb849adb163cb80225f11b20ba34711958f9d58b2e6560af616ee9f402cd8948c299ef8  safecor-vchan-sftp.py
-34c8e586ebebfffab78706f5dcc9a3c69f79ee6b118db3d2a8b332c45be280d13b2d7a94505ae4cf784e5a86f136b56e1fbd927221db25f5f0f6a77559b59f3a  setup-vchan.sh
-69ac29b15e5d6120b4000727897eec9483a626449c74dca010f3fa0ed4abfdb62f1674ff38988d0ce7b42d162f5426e581f521d7bb9fd06647f7e797cf9eeffb  setup-vchan.initd
 "

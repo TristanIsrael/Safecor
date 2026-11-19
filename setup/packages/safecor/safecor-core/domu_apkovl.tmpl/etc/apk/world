@@ -1,4 +1,2 @@
 alpine-base
 openssl
-mosquitto
-socat

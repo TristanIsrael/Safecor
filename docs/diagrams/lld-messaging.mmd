@@ -6,7 +6,7 @@ flowchart LR
         A1["Component A<br/>e.g. core controller"]
         A2["Component B<br/>e.g. direct-mount manager"]
         A3["Component C<br/>e.g. GUI application"]
-        LB["Local Mosquitto broker<br/>user mosquitto, conf /var/run/safecor/mosquitto.conf<br/>UNIX listener /var/run/safecor/mqtt.sock<br/>every local client multiplexed"]
+        LB["Local Mosquitto broker<br/>user mosquitto, conf /usr/lib/safecor/etc/mosquitto.conf<br/>UNIX listener /var/run/safecor/mqtt.sock<br/>every local client multiplexed"]
         BRG["Upstream bridge<br/>connection safecor-&lt;domain&gt;-bridge<br/>address 127.0.0.1:18860<br/>topic # both 0"]
         SOCAT["socat<br/>TCP-LISTEN:18860, bind 127.0.0.1, fork<br/>one vchan-socket-proxy per connection"]
         VCP["vchan-socket-proxy, stdio mode<br/>-m client 0 /local/domain/system/vchan/&lt;domain&gt;/msg -<br/>one process per bridge reconnection"]

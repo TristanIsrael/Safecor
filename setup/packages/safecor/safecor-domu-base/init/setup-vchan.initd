@@ -30,6 +30,6 @@ stop() {
     start-stop-daemon --stop --pidfile /var/run/safecor/vchan-tty.pid --signal TERM 2>/dev/null
     rm -f /var/run/safecor/mosquitto-domu.pid /var/run/safecor/vchan-msg-socat.pid \
           /var/run/safecor/vchan-input.pid /var/run/safecor/vchan-tty.pid
-    rm -f /var/run/safecor/mosquitto.conf
+    rm -f /usr/lib/safecor/etc/mosquitto.conf
     eend 0
 }

@@ -109,12 +109,12 @@ Produce a High Level Design (HLD) and a Low Level Design (LLD) of the messaging 
 
 | Issue | Title | Status |
 |---|---|---|
-| #258 | DomU local MQTT broker with an upstream vchan bridge | In review |
+| #258 | DomU local MQTT broker with an upstream vchan bridge | In progress (run-13 failure, fix committed, run 14 pending) |
 | #259 | Enforce MQTT client ID naming convention and broker authentication | Ready |
 | #260 | Fix the SFTP vchan channel startup order and package the sftp-server chroot | Ready |
 | #261 | Restrict xenstore write grants to the vchan subtree | Ready |
 | #262 | Fix the domid write race in reboot-domain.sh | Ready |
 | #263 | Update the project documentation and the Safecor Wiki for the v2 MQTT/vchan architecture (includes the Mermaid HLD/LLD step) | In progress (diagrams done, full sync after #259) |
-| #264 | Investigate the libpython EACCES error on the sys-usb domain | Not ready (deferred investigation) |
+| #264 | Investigate the libpython EACCES error on the sys-usb domain | In review (root cause: /etc 0700, fix committed, run 14 pending) |
 
 Planned sequence: commit the run-12 working-tree fixes under #256 -> #258 -> run 13 (re-verify findings 2 and 4) -> #259 -> #260, #261, #262 -> #263 -> #264 when time is available.
