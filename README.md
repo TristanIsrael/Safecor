@@ -26,6 +26,8 @@ Newcomers should begin with the [architecture documentation](https://github.com/
 
 The main documentation is available in the [Github Wiki](https://github.com/TristanIsrael/Safecor/wiki).
 
+Products running on Safecor v1 should read the [migration guide for Safecor v2](https://github.com/TristanIsrael/Safecor/wiki/Migration-v1-v2) before upgrading.
+
 API automatically generated documentation:
 - [Python API documentation on Github Pages](https://tristanisrael.github.io/Safecor)
 - [Protocol documentation on Github Wiki](https://github.com/TristanIsrael/Safecor/wiki/Protocol)
