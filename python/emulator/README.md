@@ -55,9 +55,9 @@ launched with `safecor-emulator --gui`; the headless CLI is unchanged without `-
 
 ## Documentation
 
-- [Operator console guide](../../docs/emulator-operator.md) — how to launch and drive the
-  console (layout, setup, controls, observation, i18n).
-- [Architecture — how the emulator fits](../../docs/architecture.md#6-how-the-emulator-fits).
-- [Function catalogue](../../docs/features.md) — what the platform exposes and what the
-  emulator fakes.
+- [Testing — the emulator and the operator console guide](../../docs/development/testing.md) —
+  how to launch and drive the console (layout, setup, controls, observation, i18n) and how the
+  emulator fits the architecture.
+- [Function catalogue](../../docs/specifications/features.md) — what the platform exposes and
+  what the emulator fakes.
 - [Operator-console plan](../../plans/emulator-plan.md) — the design and phase breakdown.

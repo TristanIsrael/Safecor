@@ -6,11 +6,13 @@ Safecor is a software architecture for building security products (kiosk/embedde
 
 - A privileged management domain (**Dom0**) runs the `safecor` library (control, repository, supervision).
 - Business applications run in virtual machines (**DomU**). Core DomUs include `sys-usb`.
-- Domains communicate with **MQTT** (paho-mqtt) transported over **UNIX socket (Dom0)** or **serial port (DomU)**. Payloads are JSON (msgpack also available).
+- Domains communicate with **MQTT** (paho-mqtt): over the **UNIX socket** on Dom0, over the **vchan `msg` channel** on the DomUs (each DomU runs a local broker bridged to Dom0). Payloads are JSON (msgpack also available).
 - The product topology (domains, vCPU groups/pinning, screen, USB, PCI blacklist, configurations) is defined in `/etc/safecor/topology.json` and parsed into a `Topology` object.
 - Hardware requires VT-x (virtualization) and VT-d/IOMMU.
 - Many `System` functions must run in Dom0 or in DomU depending on the call — check the docstrings.
 - x86_64 only; tested on Alpine 3.20/3.24.
+
+**The architecture reference is `docs/architecture/`**: start with [docs/architecture/overview.md](docs/architecture/overview.md), then the per-component files (`components/`) and the ADR registry (`decisions/`). The core library module map is in [docs/specifications/python-api.md](docs/specifications/python-api.md). The Safecor Wiki (`safecor.wiki/`) is the public documentation for human beings.
 
 ### Directory layout
 
@@ -25,97 +27,75 @@ Safecor is a software architecture for building security products (kiosk/embedde
 | `setup/docker`, `setup/infrastructure` | Local dev (Docker) and deployment (Ansible) |
 | `certs` | Public key of the Alpine repository |
 | `misc` | Fonts, logos, scripts |
-
-### Core library classes (`python/lib/src/safecor/`)
-
-- `Api` / `ApiHelper` — high-level API used by DomU apps.
-- `Dom0Controller` — handles Dom0-side MQTT commands: file repository (list/read/copy/delete/fingerprint), shutdown, restart domain, system info, energy state, component discovery, ping, settings/language, GUI switch.
-- `System` (singleton) / `Topology` / `Domain` — system state, screen size/rotation, UUID, CPU allocation and pinning per vCPU groups, settings from kernel cmdline, inotify file monitoring.
-- `MqttClient`, `SerialMQTTClient`, `MqttFactory`, `MqttHelper`, `Topics` — MQTT client/transports and topic definitions (topics use a `group/verb` structure, e.g. `system/disks/list_files/request`).
-- `XenStore`, `LibvirtHelper` — Xen xenstore and libvirt integration (screen size/rotation read from xenstore).
-- `XcbController` — X11/XCB GUI control (optional import).
-- `DiskMonitor`, `FileHelper` — disk/filesystem monitoring.
-- `SysUsbController` — USB passthrough management. (The `MockSysUsbController` used for testing now lives in the `safecor_emulator` package.)
-- `Logger` / `SysLogger` — logging, events published over MQTT topics (`system/events/*`).
-- `RequestFactory`, `ResponseFactory`, `NotificationFactory` — protocol message builders.
-- `TaskRunner`, `InputsDaemon`, `Mouse`, `KeymapFR` — background tasks and input handling.
-- `Constants`, `Settings`, `ConfigurationHelper` — constants and configuration handling.
-- `deprecated/` — legacy code, do not extend.
+| `docs` | The project documentation for AI coding agents (see below) |
 
 ### Tech stack
 
-- Python 3.9+ (3.11 for development), Alpine Linux, Xen, libvirt.
-- MQTT (paho-mqtt >= 2.0), pyserial, pyudev, msgpack, joblib, humanize, psutil, inotify.
-- GUI: PySide6 (Qt6) + QML for demo2/diag apps.
+- Python 3.9+ (3.11 for development), Alpine Linux, Xen.
+- MQTT (paho-mqtt >= 2.0), pyudev, msgpack, psutil, inotify; PySide6 (Qt6) + QML for the GUI apps.
 - Packaging: hatchling + poetry, signed Alpine apk repository, ISO images.
-- Docs: Sphinx (autodoc + RTD theme), published on GitHub Pages; CI via GitHub Actions (`build-all.yml`, `documentation.yml`).
+- Docs: Sphinx (autodoc), published on GitHub Pages; CI via GitHub Actions (`build-all.yml`, `documentation.yml`).
 - License: proprietary and restrictive (no fork/copy/reuse without written permission).
 
 ## Documentation
 
+The project documentation lies in `docs/`, organized as short, specialized documents for **offline** AI coding agents (duplication with the Wiki is allowed and expected):
+
+| Path | Content |
+|---|---|
+| `docs/architecture/` | The architecture: `overview.md`, `configuration-management.md`, `design-rules.md`, `components/` (one file per component), `decisions/` (the ADR registry) |
+| `docs/specifications/` | `features.md` (function catalogue + NFR), `topology.md`, `python-api.md` |
+| `docs/development/` | `building.md`, `coding-rules.md`, `testing.md` (emulator + operator console), `protocol.md` (the MQTT contract), `packaging.md` |
+| `docs/security/security-model.md` | The security design policy |
+| `docs/project-status.md` | The current status of the project |
+| `docs/diagrams/` | The mermaid sources (`*.mmd`) and the render theme |
+| `docs/plans/` | Working plans (not reference documentation) |
+
 The following documents **must** be read during design, planning and coding:
-- `docs/features` - The list of features and NFR
-- `docs/architecture.md` - The architecture of the product
+- `docs/specifications/features.md` — the list of features and NFR
+- `docs/architecture/overview.md` — the architecture of the product
 - The Safecor Wiki project available locally in the folder `safecor.wiki` or on Github.
 
-## Graphical design
+### Diagram sync rule
+
+The mermaid sources are `docs/diagrams/*.mmd`; the **inline** mermaid blocks in `docs/` must stay identical to them. When a diagram changes:
+
+1. Edit the `.mmd` source **and** the inline block in the document.
+2. Render: `cd docs/diagrams && mmdc -i <name>.mmd -o preview/<name>.png -c theme.json -b fdfdfd -s 2` (and without `-s 2` for the `.svg`). The previews are gitignored (local only).
+3. Copy the rendered PNG and SVG to the Safecor Wiki as `images/safecor-architecture-<name>.png` / `.svg` and commit them there (the Wiki is the place where the rendered images live).
+
+### Graphical design
 
 The graphical design of Safecor (colors, font) is described in the page [Graphical Design on the wiki](https://github.com/TristanIsrael/Safecor/wiki/Graphical-design).
 
 ## Installation packages
 
-- Safecor components are packaged into Alpine Linux packages (APK).
-- The Alpine Linux packages definitions are in `setup/packages/safecor`.
-  - `setup/packages/safecor/safecor-container-debian` is the package that installs a Debian LXC container in a Domain of a Safecor system.
-  - `setup/packages/safecor/safecor-core` is the package that contains the Dom0 core controller and the scripts that setup the core of Safecor.
-  - `setup/packages/safecor/safecor-diag` is a package that setup the diagnostic app on a platform. It does not contain Safecor.
-  - `setup/packages/safecor/safecor-domu-base` is a package that prepares a Domain to be integrated into a Safecor system. 
-  - `setup/packages/safecor/safecor-gui-base` is a package that prepares a Domain to be integrated into a Safecor system as graphical user interface (GUI). 
-  - `setup/packages/safecor/safecor-hardening` is a package that hardens a Domain in a Safecor system. 
-  - `setup/packages/safecor/safecor-lib` is a dependency package that installs the Safecor python library. 
-  - `setup/packages/safecor/safecor-splash` is the package that setup the splash screen of a Safecor vanilla system. 
-  - `setup/packages/safecor/safecor-sys-usb` is the package installed in the sys-usb Domain of a Safecor system. 
-  - `setup/packages/safecor/safecor-syslog` is the package that connects a Domain to the Safecor logging facility using `syslog`. 
-  - `setup/packages/safecor/safecor-tests` is a testing Safecor appliance. 
-  - `setup/packages/safecor/safecor-tests-gui` is the package that setup the graphical user interface (GUI) of the test appliance. 
+- Safecor components are packaged into Alpine Linux packages (APK), defined in `setup/packages/safecor/`.
+- The full package list and the product packaging rules are in [docs/development/packaging.md](docs/development/packaging.md).
 
 ## Build
 
-- Versioning rule (scheme `MAJOR.MINOR.PATCH`, e.g. `2.2.0`):
-  - A bug fix bumps the last digit (patch) only.
-  - A new feature bumps the second digit (minor) and resets the last digit to 0.
-  - The first digit (major) is bumped only by the product maintainer.
+- Versioning rule (scheme `MAJOR.MINOR.PATCH`, e.g. `2.2.0`): a bug fix bumps the last digit (patch) only; a new feature bumps the second digit (minor) and resets the last digit to 0; the first digit (major) is bumped only by the product maintainer.
 - When the components versions are modified, the Alpine Linux packages must be updated to reflect the components versions.
+- Recalculate the `sha512` APKBUILD checksums for every modified/packaged file.
+- When creating an `openrc` `.initd` file, do not write python code inside the script: write a python file instead and call it from the `initd` script.
+- Full reference: [docs/development/building.md](docs/development/building.md).
 
 ## Coding standards
 
-- Follow the existing naming conventions. The codebase is the reference; when in doubt, match the surrounding code.
-- Use `ruff` format to format Python code consistently.
-- Do not introduce unrelated formatting changes.
-- When creating an `openrc` `.initd` file, do not write python code inside the script but write python file instead and call the python script from the `initd` script .
-
-Naming conventions:
-
-| Domain | Convention | Examples |
-|---|---|---|
-| Python — classes | `PascalCase` | `ApplicationController`, `EMAETAEstimator` |
-| Python — methods / variables | `snake_case` | `start_transfer`, `remaining_time` |
-| Python — private methods | double-underscore (name mangling) | `__set_system_state`, `__handle_disk_state` |
-| Python — constants | `UPPER_SNAKE` | `ANTIVIRUS_NEEDED`, `TOPIC_ANALYSIS`, `DEVMODE` |
-| Python — enums | `PascalCase` (no underscores) | `SystemAnalysisRunning`, `FileClean` |
-| QML — components | `PascalCase` | `AnalysisPanel`, `FilesSelectionPanel` |
-| QML — properties / bindings | `camelCase` | `systemState`, `queueSize`, `nbClean` |
-| MQTT topics | `saphir/analysis/{request,response,status,error,stop,resume,reset}`; `system/...` | — |
-
-- Comments, documentation and commits are in **English** (see *Documentation standards*).
+- Follow [docs/development/coding-rules.md](docs/development/coding-rules.md): `ruff format` + `ruff check`, the naming conventions, no unrelated formatting changes.
+- The codebase is the reference; when in doubt, match the surrounding code.
+- Comments, documentation and commits are in **English**.
 
 ## Security rules
+
 - The `openrc` `.initd` scripts must execute commands with a regular user (`svc-*`) and not root. If no user matches the script's subject, create a new one in the `post-install` script of the package.
+- **Always reduce attack surface** (design rule #10) — see [docs/security/security-model.md](docs/security/security-model.md) and the ADRs in [docs/architecture/decisions/](docs/architecture/decisions/README.md).
 
 ## Linting and static analysis
 
 - Use `ruff` check to detect linting issues, potential bugs, and violations of coding conventions.
-- Run static analysis on all modified Python files, included newly added files.
+- Run static analysis on all modified Python files, including newly added files.
 - Do not suppress linting rules unless there is a clear justification.
 - Use type checking and resolve any new type errors introduced by the changes.
 
@@ -141,6 +121,7 @@ Naming conventions:
   2. The project's non-regression test suite (full `pytest` run).
 
 ## Quality gates
+
 - **Never commit** before verifying the respect of the coding standards on the added code.
 - Run formatting checks before committing changes.
 - Resolve all linting errors before committing changes.
@@ -161,10 +142,10 @@ Naming conventions:
 
 ## Documentation standards
 
-- The public documentation lies in the Safecor Wiki repository
-- The project's documentation lies in the /docs directory
+- The public documentation lies in the Safecor Wiki repository (for human beings).
+- The project's documentation lies in the `docs/` directory: offline technical documentation for AI coding agents.
 - Write documentation, comments and commits in english language even if the prompt is in another language.
-- Update the documentation in /docs and the Doxygen comments of the source code up to date when applying changes.
+- Update the documentation in `docs/` and the Doxygen comments of the source code up to date when applying changes.
 - The Doxygen documentation must be written only in the implementation files unless the function is encoded in the header file.
-- Keep `Readme.md` ("Current features") and `docs/manual.md` in sync with user-visible changes.
+- Keep `README.md` ("Current features") in sync with user-visible changes.
 - Keep `README.fr.md` (French language) and `README.md` (English language) in sync together.
