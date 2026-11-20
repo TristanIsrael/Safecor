@@ -15,7 +15,7 @@ flowchart LR
         ORCH["Safecor orchestrator<br/>domain lifecycle · virtual inputs<br/>xl configs · vCPU groups"]
         CTRL["Safecor core controller<br/>file API · workflow · monitoring<br/>sensors · energy · logging"]
         XORG0["Xorg display manager<br/>shows the focused GUI domain"]
-        REPO["Encrypted local storage<br/>repository, shared by every DomU"]
+        REPO["Encrypted local storage<br/>repository, Dom0 only<br/>file access via the MQTT file API"]
         VTUN -->|UNIX sockets, per domain| BRK0
         BRK0 <-->|/tmp/mqtt-dom0.sock| ORCH
         BRK0 <-->|/tmp/mqtt-dom0.sock| CTRL
@@ -66,8 +66,8 @@ flowchart LR
     SFTPD -->|vchan sftp channel| SSHFS
 
     %% ---------------- Storage & packages ----------------
-    REPO -->|shared block disk, /mnt/storage| BUS
-    REPO -->|shared block disk, /mnt/storage| GUI
+    REPO -.->|file API over MQTT| BUS
+    REPO -.->|file API over MQTT| GUI
     HWDSK -->|packages.squashfs read-only, /mnt/packages| BUS
     HWDSK -->|packages.squashfs read-only, /mnt/packages| GUI
 
