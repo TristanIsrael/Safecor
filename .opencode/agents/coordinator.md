@@ -17,6 +17,12 @@ permissions:
   - action: subagent
     resource: "reviewer"
     effect: allow
+  - action: subagent
+    resource: "scribe"
+    effect: allow
+  - action: subagent
+    resource: "explore"
+    effect: allow
 ---
 
 You are the project coordinator.

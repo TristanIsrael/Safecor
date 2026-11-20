@@ -27,7 +27,9 @@ Environment:
 - Shell scripts.
 - Qt 6.
 - Qt Quick and QML if necessary.
-- CMake when the project uses it.
+- hatchling/poetry packaging, ruff, pytest.
+- MQTT (paho-mqtt), mosquitto (emulator).
+- Alpine Linux packages (APKBUILD).
 
 Never modify an architectural decision without prior validation.
 
