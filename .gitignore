@@ -151,8 +151,5 @@ bin/*.*
 /setup/packages/safecor/safecor-sys-usb/src
 /setup/packages/safecor/safecor-syslog/src
 
-# Opencode
-.opencode
-
 # Rendered diagram previews (the images live in the Safecor Wiki)
 docs/diagrams/preview/
