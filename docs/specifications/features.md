@@ -7,9 +7,9 @@
 > **Audience**: developers and product integrators; **primary use**: the master list from
 > which the functions to be emulated in the operator console are selected.
 >
-> **Related**: [`docs/architecture.md`](architecture.md) (how the platform is built),
-> [`docs/doc-sync-issues.md`](doc-sync-issues.md) (code ↔ doc mismatches),
-> [`plans/emulator-context.md`](../plans/emulator-context.md) (emulator session).
+> **Related**: [`docs/architecture/overview.md`](../architecture/overview.md) (how the platform is built),
+> [`docs/development/protocol.md`](../development/protocol.md) (the MQTT contract, with the code ↔ doc mismatch notes),
+> [`docs/plans/emulator-context.md`](../plans/emulator-context.md) (emulator session).
 
 This document is the **complete catalogue of the functions the Safecor platform exposes** to
 its Domains (through the `Api` / the MQTT protocol). For each function it records what it does,
@@ -21,13 +21,13 @@ whether the emulator already fakes it.
 - ⚠️ **partial** — the emulator handles it but with a gap (isolated state, no side effect, …).
 - ❌ **missing** — the emulator does not answer it (a product calling it would hang / get nothing).
 - 📄 **documented, not implemented** — present in the Wiki but has **no topic/handler in the code**
-  at all (a platform gap, not just an emulator one). See [`doc-sync-issues.md`](doc-sync-issues.md) §2.
+  at all (a platform gap, not just an emulator one). See [protocol.md](../development/protocol.md) (the *documented, not implemented* notes).
 
 > **Note**: several field/topic names in the Wiki differ from the code. This catalogue uses the
-> **code's** names. Every code↔doc mismatch is catalogued in
-> [`doc-sync-issues.md`](doc-sync-issues.md).
+> **code's** names; every code↔doc mismatch is noted inline in the reference documents
+> ([protocol.md](../development/protocol.md), [topology.md](topology.md)).
 
-**Message shapes** (see architecture §3.2): *req/resp* = a `<topic>/request` answered by a
+**Message shapes** (see [protocol.md](../development/protocol.md)): *req/resp* = a `<topic>/request` answered by a
 `<topic>/response`; *notif* = an asynchronous event published on a bare topic; *cmd* = a request
 with a workflow side effect.
 
@@ -55,7 +55,7 @@ External-disk and file operations. In the emulator these run on local directorie
 | S13 | Disk capacity info | — | `disks/storage_info` | req/resp | req: `disk`; resp: `disk`, `total`, `used`, `free` | sys-usb | 📄 **documented, not implemented** |
 
 > **📄 = documented in the Wiki but not implemented in the code** (no topic, no handler). See
-> [`doc-sync-issues.md`](doc-sync-issues.md) §2. Such functions are **out of scope** for the
+> [protocol.md](../development/protocol.md). Such functions are **out of scope** for the
 > emulator/console unless explicitly selected.
 
 ## 2. Repository (provided by Dom0)
@@ -189,8 +189,8 @@ Runtime topology access over MQTT, used by DomUs to discover their own configura
 | Topology & environment | T1-T6 | — | — | — |
 | Topology query (Dom0) | — | — | TP1 (my_config) | — |
 
-> **Language settings caveat**: the whole L-group is at risk because of the code bug
-> [`doc-sync-issues.md`](doc-sync-issues.md) B1 / issue #217 — the language **list** request is
+> **Language settings caveat**: the whole L-group is at risk because of the code bug documented
+> in [protocol.md](../development/protocol.md) (issue #217) — the language **list** request is
 > never processed by the Dom0 handler, so `L1` (and the language combo in the console) cannot be
 > validated end-to-end until that is fixed.
 
