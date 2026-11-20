@@ -23,7 +23,7 @@ Your responsibilities include:
 
 Environment:
 - Alpine Linux (Busybox, MUSL).
-- Python 13+.
+- Python 3.13 (target).
 - Shell scripts.
 - Qt 6.
 - Qt Quick and QML if necessary.
