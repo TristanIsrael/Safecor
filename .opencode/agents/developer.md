@@ -2,12 +2,48 @@
 description: Python and Qt Development and Test Implementation
 mode: subagent
 permissions:
+  - action: read
+    resource: "*"
+    effect: allow
   - action: edit
     resource: "*"
     effect: allow
   - action: shell
     resource: "*"
     effect: ask
+  - action: shell
+    resource: "ls *"
+    effect: allow
+  - action: shell
+    resource: "head *"
+    effect: allow
+  - action: shell
+    resource: "tail *"
+    effect: allow
+  - action: shell
+    resource: "cat *"
+    effect: allow
+  - action: shell
+    resource: "find *"
+    effect: allow
+  - action: shell
+    resource: "rg *"
+    effect: allow
+  - action: shell
+    resource: "git status *"
+    effect: allow
+  - action: shell
+    resource: "git diff *"
+    effect: allow
+  - action: shell
+    resource: "git log *"
+    effect: allow
+  - action: shell
+    resource: "git push *"
+    effect: ask
+  - action: shell
+    resource: "rm *"
+    effect: deny
 ---
 
 You are the project developer.

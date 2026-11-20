@@ -5,6 +5,9 @@ permissions:
   - action: edit
     resource: "*.md"
     effect: allow
+  - action: edit
+    resource: "*.py"
+    effect: allow
   - action: shell
     resource: "*"
     effect: ask
