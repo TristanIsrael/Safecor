@@ -1,8 +1,8 @@
 """Unit tests for the pure functions of the Alpine package scripts.
 
 The scripts live in setup/packages/safecor/... and are loaded with
-importlib; only their pure functions (path and listener computation) are
-tested, so no running Safecor system is required.
+importlib; only their pure functions (path, listener and argument
+computation) are tested, so no running Safecor system is required.
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -18,11 +18,12 @@ from types import SimpleNamespace
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 CORE_PYTHON = REPO_ROOT / "setup" / "packages" / "safecor" / "safecor-core" / "python"
+SYS_USB_DIR = REPO_ROOT / "setup" / "packages" / "safecor" / "safecor-sys-usb"
 
 
-def load_module(name: str, filename: str):
+def load_module(name: str, path: Path):
     """Load a package script (hyphenated filename) as a Python module."""
-    spec = importlib.util.spec_from_file_location(name, CORE_PYTHON / filename)
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -31,7 +32,9 @@ def load_module(name: str, filename: str):
 class TestCreateVchanTunnels(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("create_vchan_tunnels", "create-vchan-tunnels.py")
+        cls.mod = load_module(
+            "create_vchan_tunnels", CORE_PYTHON / "create-vchan-tunnels.py"
+        )
 
     def test_get_socket_path_msg_is_named_by_domain(self):
         self.assertEqual(
@@ -98,7 +101,8 @@ class TestGenerateMosquittoListeners(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = load_module(
-            "generate_mosquitto_listeners", "generate-mosquitto-listeners.py"
+            "generate_mosquitto_listeners",
+            CORE_PYTHON / "generate-mosquitto-listeners.py",
         )
 
     def test_generate_listeners_one_domain(self):
@@ -133,6 +137,72 @@ class TestGenerateMosquittoListeners(unittest.TestCase):
             content = Path(output_file).read_text()
             self.assertIn("listener 0 /tmp/mqtt-sys-usb.sock", content)
             self.assertIn("do not edit manually", content)
+
+
+class TestSafecorVchanSftp(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = load_module(
+            "safecor_vchan_sftp", SYS_USB_DIR / "safecor-vchan-sftp.py"
+        )
+
+    def test_parse_direct_mount_domains(self):
+        response = {
+            "domains": [
+                {"name": "sys-usb", "direct_mount": False},
+                {"name": "app1", "direct_mount": {"mode": "ro"}},
+                {"name": "app2", "direct_mount": {"mode": "rw"}},
+            ]
+        }
+        self.assertEqual(
+            self.mod.parse_direct_mount_domains(response),
+            [("app1", "ro"), ("app2", "rw")],
+        )
+
+    def test_parse_direct_mount_domains_falsy_is_disabled(self):
+        # A falsy direct_mount (False, None, {}) is "not enabled", as in the
+        # DirectMountManager reference implementation.
+        response = {
+            "domains": [
+                {"name": "app1", "direct_mount": {}},
+                {"name": "app2", "direct_mount": None},
+            ]
+        }
+        self.assertEqual(self.mod.parse_direct_mount_domains(response), [])
+
+    def test_parse_direct_mount_domains_invalid_mode_defaults_to_rw(self):
+        response = {"domains": [{"name": "app1", "direct_mount": {"mode": "weird"}}]}
+        self.assertEqual(
+            self.mod.parse_direct_mount_domains(response), [("app1", "rw")]
+        )
+
+    def test_parse_direct_mount_domains_non_dict_defaults_to_rw(self):
+        response = {"domains": [{"name": "app1", "direct_mount": True}]}
+        self.assertEqual(
+            self.mod.parse_direct_mount_domains(response), [("app1", "rw")]
+        )
+
+    def test_parse_direct_mount_domains_empty(self):
+        self.assertEqual(self.mod.parse_direct_mount_domains({}), [])
+        self.assertEqual(self.mod.parse_direct_mount_domains({"domains": []}), [])
+
+    def test_parse_ldd(self):
+        output = (
+            "\tlinux-vdso.so.1 (0x00007ffde3f000)\n"
+            "\tlibcrypto.so.3 => /lib/libcrypto.so.3 (0x00007f12345000)\n"
+            "\tlibc.so.6 => /lib/libc.so.6 (0x00007f12340000)\n"
+            "\t/lib64/ld-linux-x86-64.so.2 (0x00007f12348000)\n"
+        )
+        self.assertEqual(
+            self.mod.parse_ldd(output),
+            ["/lib/libcrypto.so.3", "/lib/libc.so.6", "/lib64/ld-linux-x86-64.so.2"],
+        )
+
+    def test_sftp_server_args_rw(self):
+        self.assertEqual(self.mod.sftp_server_args("rw"), ["-u", "077"])
+
+    def test_sftp_server_args_ro(self):
+        self.assertEqual(self.mod.sftp_server_args("ro"), ["-u", "077", "-R"])
 
 
 if __name__ == "__main__":

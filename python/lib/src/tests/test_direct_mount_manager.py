@@ -249,6 +249,19 @@ class TestDirectMountManager(unittest.TestCase):
             opts = call_args[opts_idx + 1]
             self.assertIn("ro", opts)
 
+    def test_mount_opts_include_reconnect(self):
+        with (
+            patch("subprocess.Popen") as mock_popen,
+            patch("safecor._direct_mount_manager.time.sleep"),
+            patch("os.makedirs"),
+        ):
+            mock_popen.return_value.poll.return_value = None
+            self.manager._DirectMountManager__mount()
+            call_args = mock_popen.call_args[0][0]
+            opts_idx = call_args.index("-o")
+            opts = call_args[opts_idx + 1]
+            self.assertIn("reconnect", opts)
+
 
 if __name__ == "__main__":
     unittest.main()

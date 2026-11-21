@@ -1,6 +1,6 @@
 # Finalization of the channels → vchan migration and the sshfs direct mount
 
-> **Status**: Active — Phase A
+> **Status**: Active — Phase B (implemented, to be validated at run 15)
 >
 > **Last updated**: 2026-11-21
 >
@@ -28,7 +28,7 @@
 | #256 | Migrate all domain-to-Dom0 channels to PV channels (vchan) | In review — finalization in progress |
 | #258 | DomU local MQTT broker with an upstream vchan bridge | In review — validated at run 14 |
 | #264 | libpython EACCES on the sys-usb domain | In review — validated at run 14 |
-| #260 | SFTP vchan channel: startup order + sftp-server chroot | Ready — next functional work |
+| #260 | SFTP vchan channel: startup order + sftp-server chroot | In progress — implemented on `fix-260-sftp-vchan`, to be validated at run 15 |
 | #262 | domid write race in `reboot-domain.sh` | Ready — all the vchans are lost after an API reboot (run 14) |
 | #259 | MQTT client ID naming convention + broker authentication | Ready — second pass (hardening) |
 | #261 | Restrict the xenstore write grants to the vchan subtree | Ready — second pass (hardening) |
@@ -37,7 +37,7 @@
 
 ## 2. Phases
 
-### Phase A — Run 14 wrap-up (documentation + statuses)
+### Phase A — Run 14 wrap-up (documentation + statuses) ✅ done (committed `fd062cf`)
 
 1. `test-channels-migration.md`: check the objectives validated at run 14 (messaging, inputs, GUI), add the "Run 14 resolutions" section (the debug tty regression as a new finding, the vchan loss after the API reboot as a #262 cascade).
 2. `docs/project-status.md`: #258 → In review (validated at run 14), #264 → validated at run 14, link this plan.
@@ -46,6 +46,8 @@
 **Exit criteria**: docs and issue statuses reflect run 14.
 
 ### Phase B — #260: make the sshfs direct mount work
+
+**Implemented** on `fix-260-sftp-vchan` (the three fixes below plus the `reconnect` sshfs option, the APKBUILD sha512 recalculation and unit tests for the new pure functions). Awaiting validation at run 15.
 
 The transport design is validated: sshfs with a custom `ssh_command` bridging stdio over vchan to a raw `sftp-server` is the documented "bypass SSH" pattern, the same as the working `msg` channel. The remaining work is operational:
 

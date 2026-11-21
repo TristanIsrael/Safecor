@@ -237,9 +237,11 @@ class DirectMountManager:
         mount_point = Constants.USB_MOUNT_POINT
         os.makedirs(mount_point, exist_ok=True)
 
+        # reconnect: re-establish the SFTP session on connection loss, so
+        # the mount heals itself when sys-usb is rebooted.
         opts = (
             f"ssh_command={VCHAN_SFTP_SCRIPT_PATH},"
-            f"noexec,nosuid,nodev,default_permissions,max_read=131072"
+            f"noexec,nosuid,nodev,default_permissions,max_read=131072,reconnect"
         )
         if self.__mount_mode == "ro":
             opts += ",ro"
