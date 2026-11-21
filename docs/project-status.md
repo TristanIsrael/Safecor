@@ -12,17 +12,17 @@ The development branch is **`version-2`** (Safecor v2). The main line of v2 is t
 
 ### The channels → vchan migration (issue #256)
 
-Validated on real hardware with run sheets: `docs/plans/test-channels-migration/run-<n>.md` (runs 1–14). The migration plan and its resolutions are in `docs/plans/test-channels-migration/test-channels-migration.md`.
+Validated on real hardware with run sheets: `docs/plans/test-channels-migration/run-<n>.md` (runs 1–14). The migration plan and its resolutions are in `docs/plans/test-channels-migration/test-channels-migration.md`; the remaining work (the sshfs direct mount #260, the domid race #262, the debug tty regression) and its sequence are in `docs/plans/test-channels-migration/finalization-plan.md`.
 
 | Issue | Subject | State |
 |-------|---------|-------|
-| #256 | Migrate all domain-to-Dom0 channels to PV channels (vchan) | In progress — **run 14 pending** |
-| #258 | DomU local MQTT broker with an upstream vchan bridge | In progress — validated at run 14 (mosquitto running, multi-clients, e2e, bridge IDs `safecor-<domain>-bridge`) |
+| #256 | Migrate all domain-to-Dom0 channels to PV channels (vchan) | In review — runs 1–14 done; finalization active (sshfs direct mount, domid race, tty regression, then run 15) |
+| #258 | DomU local MQTT broker with an upstream vchan bridge | In review — validated at run 14 (mosquitto running, multi-clients, e2e, bridge IDs `safecor-<domain>-bridge`) |
 | #264 | Investigate the libpython EACCES error on the sys-usb domain | In review — resolved by restoring the `/etc` permissions at boot, validated at run 14 |
-| #259 | Enforce MQTT client ID naming convention and broker authentication | Ready |
-| #260 | Fix the SFTP vchan channel startup order and package the sftp-server chroot | Ready |
-| #261 | Restrict xenstore write grants to the vchan subtree | Ready |
-| #262 | Fix the domid write race in `reboot-domain.sh` | Ready |
+| #260 | Fix the SFTP vchan channel startup order and package the sftp-server chroot | Ready — the sshfs direct mount in the business domains does not work yet (run 14) |
+| #262 | Fix the domid write race in `reboot-domain.sh` | Ready — all the vchans are lost after an API reboot (run 14) |
+| #259 | Enforce MQTT client ID naming convention and broker authentication | Ready — second pass (hardening), after the #256 closure |
+| #261 | Restrict xenstore write grants to the vchan subtree | Ready — second pass (hardening), after the #256 closure |
 
 ### Documentation
 
