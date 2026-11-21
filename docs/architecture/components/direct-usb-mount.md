@@ -27,10 +27,13 @@ application (DomU) opens files under /media/usb
   → vchan "sftp" PV channel (ring in xenstore /local/domain/system/vchan/<domain>/sftp)
   → vchan-socket-proxy, server mode (sys-usb, one per authorized domain, started by safecor-vchan-sftp.py)
   → socat (UNIX-LISTEN /var/run/safecor/vchan-<domain>.sock, fork)
-  → openssh sftp-server (chroot /media/usb, read-only on ro channels, request filters, umask)
+  → bubblewrap (per session: /media/usb bound as the sandbox root, sftp-server + musl loader read-only, fresh /dev, unshared pid/ipc/uts/net namespaces)
+  → openssh sftp-server (read-only on ro channels, request filters, umask)
 ```
 
-**Security constraints on the server side**: the `sftp-server` runs chrooted in `/media/usb`, is read-only when the channel mode is `ro`, applies request filters and a restrictive umask, and only the domains listed in the topology are authorized (one server per authorized domain).
+**Security constraints on the server side**: the `sftp-server` runs in a **per-session bubblewrap sandbox** (`bwrap`, spawned by socat for every connection — no boot-time assembly): `/media/usb` is bound as the sandbox root (read-only for the `ro` channels), the `sftp-server` binary and the musl dynamic loader are bound in read-only, a fresh `/dev` is mounted, the pid/ipc/uts/net namespaces are unshared, and all capabilities are dropped except the three needed to serve the disks (`CAP_DAC_OVERRIDE` — the disks are mounted with a dedicated uid/gid — and `CAP_FOWNER`/`CAP_CHOWN` for SFTP attribute requests). The sandbox root is installed by a double `pivot_root` with the old root detached, so the host root filesystem is unreachable from the sandbox (unlike a plain chroot, which a root process can escape). The `sftp-server` is read-only when the channel mode is `ro`, applies request filters and a restrictive umask, and only the domains listed in the topology are authorized (one server per authorized domain).
+
+When a USB disk is added, removed or changed, the mdev hook (`mdev-usb-storage.sh`) kills the existing sftp sessions: each session's sandbox is a mount-table snapshot taken at spawn, so the clients' sshfs (with the `reconnect` option) must reconnect to pick up the new mount state.
 
 ## `DirectMountManager` (DomU side)
 
@@ -62,13 +65,13 @@ flowchart LR
         USBST["USB storage devices<br/>mounted /media/usb/&lt;label&gt;"]
         SFTPS["vchan-socket-proxy, server mode<br/>one per authorized domain, sftp channel<br/>started by safecor-vchan-sftp.py"]
         SOCAT["socat<br/>UNIX-LISTEN /var/run/safecor/vchan-&lt;domain&gt;.sock, fork<br/>spawns the sftp-server per connection"]
-        SFTP["openssh sftp-server<br/>chroot /media/usb<br/>read-only, request filters, umask"]
+        SFTP["openssh sftp-server<br/>bwrap sandbox (root /media/usb)<br/>read-only, request filters, umask"]
         INPD["sys-usb controller<br/>inputs daemon, evdev<br/>keyboard, mouse, touch"]
         VCIN["vchan-socket-proxy, client mode<br/>input channel<br/>socket /var/run/safecor/input.sock"]
         VCTY["vchan-socket-proxy, client mode<br/>tty channel, debug mode only"]
-        USBST -->|root of the chroot| SFTP
+        USBST -->|"sandbox root (bind /media/usb)"| SFTP
         SFTPS -->|UNIX socket| SOCAT
-        SOCAT -->|spawn, chroot| SFTP
+        SOCAT -->|spawn, bwrap sandbox| SFTP
         INPD -->|UNIX socket input.sock| VCIN
     end
 

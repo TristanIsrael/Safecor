@@ -1,5 +1,7 @@
 # Direct USB Mount from sys-usb via vchan
 
+> **Superseded**: this plan describes the original design (boot-time chroot), which run 15 proved empty and which has been replaced by a per-session bubblewrap sandbox — see [the direct-usb-mount component documentation](../architecture/components/direct-usb-mount.md) and [the finalization plan](test-channels-migration/finalization-plan.md) (Phase B).
+>
 > **Status**: Draft
 >
 > **Last updated**: 2026-11-11

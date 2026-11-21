@@ -39,3 +39,13 @@ Verification — the five objectives (test-channels-migration.md) + regressions:
 - [ ] The local brokers stay connected across the reboots tested above
 
 If everything is green: close #256 (and #258, #264, #260, #262 as validated), update `docs/project-status.md`, check the objectives in `test-channels-migration.md`, and move to the second pass (Phase F: #259, #261).
+
+## Run 15 resolutions
+
+Run 15 validated the `reconnect` sshfs option but the #260 fix was not working: the sftp-server chroot built at boot was empty (musl `ldd` output not parsed), so every sftp session died instantly and the FUSE mount was stuck. The chroot approach was replaced by a per-session bubblewrap sandbox.
+
+| # | Finding | Resolution | Tracker |
+|---|---|---|---|
+| 1 | The sftp chroot built at boot is empty (`/media/usb/usr/lib/ssh/` only contains `sftp-server`, no dynamic linker or libraries): `parse_ldd` parsed the glibc `ldd` format, incompatible with Alpine/musl, so the chrooted sftp-server could not exec. Every sftp session died instantly (zombie `[sftp-server]` processes), the FUSE mount was dead but present (`df` stuck, files unreadable). | Decision: drop the boot-time chroot, switch to a per-session **bubblewrap** sandbox (no copies, no ldd parsing, mount/pid/ipc/uts/net namespaces, `/media/usb` bound as the sandbox root). Fix implemented on `version-2`. To validate on run 16. | #260 |
+| 2 | Multiple `socat` listeners per direct_mount domain, one pair constantly restarting (PIDs changed between observations) while the boot pair stayed stable: `start_channel` was not idempotent, so a double start of the service duplicated the listeners (the late ones fail to bind and loop). | Fix implemented on `version-2`: `start_channel` stops the existing instance (pidfile) and removes the stale socket before starting, and the children's output is redirected to a per-domain log. Run 16 forensics (service log « starting » count, `ps -o pid,ppid`, openrc logs) to identify the double-start trigger. | #260 |
+| 3 | `df` stuck on the business domains and no `/media/usb` mount point (the FUSE mount is dead but present — consequence of 1). | Consequence of 1. At run 16: `fusermount -u /media/usb` on the business domains (or a cold boot) before re-testing. | — |

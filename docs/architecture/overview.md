@@ -54,7 +54,7 @@ flowchart LR
         subgraph SYSUSB["sys-usb — USB controller domain (trust: low)"]
             USBC["sys-usb controller<br/>inputs daemon · USB storage manager<br/>direct-mount manager"]
             BRKU1["Local Mosquitto broker<br/>UNIX socket, multiplexes<br/>every local client"]
-            SFTPD["SFTP server<br/>chroot /media/usb<br/>read-only channels, filters, umask"]
+            SFTPD["SFTP server<br/>bwrap sandbox (root /media/usb)<br/>read-only channels, filters, umask"]
             USBST["USB storage devices<br/>/media/usb/&lt;label&gt;"]
             USBST --> SFTPD
         end

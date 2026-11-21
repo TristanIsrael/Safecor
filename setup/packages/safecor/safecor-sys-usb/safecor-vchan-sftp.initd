@@ -38,6 +38,7 @@ stop() {
     start-stop-daemon --stop --pidfile "$pidfile" --signal TERM --retry 5 2>/dev/null
     pkill -f "vchan-socket-proxy.*-m server" 2>/dev/null
     pkill -f "socat.*UNIX-LISTEN:/var/run/safecor/vchan-" 2>/dev/null
+    pkill -f "^bwrap.*sftp-server" 2>/dev/null
     rm -f /var/run/safecor/vchan-*.pid /var/run/safecor/socat-*.pid /var/run/safecor/vchan-*.sock
     eend 0
 }

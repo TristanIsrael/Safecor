@@ -16,13 +16,13 @@ flowchart LR
         USBST["USB storage devices<br/>mounted /media/usb/&lt;label&gt;"]
         SFTPS["vchan-socket-proxy, server mode<br/>one per authorized domain, sftp channel<br/>started by safecor-vchan-sftp.py"]
         SOCAT["socat<br/>UNIX-LISTEN /var/run/safecor/vchan-&lt;domain&gt;.sock, fork<br/>spawns the sftp-server per connection"]
-        SFTP["openssh sftp-server<br/>chroot /media/usb<br/>read-only, request filters, umask"]
+        SFTP["openssh sftp-server<br/>bwrap sandbox (root /media/usb)<br/>read-only, request filters, umask"]
         INPD["sys-usb controller<br/>inputs daemon, evdev<br/>keyboard, mouse, touch"]
         VCIN["vchan-socket-proxy, client mode<br/>input channel<br/>socket /var/run/safecor/input.sock"]
         VCTY["vchan-socket-proxy, client mode<br/>tty channel, debug mode only"]
-        USBST -->|root of the chroot| SFTP
+        USBST -->|"sandbox root (bind /media/usb)"| SFTP
         SFTPS -->|UNIX socket| SOCAT
-        SOCAT -->|spawn, chroot| SFTP
+        SOCAT -->|spawn, bwrap sandbox| SFTP
         INPD -->|UNIX socket input.sock| VCIN
     end
 

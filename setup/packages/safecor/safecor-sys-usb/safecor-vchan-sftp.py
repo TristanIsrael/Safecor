@@ -1,9 +1,9 @@
 """Starts the per-DomU vchan+SFTP channels on sys-usb for direct USB mount.
 
 Queries the topology via MQTT to find the domains with direct_mount enabled,
-builds the sftp-server chroot under /media/usb, then starts, for each of
-those domains:
-- a socat bridge from a UNIX socket to the chrooted sftp-server,
+sandboxes sftp-server with bubblewrap (one sandbox per session, /media/usb
+served as the SFTP root), then starts, for each of those domains:
+- a socat bridge from a UNIX socket to the sandboxed sftp-server,
 - a vchan-socket-proxy server bridging the SFTP vchan channel to that socket.
 
 Runs detached (started by the safecor-vchan-sftp service) and retries the
@@ -16,7 +16,6 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import os
-import shutil
 import subprocess
 import sys
 import threading
@@ -31,11 +30,12 @@ QUERY_TIMEOUT = 10  # seconds, per MQTT query attempt
 RETRY_INTERVAL = 5  # seconds between query attempts
 DOMAIN_WAIT_TIMEOUT = 60  # seconds to wait for a domain's domid
 
-# The chroot root is /media/usb (the mount tree the client mounts at
-# /media/usb), so the chrooted sftp-server serves /media/usb/<disk>/... as
-# /<disk>/... to the client.
-CHROOT_ROOT = "/media/usb"
+# /media/usb is served as the SFTP root (bound to / in the sandbox), so a
+# disk mounted at /media/usb/<label> on sys-usb appears at the same path in
+# the client's /media/usb sshfs mount.
+SFTP_ROOT = "/media/usb"
 SFTP_SERVER = "/usr/lib/ssh/sftp-server"
+MUSL_LOADER = "/lib/ld-musl-x86_64.so.1"
 
 
 def log(message: str) -> None:
@@ -66,22 +66,6 @@ def parse_direct_mount_domains(response: dict) -> list[tuple[str, str]]:
     return pairs
 
 
-def parse_ldd(output: str) -> list[str]:
-    """Extract the shared object paths from the output of ldd(1).
-
-    The shared libraries are the paths after "=>"; the dynamic linker is
-    reported as a plain path on its own line.
-    """
-    paths = []
-    for line in output.splitlines():
-        line = line.strip()
-        if "=>" in line:
-            paths.append(line.split("=>", 1)[1].strip().split()[0])
-        elif line.startswith("/"):
-            paths.append(line.split()[0])
-    return paths
-
-
 def sftp_server_args(mode: str) -> list[str]:
     """The sftp-server command-line arguments for a mount mode.
 
@@ -95,30 +79,54 @@ def sftp_server_args(mode: str) -> list[str]:
     return args
 
 
-def build_chroot() -> bool:
-    """Build the sftp-server chroot under /media/usb.
+def bwrap_args(mode: str) -> list[str]:
+    """The bubblewrap command line sandboxing one sftp-server session.
 
-    Copies /usr/lib/ssh/sftp-server and its shared libraries (plus the
-    dynamic linker) into the chroot, so that the chrooted sftp-server can
-    run. The DomU root is a tmpfs rebuilt at every boot, so the chroot is
-    rebuilt at every boot.
+    The sandbox root is a bind of /media/usb (read-only for ``ro`` channels),
+    so the served SFTP root is the USB mount tree. The sftp-server binary and
+    the musl dynamic linker are bound in read-only, a fresh /dev is mounted,
+    and the pid/ipc/uts/net namespaces are unshared. All capabilities are
+    dropped except the three needed to serve the disks: they are mounted
+    with a dedicated uid/gid (CAP_DAC_OVERRIDE), and SFTP attribute requests
+    need CAP_FOWNER/CAP_CHOWN.
+
+    Confinement: bwrap pivots twice into the new root and detaches the old
+    one, so the host root filesystem is unreachable from the sandbox (unlike
+    a plain chroot, which a root process can escape).
     """
-    try:
-        subprocess.run(["mkdir", "-p", f"{CHROOT_ROOT}/usr/lib/ssh"], check=True)
-        shutil.copy2(SFTP_SERVER, f"{CHROOT_ROOT}{SFTP_SERVER}")
-        result = subprocess.run(
-            ["ldd", SFTP_SERVER], capture_output=True, text=True, check=True
-        )
-        for lib in parse_ldd(result.stdout):
-            if not os.path.isabs(lib):
-                continue
-            dest = f"{CHROOT_ROOT}{lib}"
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
-            shutil.copy2(lib, dest)
-        return True
-    except (subprocess.SubprocessError, OSError, shutil.Error) as e:
-        log(f"error: failed to build the sftp chroot: {e}")
-        return False
+    root_flag = "--ro-bind" if mode == "ro" else "--bind"
+    return [
+        "bwrap",
+        root_flag,
+        SFTP_ROOT,
+        "/",
+        "--ro-bind",
+        SFTP_SERVER,
+        SFTP_SERVER,
+        "--ro-bind",
+        MUSL_LOADER,
+        MUSL_LOADER,
+        "--cap-drop",
+        "ALL",
+        "--cap-add",
+        "CAP_DAC_OVERRIDE",
+        "--cap-add",
+        "CAP_FOWNER",
+        "--cap-add",
+        "CAP_CHOWN",
+        "--dev",
+        "/dev",
+        "--unshare-pid",
+        "--unshare-ipc",
+        "--unshare-uts",
+        "--unshare-net",
+        "--die-with-parent",
+        "--chdir",
+        "/",
+        "--",
+        SFTP_SERVER,
+        *sftp_server_args(mode),
+    ]
 
 
 def query_direct_mount_domains() -> list[tuple[str, str]] | None:
@@ -181,6 +189,16 @@ def wait_for_domid(name: str) -> str:
 def start_channel(name: str, domid: str, mode: str) -> None:
     """Start the socat bridge and the vchan server for one domain.
 
+    Every client connection is answered with a bubblewrap-sandboxed
+    sftp-server (see bwrap_args): the sandbox is spawned per session by
+    socat, so no assembly is needed at boot.
+
+    The start is idempotent: the existing socat and vchan-socket-proxy
+    instances (by pidfile) are stopped and the stale socket removed before
+    starting, so a double start of the service converges to one socat and
+    one proxy per domain. The children's output (bind failures, sftp
+    session errors) is redirected to a per-domain log.
+
     The socat UNIX listener is started first: the vchan server connects to
     the socket that socat creates. The SFTP vchan channel data is shared in
     the xenstore namespace /local/domain/system/vchan/<domain>/sftp,
@@ -188,7 +206,35 @@ def start_channel(name: str, domid: str, mode: str) -> None:
     """
     vchan_sock = f"/var/run/safecor/vchan-{name}.sock"
     vchan_path = f"/local/domain/system/vchan/{name}/sftp"
-    sftp_cmd = " ".join(["chroot", CHROOT_ROOT, SFTP_SERVER, *sftp_server_args(mode)])
+    vchan_log = f"/var/log/safecor/vchan-{name}.log"
+    sftp_cmd = " ".join(bwrap_args(mode))
+
+    subprocess.run(
+        [
+            "start-stop-daemon",
+            "--stop",
+            "--pidfile",
+            f"/var/run/safecor/socat-{name}.pid",
+            "--retry",
+            "3",
+        ],
+        check=False,
+    )
+    subprocess.run(
+        [
+            "start-stop-daemon",
+            "--stop",
+            "--pidfile",
+            f"/var/run/safecor/vchan-{name}.pid",
+            "--retry",
+            "3",
+        ],
+        check=False,
+    )
+    try:
+        os.remove(vchan_sock)
+    except FileNotFoundError:
+        pass
 
     subprocess.run(
         [
@@ -198,6 +244,10 @@ def start_channel(name: str, domid: str, mode: str) -> None:
             "--make-pidfile",
             "--pidfile",
             f"/var/run/safecor/socat-{name}.pid",
+            "--stdout",
+            vchan_log,
+            "--stderr",
+            vchan_log,
             "--exec",
             "/usr/bin/socat",
             "--",
@@ -214,6 +264,10 @@ def start_channel(name: str, domid: str, mode: str) -> None:
             "--make-pidfile",
             "--pidfile",
             f"/var/run/safecor/vchan-{name}.pid",
+            "--stdout",
+            vchan_log,
+            "--stderr",
+            vchan_log,
             "--exec",
             "/usr/bin/vchan-socket-proxy",
             "--",
@@ -247,9 +301,9 @@ def main() -> None:
         log("no domains with direct_mount found in topology")
         return
 
-    if not build_chroot():
-        log("error: the sftp chroot could not be built, aborting")
-        sys.exit(1)
+    # The bind source of the sandbox root must exist at session spawn
+    # (mdev creates the per-disk subdirectories).
+    os.makedirs(SFTP_ROOT, exist_ok=True)
 
     for name, mode in domains:
         domid = wait_for_domid(name)

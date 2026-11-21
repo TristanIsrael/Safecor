@@ -1,6 +1,6 @@
 # Finalization of the channels → vchan migration and the sshfs direct mount
 
-> **Status**: Active — Phase B (implemented, to be validated at run 15)
+> **Status**: Active — Phase B (implemented on `version-2` with the bwrap sandbox, to be validated at run 16)
 >
 > **Last updated**: 2026-11-21
 >
@@ -28,7 +28,7 @@
 | #256 | Migrate all domain-to-Dom0 channels to PV channels (vchan) | In review — finalization in progress |
 | #258 | DomU local MQTT broker with an upstream vchan bridge | In review — validated at run 14 |
 | #264 | libpython EACCES on the sys-usb domain | In review — validated at run 14 |
-| #260 | SFTP vchan channel: startup order + sftp-server chroot | In progress — implemented on `fix-260-sftp-vchan`, to be validated at run 15 |
+| #260 | SFTP vchan channel: startup order + per-session sftp-server sandbox | In progress — implemented on `version-2` (bwrap sandbox, after the run-15 chroot failure), to be validated at run 16 |
 | #262 | domid write race in `reboot-domain.sh` | In progress — implemented on `version-2` (polling), to be validated at run 15 |
 | #259 | MQTT client ID naming convention + broker authentication | Ready — second pass (hardening) |
 | #261 | Restrict the xenstore write grants to the vchan subtree | Ready — second pass (hardening) |
@@ -47,7 +47,19 @@
 
 ### Phase B — #260: make the sshfs direct mount work
 
-**Implemented** on `fix-260-sftp-vchan` (the three fixes below plus the `reconnect` sshfs option, the APKBUILD sha512 recalculation and unit tests for the new pure functions). Awaiting validation at run 15.
+**Implemented** on `version-2` (bwrap). Awaiting validation at run 16.
+
+**Approach replaced after run 15**: run 15 validated the transport but showed the sftp-server chroot built at boot was **empty** (only the binary, no dynamic linker or libraries) — `parse_ldd` parsed the glibc `ldd` output format, which Alpine/musl does not use, so the chrooted sftp-server could not exec. The boot-time chroot was therefore **replaced by a per-session bubblewrap sandbox**:
+
+- no boot-time assembly: each session is sandboxed by `bwrap` at spawn (the kernel bind-mounts `/media/usb` as the sandbox root, plus the sftp-server binary and the musl dynamic linker in read-only, a fresh `/dev`, and unshared pid/ipc/uts/net namespaces);
+- stronger confinement than a chroot (a chroot can be escaped by a root process);
+- all capabilities are dropped except the three needed to serve the disks (`CAP_DAC_OVERRIDE` — the disks are mounted with a dedicated uid/gid — and `CAP_FOWNER`/`CAP_CHOWN` for SFTP attribute requests), and the `ro` channels get a read-only sandbox root;
+- bwrap installs a reaper as pid 1 of the sandbox, removing the zombie accumulation observed at run 15;
+- the SFTP root stays `/media/usb`: a disk mounted at `/media/usb/<label>` on sys-usb appears at the same path in the client's sshfs mount;
+- `start_channel` is idempotent (stop the existing instance by pidfile and remove the stale socket before starting: run 15 exposed duplicated socat listeners in a restart loop), and the children's output is redirected to a per-domain log;
+- on USB disk add/remove/change, the mdev hook kills the existing sftp sessions (each sandbox is a mount-table snapshot at spawn), so the clients' sshfs (`reconnect` option) reconnect into fresh sandboxes.
+
+The original (run-15) implementation, for reference, was on `fix-260-sftp-vchan` (the three fixes below plus the `reconnect` sshfs option, the APKBUILD sha512 recalculation and unit tests for the new pure functions):
 
 The transport design is validated: sshfs with a custom `ssh_command` bridging stdio over vchan to a raw `sftp-server` is the documented "bypass SSH" pattern, the same as the working `msg` channel. The remaining work is operational:
 
@@ -59,7 +71,7 @@ The transport design is validated: sshfs with a custom `ssh_command` bridging st
 2. `DirectMountManager` (`python/lib`, client side): add `reconnect` to the sshfs options (the mount heals itself when sys-usb is rebooted: the `vchan-sftp` script resolves the sys-usb domid at runtime, and the `safecor-vchan-sftp` service recreates the server side at boot).
 3. Packaging: recalculate the `sha512sums` of the modified files in the `safecor-sys-usb` APKBUILD and bump `pkgrel`; same for `safecor-lib` if `DirectMountManager` changes.
 
-**Exit criteria**: on real hardware, a business domain with `direct_mount` mounts `/media/usb` automatically at boot and a file from a connected USB disk is readable (and writable, for `rw`) through the mount; an `ro` domain cannot write. Validated at run 15.
+**Exit criteria**: on real hardware, a business domain with `direct_mount` mounts `/media/usb` automatically at boot and a file from a connected USB disk is readable (and writable, for `rw`) through the mount; an `ro` domain cannot write. Validated at run 16.
 
 ### Phase C — #262: the domid write race in `reboot-domain.sh`
 

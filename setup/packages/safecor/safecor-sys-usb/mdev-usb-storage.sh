@@ -69,3 +69,10 @@ then
         fi
     fi
 fi
+
+# Restart the sftp sessions (the anchored pattern matches the bwrap monitors
+# only, never the one-shot socat listeners): each sftp-server runs in a
+# bubblewrap sandbox whose mount table is a snapshot taken at session spawn,
+# so existing sessions do not see the new (or gone) disk mount. Killing them
+# makes the clients' sshfs (reconnect option) reconnect into fresh sandboxes.
+pkill -f "^bwrap.*sftp-server" 2>/dev/null

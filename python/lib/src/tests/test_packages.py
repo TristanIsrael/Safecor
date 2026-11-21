@@ -186,23 +186,88 @@ class TestSafecorVchanSftp(unittest.TestCase):
         self.assertEqual(self.mod.parse_direct_mount_domains({}), [])
         self.assertEqual(self.mod.parse_direct_mount_domains({"domains": []}), [])
 
-    def test_parse_ldd(self):
-        output = (
-            "\tlinux-vdso.so.1 (0x00007ffde3f000)\n"
-            "\tlibcrypto.so.3 => /lib/libcrypto.so.3 (0x00007f12345000)\n"
-            "\tlibc.so.6 => /lib/libc.so.6 (0x00007f12340000)\n"
-            "\t/lib64/ld-linux-x86-64.so.2 (0x00007f12348000)\n"
-        )
-        self.assertEqual(
-            self.mod.parse_ldd(output),
-            ["/lib/libcrypto.so.3", "/lib/libc.so.6", "/lib64/ld-linux-x86-64.so.2"],
-        )
-
     def test_sftp_server_args_rw(self):
         self.assertEqual(self.mod.sftp_server_args("rw"), ["-u", "077"])
 
     def test_sftp_server_args_ro(self):
         self.assertEqual(self.mod.sftp_server_args("ro"), ["-u", "077", "-R"])
+
+    def test_bwrap_args_rw(self):
+        self.assertEqual(
+            self.mod.bwrap_args("rw"),
+            [
+                "bwrap",
+                "--bind",
+                "/media/usb",
+                "/",
+                "--ro-bind",
+                "/usr/lib/ssh/sftp-server",
+                "/usr/lib/ssh/sftp-server",
+                "--ro-bind",
+                "/lib/ld-musl-x86_64.so.1",
+                "/lib/ld-musl-x86_64.so.1",
+                "--cap-drop",
+                "ALL",
+                "--cap-add",
+                "CAP_DAC_OVERRIDE",
+                "--cap-add",
+                "CAP_FOWNER",
+                "--cap-add",
+                "CAP_CHOWN",
+                "--dev",
+                "/dev",
+                "--unshare-pid",
+                "--unshare-ipc",
+                "--unshare-uts",
+                "--unshare-net",
+                "--die-with-parent",
+                "--chdir",
+                "/",
+                "--",
+                "/usr/lib/ssh/sftp-server",
+                "-u",
+                "077",
+            ],
+        )
+
+    def test_bwrap_args_ro(self):
+        self.assertEqual(
+            self.mod.bwrap_args("ro"),
+            [
+                "bwrap",
+                "--ro-bind",
+                "/media/usb",
+                "/",
+                "--ro-bind",
+                "/usr/lib/ssh/sftp-server",
+                "/usr/lib/ssh/sftp-server",
+                "--ro-bind",
+                "/lib/ld-musl-x86_64.so.1",
+                "/lib/ld-musl-x86_64.so.1",
+                "--cap-drop",
+                "ALL",
+                "--cap-add",
+                "CAP_DAC_OVERRIDE",
+                "--cap-add",
+                "CAP_FOWNER",
+                "--cap-add",
+                "CAP_CHOWN",
+                "--dev",
+                "/dev",
+                "--unshare-pid",
+                "--unshare-ipc",
+                "--unshare-uts",
+                "--unshare-net",
+                "--die-with-parent",
+                "--chdir",
+                "/",
+                "--",
+                "/usr/lib/ssh/sftp-server",
+                "-u",
+                "077",
+                "-R",
+            ],
+        )
 
 
 if __name__ == "__main__":
