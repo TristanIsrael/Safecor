@@ -27,6 +27,12 @@ Verification — regressions (unchanged channels):
 - [ ] The debug tty works in debug mode
 - [ ] The GUI domain displays and the Saphir app starts (its messages are visible on the bus)
 
-Known issues (not fixed yet):
-- [ ] #262: `reboot-domain.sh` domid write race
-- [ ] #260: the SFTP direct mount does not work
+## Run 14 resolutions
+
+Run 14 validated #258 and #264 and exposed two findings (the debug tty regression and the vchan loss after an API reboot, a cascade of #262); the SFTP direct mount (#260) remains not working.
+
+| # | Finding | Resolution | Tracker |
+|---|---|---|---|
+| 1 | After the API reboot (`system/workflow/restart_domain/request`), sys-usb is restarted but all the vchans are lost (sys-usb's and the business domains' too): `reboot-domain.sh` writes the domid after a `sleep 3`, while the domain is still down (it is destroyed and recreated on reboot), so the stale domid is kept in xenstore and the Dom0 discovery loop (`create-vchan-tunnels.py`, which recreates the vchan servers on domid change) never sees the new domid. | Fix implemented on `version-2`: `reboot-domain.sh` records the old domid, polls for the domain to go down (~30 s), then for it to come back with a new domid (~60 s), and only then writes the new domid to xenstore (exit 1 and no write if it never does, so the controller refuses the restart). To validate on run 15. | #262 |
+| 2 | The SFTP direct mount does not work: the sftp-server chroot was never built (the DomU root is a tmpfs), the vchan server was started before the socat UNIX listener it connects to, and the `ro`/`rw` mode of the domain was ignored. | Fix implemented on `version-2`: `safecor-vchan-sftp.py` builds the sftp-server chroot under `/media/usb` at boot (sftp-server + the ldd libraries + the dynamic linker, only when a domain has `direct_mount`), starts the socat UNIX listener before the vchan-socket-proxy server, and passes the domain mode to sftp-server (`-u 077` always, `-R` for `ro` domains); the `DirectMountManager` adds the `reconnect` sshfs option. To validate on run 15. | #260 |
+| 3 | The debug tty does not work anymore (regression — it worked at run 13) while all the components are present (Dom0: the `vchan-socket-proxy` server for the tty channel, `create-tty-tunnel.sh`, `create-tty-terminal.sh`, `getty` on `/var/run/safecor/tty-admin`; sys-usb: the `tty` vchan client and `socat /dev/ttyUSB0`): the break is in the chain assembly, probably related to the run-13→14 changes (mosquitto/socat apk dependencies, `safecor-domu-base` made a dependency of `safecor-sys-usb`, the duplicated `setup-vchan` removed from `safecor-sys-usb`). | To diagnose on real hardware at run 15: identify which process/socket of the chain is dead (service states and ordering), fix it, then re-validate the tty. No dedicated GitHub issue (user decision). | — |

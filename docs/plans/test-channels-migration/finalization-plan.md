@@ -29,7 +29,7 @@
 | #258 | DomU local MQTT broker with an upstream vchan bridge | In review — validated at run 14 |
 | #264 | libpython EACCES on the sys-usb domain | In review — validated at run 14 |
 | #260 | SFTP vchan channel: startup order + sftp-server chroot | In progress — implemented on `fix-260-sftp-vchan`, to be validated at run 15 |
-| #262 | domid write race in `reboot-domain.sh` | Ready — all the vchans are lost after an API reboot (run 14) |
+| #262 | domid write race in `reboot-domain.sh` | In progress — implemented on `version-2` (polling), to be validated at run 15 |
 | #259 | MQTT client ID naming convention + broker authentication | Ready — second pass (hardening) |
 | #261 | Restrict the xenstore write grants to the vchan subtree | Ready — second pass (hardening) |
 
@@ -63,9 +63,11 @@ The transport design is validated: sshfs with a custom `ssh_command` bridging st
 
 ### Phase C — #262: the domid write race in `reboot-domain.sh`
 
-`reboot-domain.sh` sleeps 3 s after `xl reboot` and then reads the domid — too short: the domain is still down/restarting, the domid is not written (or the stale one is kept), and the Dom0 discovery loop in `create-vchan-tunnels.py` (which recreates the vchan servers when the domid changes) never sees the new domid. Result (run 14): all the vchans of the restarted domain are lost.
+**Implemented** on `version-2` (smoke-tested with a fake `xl` in a chroot: the new domid is written after the domain comes back, no write and exit 1 when the domain never comes back or `xl reboot` fails). Awaiting validation at run 15.
 
-1. `reboot-domain.sh`: replace `sleep 3` with polling — wait until the domain is down (domid gone or state `shut down`, ~30 s timeout), wait until the domain is Running again with a valid domid (~60 s timeout), then write `/local/domain/system/domids/<name>`.
+`reboot-domain.sh` slept 3 s after `xl reboot` and then read the domid — too short: the domain is still down/restarting, the domid is not written (or the stale one is kept), and the Dom0 discovery loop in `create-vchan-tunnels.py` (which recreates the vchan servers when the domid changes) never sees the new domid. Result (run 14): all the vchans of the restarted domain are lost.
+
+1. `reboot-domain.sh`: replace `sleep 3` with polling — record the old domid, wait for the domain to go down (~30 s), wait for it to come back with a domid different from the old one (~60 s), then write `/local/domain/system/domids/<name>` (exit 1, and no write, if no new domid is seen: the Dom0 controller then answers the `restart_domain` request with a refusal).
 
 No change needed in `create-vchan-tunnels.py` (it already reaps and re-discovers on domid change) nor in `safecor-vchan-sftp.py` (the service re-runs at the sys-usb boot).
 
@@ -82,7 +84,7 @@ The debug tty worked at run 13 and is KO at run 14, while every component is pre
 
 ### Phase E — Run 15: final validation + #256 closure
 
-A full cold boot in debug mode, then:
+The run sheet is [run-15.md](run-15.md). Prerequisite: Phase C implemented (and `safecor-core` rebuilt with it). Packages to rebuild from `version-2`: `safecor-lib` and `safecor-sys-usb` (the Phase B fix), plus `safecor-core` for Phase C. A full cold boot in debug mode, then:
 
 - [ ] the five objectives of `test-channels-migration.md` are all validated (messaging, inputs, debug tty, file read on a USB storage from a Domain, GUI display);
 - [ ] USB hot-plug: connect a USB disk after boot, it appears in the `/media/usb` mount of the business domains without reboot;

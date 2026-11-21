@@ -14,7 +14,7 @@ The remaining work and the planned sequence are in [finalization-plan.md](finali
 
 ## Runs
 
-The runs are described in their own file in the same directory as this file.
+The runs are described in their own file in the same directory as this file. Run 15 is the final validation run (see [run-15.md](run-15.md)); it requires the Phase C fix (#262) to be implemented first.
 
 ## Run 14 resolutions
 

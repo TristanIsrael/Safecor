@@ -12,7 +12,7 @@ The development branch is **`version-2`** (Safecor v2). The main line of v2 is t
 
 ### The channels → vchan migration (issue #256)
 
-Validated on real hardware with run sheets: `docs/plans/test-channels-migration/run-<n>.md` (runs 1–14). The migration plan and its resolutions are in `docs/plans/test-channels-migration/test-channels-migration.md`; the remaining work (the sshfs direct mount #260, the domid race #262, the debug tty regression) and its sequence are in `docs/plans/test-channels-migration/finalization-plan.md`.
+Validated on real hardware with run sheets: `docs/plans/test-channels-migration/run-<n>.md` (runs 1–14; run 15 planned, the final validation). The migration plan and its resolutions are in `docs/plans/test-channels-migration/test-channels-migration.md`; the remaining work (the sshfs direct mount #260, the domid race #262, the debug tty regression) and its sequence are in `docs/plans/test-channels-migration/finalization-plan.md`.
 
 | Issue | Subject | State |
 |-------|---------|-------|
@@ -20,7 +20,7 @@ Validated on real hardware with run sheets: `docs/plans/test-channels-migration/
 | #258 | DomU local MQTT broker with an upstream vchan bridge | In review — validated at run 14 (mosquitto running, multi-clients, e2e, bridge IDs `safecor-<domain>-bridge`) |
 | #264 | Investigate the libpython EACCES error on the sys-usb domain | In review — resolved by restoring the `/etc` permissions at boot, validated at run 14 |
 | #260 | Fix the SFTP vchan channel startup order and package the sftp-server chroot | In progress — fix implemented on `fix-260-sftp-vchan` (chroot `/media/usb` built at boot, socat→proxy order, `-R`/`-u 077` flags, `reconnect` sshfs option), to be validated at run 15 |
-| #262 | Fix the domid write race in `reboot-domain.sh` | Ready — all the vchans are lost after an API reboot (run 14) |
+| #262 | Fix the domid write race in `reboot-domain.sh` | In progress — fix implemented on `version-2` (`reboot-domain.sh` polls for the domain to go down, then for the new domid, before writing xenstore), to be validated at run 15 |
 | #259 | Enforce MQTT client ID naming convention and broker authentication | Ready — second pass (hardening), after the #256 closure |
 | #261 | Restrict xenstore write grants to the vchan subtree | Ready — second pass (hardening), after the #256 closure |
 
