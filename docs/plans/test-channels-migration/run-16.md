@@ -3,15 +3,16 @@
 Purpose: validate the #260 fix re-implemented as a per-session bubblewrap sandbox (run 15: the boot-time chroot was empty — musl `ldd` format), the #262 fix (the domid write race in `reboot-domain.sh`), diagnose the debug tty regression (Phase D), and re-validate the five objectives of `test-channels-migration.md`.
 
 Preparation:
-- [ ] Rebuild the `safecor-sys-usb` package from `version-2` (the bubblewrap switch + the idempotent `start_channel` + the hot-plug hook; new dependency `bubblewrap`)
+- [ ] Rebuild the `safecor-sys-usb` package from `version-2` (the bubblewrap switch + the idempotent `start_channel` + the hot-plug hook + the dedicated `svc-sys-usb-sftp` service account; new dependencies `bubblewrap`, `setpriv`)
 - [ ] On Dom0: `apk update && apk add safecor-core` (and the rebuilt package on the DomUs at reprovisioning)
 - [ ] Full cold boot in debug mode with a USB disk connected before boot
 - [ ] On the business domains with `direct_mount`: `fusermount -u /media/usb` (the run-15 FUSE mount is dead) — or rely on the cold boot
 
-Smoke test (sys-usb, before any other check — proves bwrap works under the DomU kernel and that sftp-server execs in the sandbox):
+Smoke test (sys-usb, before any other check — proves bwrap works under the DomU kernel, that the setpriv switch to the service account works, and that sftp-server execs in the sandbox):
 - [ ] `bwrap --version` works
+- [ ] `id svc-sys-usb-sftp` returns an account (created by the package post-install)
 - [ ] The SFTP handshake succeeds in the sandbox (an `SFTP_VERSION` answer is printed):
-  - `printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 bwrap --bind /media/usb / --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --cap-drop ALL --cap-add CAP_DAC_OVERRIDE --cap-add CAP_FOWNER --cap-add CAP_CHOWN --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir / -- /usr/lib/ssh/sftp-server -u 077 | xxd | head`
+  - `printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 bwrap --bind /media/usb / --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --ro-bind /usr/bin/setpriv /usr/bin/setpriv --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir / -- /usr/bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 | xxd | head`
   - Expected: a line starting with `0000000c 00000002 00000003`
   - If it fails: check `/var/log/safecor/vchan-*.log`, and whether sftp-server needs more files in the sandbox (e.g. `/etc/passwd`) — add the missing `--ro-bind` in that case (dedicated follow-up commit)
 
@@ -22,7 +23,9 @@ Forensics — the run-15 socat duplication (identify the double-start trigger):
 
 Verification — #260, the sshfs direct mount (bubblewrap):
 - [ ] On sys-usb, one `socat UNIX-LISTEN:/var/run/safecor/vchan-<name>.sock,fork EXEC:"bwrap ..."` and one `vchan-socket-proxy -m server <domid> /local/domain/system/vchan/<name>/sftp /var/run/safecor/vchan-<name>.sock` per direct_mount domain — no duplicated listeners, no restart loop
-- [ ] On sys-usb, when a client connects, an sftp session runs in the sandbox: `ps ax | grep bwrap` shows `bwrap --bind /media/usb / ... sftp-server -u 077 [-R]`, no zombie accumulation
+- [ ] On sys-usb, when a client connects, an sftp session runs in the sandbox: `ps ax | grep bwrap` shows `bwrap --bind /media/usb / ... /usr/bin/setpriv --reuid <uid> --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 [-R]`, no zombie accumulation
+- [ ] The sftp-server process runs as `svc-sys-usb-sftp` with no capabilities: `ps ax | grep sftp-server` shows the user, and `CapEff: 0000000000000000` in `/proc/<sftp-pid>/status`
+- [ ] A USB disk mount point is owned by the account: `stat -c '%U:%G %a' /media/usb/<disk>` → `svc-sys-usb-sftp:safecor 770`
 - [ ] The `ro` domains get `sftp-server -u 077 -R`, the `rw` domains `-u 077` only
 - [ ] On a business domain with `direct_mount`, `/media/usb` is mounted automatically at boot (`mount | grep /media/usb`, `df` returns)
 - [ ] The sshfs options include `reconnect` (`ps ax | grep sshfs`)

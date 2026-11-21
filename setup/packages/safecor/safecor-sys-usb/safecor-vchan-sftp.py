@@ -2,7 +2,8 @@
 
 Queries the topology via MQTT to find the domains with direct_mount enabled,
 sandboxes sftp-server with bubblewrap (one sandbox per session, /media/usb
-served as the SFTP root), then starts, for each of those domains:
+served as the SFTP root, the server running as the dedicated svc-sys-usb-sftp
+account with no capabilities), then starts, for each of those domains:
 - a socat bridge from a UNIX socket to the sandboxed sftp-server,
 - a vchan-socket-proxy server bridging the SFTP vchan channel to that socket.
 
@@ -16,6 +17,7 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import os
+import pwd
 import subprocess
 import sys
 import threading
@@ -35,7 +37,13 @@ DOMAIN_WAIT_TIMEOUT = 60  # seconds to wait for a domain's domid
 # the client's /media/usb sshfs mount.
 SFTP_ROOT = "/media/usb"
 SFTP_SERVER = "/usr/lib/ssh/sftp-server"
+SETPRIV = "/usr/bin/setpriv"
 MUSL_LOADER = "/lib/ld-musl-x86_64.so.1"
+
+# The account the sandboxed sftp-server runs as (created by the package's
+# post-install script). The USB disks are owned by this account (mdev mount
+# options), so the server needs no capabilities at all.
+SFTP_USER = "svc-sys-usb-sftp"
 
 
 def log(message: str) -> None:
@@ -79,16 +87,33 @@ def sftp_server_args(mode: str) -> list[str]:
     return args
 
 
-def bwrap_args(mode: str) -> list[str]:
+def sftp_credentials() -> tuple[int, int]:
+    """The (uid, gid) of the SFTP service account.
+
+    The sandboxed sftp-server runs as this account (see bwrap_args). The
+    account is created by the package's post-install script.
+
+    Raises:
+        KeyError: if the account does not exist.
+    """
+    pw = pwd.getpwnam(SFTP_USER)
+    return pw.pw_uid, pw.pw_gid
+
+
+def bwrap_args(mode: str, uid: int, gid: int) -> list[str]:
     """The bubblewrap command line sandboxing one sftp-server session.
 
     The sandbox root is a bind of /media/usb (read-only for ``ro`` channels),
-    so the served SFTP root is the USB mount tree. The sftp-server binary and
-    the musl dynamic linker are bound in read-only, a fresh /dev is mounted,
-    and the pid/ipc/uts/net namespaces are unshared. All capabilities are
-    dropped except the three needed to serve the disks: they are mounted
-    with a dedicated uid/gid (CAP_DAC_OVERRIDE), and SFTP attribute requests
-    need CAP_FOWNER/CAP_CHOWN.
+    so the served SFTP root is the USB mount tree. The sftp-server binary,
+    the setpriv helper and the musl dynamic linker are bound in read-only,
+    a fresh /dev is mounted, and the pid/ipc/uts/net namespaces are unshared.
+
+    The command runs setpriv as root to drop to the SFTP service account
+    (``uid``:``gid``) before exec'ing sftp-server, which then runs with no
+    capabilities at all: the USB disks are owned by the account, so no DAC
+    override is needed, and the kernel clears the capability sets on the
+    setuid switch. Only CAP_SETUID, CAP_SETGID and CAP_SETPCAP are kept in
+    the bounding set, for the short-lived root setpriv phase.
 
     Confinement: bwrap pivots twice into the new root and detaches the old
     one, so the host root filesystem is unreachable from the sandbox (unlike
@@ -104,16 +129,19 @@ def bwrap_args(mode: str) -> list[str]:
         SFTP_SERVER,
         SFTP_SERVER,
         "--ro-bind",
+        SETPRIV,
+        SETPRIV,
+        "--ro-bind",
         MUSL_LOADER,
         MUSL_LOADER,
         "--cap-drop",
         "ALL",
         "--cap-add",
-        "CAP_DAC_OVERRIDE",
+        "CAP_SETUID",
         "--cap-add",
-        "CAP_FOWNER",
+        "CAP_SETGID",
         "--cap-add",
-        "CAP_CHOWN",
+        "CAP_SETPCAP",
         "--dev",
         "/dev",
         "--unshare-pid",
@@ -124,6 +152,13 @@ def bwrap_args(mode: str) -> list[str]:
         "--chdir",
         "/",
         "--",
+        SETPRIV,
+        "--reuid",
+        str(uid),
+        "--regid",
+        str(gid),
+        "--clear-groups",
+        "--no-new-privs",
         SFTP_SERVER,
         *sftp_server_args(mode),
     ]
@@ -186,7 +221,7 @@ def wait_for_domid(name: str) -> str:
     return ""
 
 
-def start_channel(name: str, domid: str, mode: str) -> None:
+def start_channel(name: str, domid: str, mode: str, uid: int, gid: int) -> None:
     """Start the socat bridge and the vchan server for one domain.
 
     Every client connection is answered with a bubblewrap-sandboxed
@@ -207,7 +242,7 @@ def start_channel(name: str, domid: str, mode: str) -> None:
     vchan_sock = f"/var/run/safecor/vchan-{name}.sock"
     vchan_path = f"/local/domain/system/vchan/{name}/sftp"
     vchan_log = f"/var/log/safecor/vchan-{name}.log"
-    sftp_cmd = " ".join(bwrap_args(mode))
+    sftp_cmd = " ".join(bwrap_args(mode, uid, gid))
 
     subprocess.run(
         [
@@ -305,13 +340,21 @@ def main() -> None:
     # (mdev creates the per-disk subdirectories).
     os.makedirs(SFTP_ROOT, exist_ok=True)
 
+    # The sandbox drops to this account (see bwrap_args); it is created by
+    # the package's post-install script, so a missing account is fatal.
+    try:
+        sftp_uid, sftp_gid = sftp_credentials()
+    except KeyError:
+        log(f"error: the SFTP service account {SFTP_USER!r} does not exist")
+        sys.exit(1)
+
     for name, mode in domains:
         domid = wait_for_domid(name)
         if not domid:
             log(f"warning: no domid found for domain {name}, skipping")
             continue
         log(f"starting vchan SFTP channel for {name} (domid {domid}, mode {mode})")
-        start_channel(name, domid, mode)
+        start_channel(name, domid, mode, sftp_uid, sftp_gid)
 
     log("vchan SFTP channels started")
 

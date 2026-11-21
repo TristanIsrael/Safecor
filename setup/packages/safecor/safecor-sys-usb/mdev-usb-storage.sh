@@ -27,8 +27,10 @@ then
 	echo "Mounting disk $LABEL with filesystem $FS in $MOUNT_POINT" >> $LOG_FILENAME
 	echo mount $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME >> $LOG_FILENAME
 	mkdir -p "$MOUNT_POINT"	
-    mount -o uid=1000,gid=2000,umask=007 $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME 2>&1
-    chown svc-sys-usb-controller:safecor "$MOUNT_POINT"
+    # The disk is owned by the SFTP service account: it is served only
+    # through the sandboxed sftp-server, which runs as this account.
+    mount -o uid=$(id -u svc-sys-usb-sftp),gid=2000,umask=007 $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME 2>&1
+    chown svc-sys-usb-sftp:safecor "$MOUNT_POINT"
     chmod 770 "$MOUNT_POINT"    
 
     if [ $? -eq 0 ]
@@ -59,8 +61,8 @@ then
         echo "Mounting disk $LABEL with filesystem $FS in $MOUNT_POINT" >> $LOG_FILENAME
         echo mount $DEVICE $MOUNT_POINT >> $LOG_FILENAME >> $LOG_FILENAME
         mkdir -p "$MOUNT_POINT" 
-        mount -o uid=1000,gid=1000,umask=007 $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME 2>&1       
-        chown svc-sys-usb-controller:safecor "$MOUNT_POINT"
+        mount -o uid=$(id -u svc-sys-usb-sftp),gid=2000,umask=007 $DEVICE "$MOUNT_POINT" >> $LOG_FILENAME 2>&1
+        chown svc-sys-usb-sftp:safecor "$MOUNT_POINT"
         chmod 770 "$MOUNT_POINT"        
 
         if [ $? -eq 0 ]

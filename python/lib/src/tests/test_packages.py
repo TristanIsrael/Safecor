@@ -15,6 +15,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 CORE_PYTHON = REPO_ROOT / "setup" / "packages" / "safecor" / "safecor-core" / "python"
@@ -192,9 +193,20 @@ class TestSafecorVchanSftp(unittest.TestCase):
     def test_sftp_server_args_ro(self):
         self.assertEqual(self.mod.sftp_server_args("ro"), ["-u", "077", "-R"])
 
+    def test_sftp_credentials(self):
+        with mock.patch.object(self.mod.pwd, "getpwnam") as m:
+            m.return_value = mock.Mock(pw_uid=1002, pw_gid=2000)
+            self.assertEqual(self.mod.sftp_credentials(), (1002, 2000))
+            m.assert_called_once_with("svc-sys-usb-sftp")
+
+    def test_sftp_credentials_missing_account(self):
+        with mock.patch.object(self.mod.pwd, "getpwnam", side_effect=KeyError):
+            with self.assertRaises(KeyError):
+                self.mod.sftp_credentials()
+
     def test_bwrap_args_rw(self):
         self.assertEqual(
-            self.mod.bwrap_args("rw"),
+            self.mod.bwrap_args("rw", 1002, 2000),
             [
                 "bwrap",
                 "--bind",
@@ -204,16 +216,19 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "/usr/lib/ssh/sftp-server",
                 "/usr/lib/ssh/sftp-server",
                 "--ro-bind",
+                "/usr/bin/setpriv",
+                "/usr/bin/setpriv",
+                "--ro-bind",
                 "/lib/ld-musl-x86_64.so.1",
                 "/lib/ld-musl-x86_64.so.1",
                 "--cap-drop",
                 "ALL",
                 "--cap-add",
-                "CAP_DAC_OVERRIDE",
+                "CAP_SETUID",
                 "--cap-add",
-                "CAP_FOWNER",
+                "CAP_SETGID",
                 "--cap-add",
-                "CAP_CHOWN",
+                "CAP_SETPCAP",
                 "--dev",
                 "/dev",
                 "--unshare-pid",
@@ -224,6 +239,13 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "--chdir",
                 "/",
                 "--",
+                "/usr/bin/setpriv",
+                "--reuid",
+                "1002",
+                "--regid",
+                "2000",
+                "--clear-groups",
+                "--no-new-privs",
                 "/usr/lib/ssh/sftp-server",
                 "-u",
                 "077",
@@ -232,7 +254,7 @@ class TestSafecorVchanSftp(unittest.TestCase):
 
     def test_bwrap_args_ro(self):
         self.assertEqual(
-            self.mod.bwrap_args("ro"),
+            self.mod.bwrap_args("ro", 1002, 2000),
             [
                 "bwrap",
                 "--ro-bind",
@@ -242,16 +264,19 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "/usr/lib/ssh/sftp-server",
                 "/usr/lib/ssh/sftp-server",
                 "--ro-bind",
+                "/usr/bin/setpriv",
+                "/usr/bin/setpriv",
+                "--ro-bind",
                 "/lib/ld-musl-x86_64.so.1",
                 "/lib/ld-musl-x86_64.so.1",
                 "--cap-drop",
                 "ALL",
                 "--cap-add",
-                "CAP_DAC_OVERRIDE",
+                "CAP_SETUID",
                 "--cap-add",
-                "CAP_FOWNER",
+                "CAP_SETGID",
                 "--cap-add",
-                "CAP_CHOWN",
+                "CAP_SETPCAP",
                 "--dev",
                 "/dev",
                 "--unshare-pid",
@@ -262,6 +287,13 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "--chdir",
                 "/",
                 "--",
+                "/usr/bin/setpriv",
+                "--reuid",
+                "1002",
+                "--regid",
+                "2000",
+                "--clear-groups",
+                "--no-new-privs",
                 "/usr/lib/ssh/sftp-server",
                 "-u",
                 "077",

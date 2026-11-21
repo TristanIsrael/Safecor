@@ -53,7 +53,7 @@
 
 - no boot-time assembly: each session is sandboxed by `bwrap` at spawn (the kernel bind-mounts `/media/usb` as the sandbox root, plus the sftp-server binary and the musl dynamic linker in read-only, a fresh `/dev`, and unshared pid/ipc/uts/net namespaces);
 - stronger confinement than a chroot (a chroot can be escaped by a root process);
-- all capabilities are dropped except the three needed to serve the disks (`CAP_DAC_OVERRIDE` — the disks are mounted with a dedicated uid/gid — and `CAP_FOWNER`/`CAP_CHOWN` for SFTP attribute requests), and the `ro` channels get a read-only sandbox root;
+- the `sftp-server` runs as the dedicated `svc-sys-usb-sftp` account with no capabilities: `setpriv` (bound in read-only) drops to the account inside the sandbox before exec, and only `CAP_SETUID`/`CAP_SETGID`/`CAP_SETPCAP` remain in the bounding set for the short-lived root switch — the disks are owned by the account (mdev mount options), so no DAC override is needed; and the `ro` channels get a read-only sandbox root;
 - bwrap installs a reaper as pid 1 of the sandbox, removing the zombie accumulation observed at run 15;
 - the SFTP root stays `/media/usb`: a disk mounted at `/media/usb/<label>` on sys-usb appears at the same path in the client's sshfs mount;
 - `start_channel` is idempotent (stop the existing instance by pidfile and remove the stale socket before starting: run 15 exposed duplicated socat listeners in a restart loop), and the children's output is redirected to a per-domain log;
