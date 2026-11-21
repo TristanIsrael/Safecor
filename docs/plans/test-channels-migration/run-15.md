@@ -4,12 +4,12 @@ Purpose: final validation run of the channels → vchan migration (#256) — val
 
 Preparation:
 - [x] Implement Phase C (#262: `reboot-domain.sh` polls for the domain to go down, then for it to come back with a new domid, and only then writes the new domid to xenstore)
-- [ ] Rebuild the packages changed since run 14 from `version-2`:
+- [x] Rebuild the packages changed since run 14 from `version-2`:
   - `safecor-lib` (the `reconnect` sshfs option in `DirectMountManager`)
   - `safecor-sys-usb` (the `safecor-vchan-sftp.py` rewrite)
   - `safecor-core` (the `reboot-domain.sh` polling fix)
-- [ ] On Dom0: `apk update && apk add safecor-core` (and the rebuilt packages on the DomUs at reprovisioning)
-- [ ] Full cold boot in debug mode with a USB disk connected before boot
+- [x] On Dom0: `apk update && apk add safecor-core` (and the rebuilt packages on the DomUs at reprovisioning)
+- [x] Full cold boot in debug mode with a USB disk connected before boot
 
 Verification — #260, the sshfs direct mount:
 - [ ] On sys-usb, the sftp chroot is built at boot: `ls -l /media/usb/usr/lib/ssh/` contains `sftp-server`, the shared libraries and `/lib64/ld-linux-x86-64.so.2`

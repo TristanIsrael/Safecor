@@ -33,10 +33,28 @@ permissions:
     resource: "git status *"
     effect: allow
   - action: shell
+    resource: "git branch *"
+    effect: allow
+  - action: shell
     resource: "git diff *"
     effect: allow
   - action: shell
     resource: "git log *"
+    effect: allow
+  - action: shell
+    resource: "echo *"
+    effect: allow
+  - action: shell
+    resource: "xargs *"
+    effect: allow
+  - action: shell
+    resource: "awk *"
+    effect: allow
+  - action: shell
+    resource: "sed *"
+    effect: allow
+  - action: shell
+    resource: "cut *"
     effect: allow
   - action: shell
     resource: "git push *"
