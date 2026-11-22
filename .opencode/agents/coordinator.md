@@ -1,5 +1,5 @@
 ---
-description: Lead Project Coordinator for the Software Project
+description: Lead Project Coordinator
 mode: primary
 permissions:
   - action: subagent
