@@ -211,7 +211,7 @@ class TestSafecorVchanSftp(unittest.TestCase):
         return cls.mod.SandboxContext(
             setpriv="/bin/setpriv",
             setpriv_libs=["/usr/lib/libeconf.so.0", "/usr/lib/libcap-ng.so.0"],
-            passwd="/var/run/safecor/sftp-sandbox-passwd",
+            passwd="/usr/lib/safecor/etc/sftp-sandbox-passwd",
         )
 
     def test_bwrap_args_rw(self):
@@ -229,7 +229,7 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "--dir",
                 "/etc",
                 "--ro-bind",
-                "/var/run/safecor/sftp-sandbox-passwd",
+                "/usr/lib/safecor/etc/sftp-sandbox-passwd",
                 "/etc/passwd",
                 "--dir",
                 "/bin",
@@ -302,7 +302,7 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "--dir",
                 "/etc",
                 "--ro-bind",
-                "/var/run/safecor/sftp-sandbox-passwd",
+                "/usr/lib/safecor/etc/sftp-sandbox-passwd",
                 "/etc/passwd",
                 "--dir",
                 "/bin",

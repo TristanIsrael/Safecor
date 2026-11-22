@@ -58,33 +58,43 @@ Error relocating /usr/bin/setpriv: econf_errString: symbol not found
 
 ### The fixed production smoke (new #260 commit — tmpfs sandbox root)
 
-The production script now resolves everything dynamically at start: `shutil.which("setpriv")` (the binary is in `/bin` on this target), `ldd` for setpriv's shared libraries (libeconf + libcap-ng on Alpine 3.24), and a minimal one-account `/etc/passwd` written to `/var/run/safecor/sftp-sandbox-passwd`. The sandbox root is a private tmpfs: `/media/usb` is bound at the same path and made the working directory (the SFTP root), so no junk directory ever reaches the system disk or the client.
+The production script now resolves everything dynamically at start: `shutil.which("setpriv")` (the binary is in `/bin` on this target), `ldd` for setpriv's shared libraries (libeconf + libcap-ng on Alpine 3.24), and a minimal one-account `/etc/passwd` written to `/usr/lib/safecor/etc/sftp-sandbox-passwd`. The sandbox root is a private tmpfs: `/media/usb` is bound at the same path and made the working directory (the SFTP root), so no junk directory ever reaches the system disk or the client.
 
 Prerequisite: rebuild the `safecor-sys-usb` package from `version-2` (the new commit) and reinstall it on sys-usb.
 
-Setup (once, as root — what the production script does at start):
+Setup (once, as root — what the production script does at start; the file lives in `/usr/lib/safecor/etc`):
 ```
-mkdir -p /var/run/safecor
-echo "svc-sys-usb-sftp:x:$(id -u svc-sys-usb-sftp):$(id -g svc-sys-usb-sftp)::/:/sbin/nologin" > /var/run/safecor/sftp-sandbox-passwd
-chmod 644 /var/run/safecor/sftp-sandbox-passwd
+mkdir -p /usr/lib/safecor/etc
+echo "svc-sys-usb-sftp:x:$(id -u svc-sys-usb-sftp):$(id -g svc-sys-usb-sftp)::/:/sbin/nologin" > /usr/lib/safecor/etc/sftp-sandbox-passwd
+chmod 644 /usr/lib/safecor/etc/sftp-sandbox-passwd
 ```
 
-- [ ] The SFTP handshake succeeds in the sandbox (an `SFTP_VERSION` answer is printed) — the exact production command (Alpine 3.24 values):
+- [x] The SFTP handshake succeeds in the sandbox (an `SFTP_VERSION` answer is printed) — the exact production command (Alpine 3.24 values):
 ```
-printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 bwrap --tmpfs / --dir /media/usb --bind /media/usb /media/usb --dir /etc --ro-bind /var/run/safecor/sftp-sandbox-passwd /etc/passwd --dir /bin --ro-bind /bin/setpriv /bin/setpriv --dir /lib --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --dir /usr --dir /usr/lib --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --dir /usr/lib/ssh --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir /media/usb -- /bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 | xxd | head
+printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 bwrap --tmpfs / --dir /media/usb --bind /media/usb /media/usb --dir /etc --ro-bind /usr/lib/safecor/etc/sftp-sandbox-passwd /etc/passwd --dir /bin --ro-bind /bin/setpriv /bin/setpriv --dir /lib --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --dir /usr --dir /usr/lib --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --dir /usr/lib/ssh --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir /media/usb -- /bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 | xxd | head
 ```
   - Expected: a line starting with `0000000c 00000002 00000003`
-  - Then: `ls -la /media/usb` must list only the disk subdirectories (no `/usr`, `/lib`, `/etc`, `/bin` — the sandbox root is a tmpfs, gone with the session)
+    - KO. Nothing is written
+  - Then: `ls -la /media/usb` musgit statust list only the disk subdirectories (no `/usr`, `/lib`, `/etc`, `/bin` — the sandbox root is a tmpfs, gone with the session)
+    - KO. The fodler is empty.
   - If it is still silent (exit code 0, no answer), run the probes A/B/C below before anything else:
     - **A — host, no sandbox** (does sftp-server answer at all for this account on this target?):
 ```
 printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 /bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 | xxd | head
 ```
+      - KO.
+      - **A' — host, root, no setpriv, stderr captured** (isolates the setuid switch; also checks the sftp-server binary itself):
+```
+printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 /usr/lib/ssh/sftp-server -u 077 2>/tmp/sftp-a.err | xxd | head; echo "exit=$?"; cat /tmp/sftp-a.err; rm -f /tmp/sftp-a.err
+apk info -v openssh-sftp-server
+```
+        - If A' is silent too: the sftp-server binary does not answer a piped SFTP_INIT on this target (version issue — compare with the run-15 version)
+        - If A' answers but A does not: the setuid switch to `svc-sys-usb-sftp` is the cause
     - **B — sandbox, liveness + stdin through a held-open fifo** (separates "process died" from "process alive but the pipe never reached it"):
 ```
 mkfifo /tmp/sftp.in
 ( sleep 300 > /tmp/sftp.in ) & WRITER=$!
-timeout 30 bwrap --tmpfs / --dir /media/usb --bind /media/usb /media/usb --dir /etc --ro-bind /var/run/safecor/sftp-sandbox-passwd /etc/passwd --dir /bin --ro-bind /bin/setpriv /bin/setpriv --dir /lib --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --dir /usr --dir /usr/lib --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --dir /usr/lib/ssh --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir /media/usb -- /bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 < /tmp/sftp.in > /tmp/sftp.out 2>/tmp/sftp.err &
+timeout 30 bwrap --tmpfs / --dir /media/usb --bind /media/usb /media/usb --dir /etc --ro-bind /usr/lib/safecor/etc/sftp-sandbox-passwd /etc/passwd --dir /bin --ro-bind /bin/setpriv /bin/setpriv --dir /lib --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --dir /usr --dir /usr/lib --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --dir /usr/lib/ssh --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir /media/usb -- /bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 < /tmp/sftp.in > /tmp/sftp.out 2>/tmp/sftp.err &
 sleep 2
 ps ax | grep '[s]ftp-server'            # is the process alive? note the pid
 ls -l /proc/<pid>/fd                    # is fd 0 the fifo?
@@ -102,8 +112,60 @@ printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 bwrap --tm
 rm -f /tmp/probe-c-passwd
 ```
 
+### Topology regression — `my_config` returns no `direct_mount` domains (diagnosis)
+
+The service log says `no domains with direct_mount found in topology` although `topology.json` contains the `direct_mount` entries. The `version-2` code path was verified end to end (JSON → struct → `Topology` → `my_config` response), and the `direct_mount` support only exists on `version-2` (`main` has safecor-core 1.4.2 without it; the stale-topology fix `628ae9c` is also version-2 only). Three candidates:
+
+1. the safecor library running on the Dom0 is a build **older than `628ae9c`** (the `my_config` handler then answers with an empty `domains` list — the "stale topology reference" bug);
+2. the running Dom0 controller loaded the topology **before** the `direct_mount` entries were added to `topology.json` (the topology is cached in memory after first load and never reloaded);
+3. the file the Dom0 reads (`/etc/safecor/topology.json`) is not the file inspected above.
+
+Diagnostics (on the **Dom0**):
+```
+apk info -v safecor-core
+grep -c direct_mount /usr/lib/safecor/_system.py /usr/lib/safecor/_response_factory.py
+grep direct_mount /etc/safecor/topology.json | head -5
+python3 -c "import sys; sys.path.insert(0, '/usr/lib/safecor'); from safecor import System; t = System.get_topology(); [print(d.name, repr(d.direct_mount)) for d in t.domains]"
+```
+
+- `grep -c` = 0 → the installed library predates the `direct_mount` support → rebuild the repository's `safecor-core` from the `version-2` tip (bump `pkgrel` so it is newer than the repository's) and `apk upgrade` on the Dom0.
+- `grep direct_mount /etc/safecor/topology.json` empty → the Dom0's topology file has no `direct_mount` entries (wrong file / stale copy).
+- the `python3` one-liner prints `{'mode': 'ro'}` for the antivirus domains but the service sees nothing → the running Dom0 controller holds a stale in-memory topology (loaded before the edit) → restart the Dom0 safecor service (or reboot).
+- the one-liner prints `False` → the library reads a file without the entries → compare the file the library opens with the one inspected.
+
 Forensics — the run-15 socat duplication (identify the double-start trigger):
-- [ ] `tail -50 /var/log/safecor/vchan-sftp.log` — how many « starting » lines (script invocations)?
+- [x] `tail -50 /var/log/safecor/vchan-sftp.log` — how many « starting » lines (script invocations)?
+  - The file `var/log/safecor/vchan-sftp.log` contains the error `safecor-vchan-sftp: no domains with direct_mount found in topology` (this is a regression) but the file topology.json contains
+```
+"domains": [
+    {
+        "name": "saphir-gui",
+        "app-package": "saphir-gui",
+        "memory": 1200,
+        "has_gui": 1,
+        "vcpu_group": "gui",
+        "temp_disk_size": 1024
+    },
+    {
+        "name": "saphir-av-clamav",
+        "app-package": "saphir-av-clamav",
+        "memory": 3000,
+        "vcpu_group": "antivirus",
+        "temp_disk_size": 4096,
+        "swap_size": 1024,
+        "direct_mount": { "mode": "ro" }
+    },
+    {
+        "name": "saphir-av-eset",
+        "app-package": "saphir-av-eset",
+        "memory": 2100,
+        "vcpu_group": "antivirus",
+        "temp_disk_size": 4096,
+        "swap_size": 1024,
+        "direct_mount": { "mode": "ro" }
+    }
+]
+```
 - [ ] `ps -o pid,ppid,lstart,args -ax | grep -E "socat|vchan-socket-proxy|bwrap" | grep -v grep` — who spawned the late socat (ppid)?
 - [ ] `grep -i "safecor-vchan-sftp" /var/log/messages` — openrc start/stop activity
 

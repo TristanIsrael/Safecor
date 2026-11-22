@@ -40,7 +40,7 @@ DOMAIN_WAIT_TIMEOUT = 60  # seconds to wait for a domain's domid
 SFTP_ROOT = "/media/usb"
 SFTP_SERVER = "/usr/lib/ssh/sftp-server"
 MUSL_LOADER = "/lib/ld-musl-x86_64.so.1"
-SANDBOX_PASSWD = "/var/run/safecor/sftp-sandbox-passwd"
+SANDBOX_PASSWD = "/usr/lib/safecor/etc/sftp-sandbox-passwd"
 
 # The account the sandboxed sftp-server runs as (created by the package's
 # post-install script). The USB disks are owned by this account (mdev mount
