@@ -89,7 +89,21 @@ printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 /usr/lib/s
 apk info -v openssh-sftp-server
 ```
         - If A' is silent too: the sftp-server binary does not answer a piped SFTP_INIT on this target (version issue — compare with the run-15 version)
+          - Return `exit=0`
         - If A' answers but A does not: the setuid switch to `svc-sys-usb-sftp` is the cause
+      - **D — no pipes at all, real exit code, file I/O only** (isolates the sftp-server binary from the `timeout`/`xxd`/`head` pipeline; run on sys-usb):
+```
+printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' > /tmp/init.bin
+echo "--- init.bin:"; xxd /tmp/init.bin
+timeout 5 /usr/lib/ssh/sftp-server -u 077 < /tmp/init.bin > /tmp/out.bin 2>/tmp/err.txt
+echo "exit=$?"
+echo "--- out.bin:"; xxd /tmp/out.bin
+echo "--- err:"; cat /tmp/err.txt
+apk info -v openssh-sftp-server
+```
+        - `init.bin` must show `00000000: 0000 000c 0000 0001 0000 0003` (the target's busybox printf is verified to emit `\xHH` correctly — the payload is right)
+        - `out.bin` with `0000000c 00000002 00000003...` → the binary works, the pipeline (`timeout`/`xxd`/`head`) is what breaks it
+        - `out.bin` empty, `err.txt` empty, `exit=0` → the sftp-server binary itself is silent on this target (compare its version with the one that worked at run 15)
     - **B — sandbox, liveness + stdin through a held-open fifo** (separates "process died" from "process alive but the pipe never reached it"):
 ```
 mkfifo /tmp/sftp.in
