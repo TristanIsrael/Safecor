@@ -21,6 +21,14 @@ start() {
     chown svc-sys-usb-controller:safecor /var/run/safecor/direct-mount
     chmod 770 /var/run/safecor/direct-mount
 
+    # Local persistent log for direct mount channel lifecycle events
+    # (see docs/architecture/components/direct-usb-mount.md).
+    # The initd runs as root; the controller runs as svc-sys-usb-controller.
+    mkdir -p /var/log/safecor
+    [ -f /var/log/safecor/direct-mount.log ] || touch /var/log/safecor/direct-mount.log
+    chown svc-sys-usb-controller:safecor /var/log/safecor/direct-mount.log
+    chmod 660 /var/log/safecor/direct-mount.log
+
     start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --umask 0007 --pidfile /var/run/$name.pid --background --user svc-sys-usb-controller -- /usr/lib/safecor/bin/safecor-sys-usb-controller.py
 
     eend $?

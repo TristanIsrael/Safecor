@@ -420,6 +420,7 @@ class TestStartDirectMountChannels(unittest.TestCase):
         self.controller._SysUsbController__run_channels_helper.assert_not_called()
 
     def test_missing_domid_skipped_still_ready(self):
+        """Missing domid (timeout) → channel skipped, component stays STARTING."""
         with (
             mock.patch.object(
                 SysUsbController,
@@ -432,11 +433,12 @@ class TestStartDirectMountChannels(unittest.TestCase):
             self.controller._SysUsbController__start_direct_mount_channels()
         self.assertEqual(
             self.controller._SysUsbController__direct_mount_state,
-            ComponentState.READY,
+            ComponentState.STARTING,
         )
         self.controller._SysUsbController__run_channels_helper.assert_not_called()
 
     def test_normal_case_starts_channels(self):
+        """All channels start and pass liveness → READY."""
         with (
             mock.patch.object(
                 SysUsbController,
@@ -444,6 +446,9 @@ class TestStartDirectMountChannels(unittest.TestCase):
                 return_value=[("app1", MountMode.RW), ("app2", MountMode.RO)],
             ),
             mock.patch("safecor._sys_usb_controller.System") as system,
+            mock.patch("os.path.exists", return_value=True),
+            mock.patch("pathlib.Path.read_text", return_value="9999\n"),
+            mock.patch("time.sleep"),
         ):
             system.return_value.get_domain_domid.side_effect = [5, 6]
             self.controller._SysUsbController__start_direct_mount_channels()
@@ -477,6 +482,7 @@ class TestStartDirectMountChannels(unittest.TestCase):
         )
 
     def test_helper_failure_channel_not_tracked(self):
+        """Helper failure → channel skipped, component stays STARTING."""
         self.controller._SysUsbController__run_channels_helper.return_value = False
         with (
             mock.patch.object(
@@ -490,7 +496,7 @@ class TestStartDirectMountChannels(unittest.TestCase):
             self.controller._SysUsbController__start_direct_mount_channels()
         self.assertEqual(
             self.controller._SysUsbController__direct_mount_state,
-            ComponentState.READY,
+            ComponentState.STARTING,
         )
         self.assertEqual(self.controller._SysUsbController__sftp_channels, [])
 
@@ -629,6 +635,226 @@ class TestShutdown(unittest.TestCase):
             ComponentState.OFF,
         )
         stop_channels.assert_called_once()
+
+
+class TestStartChannelsAllOrNothingReady(unittest.TestCase):
+    """F1: READY only when ALL channels are started and verified alive."""
+
+    def setUp(self):
+        self.mqtt_client = mock.MagicMock()
+        self.controller = SysUsbController(self.mqtt_client)
+        self.controller._SysUsbController__run_channels_helper = mock.MagicMock(
+            return_value=True
+        )
+        # Patch the wait_for_domid so domid resolution is instant.
+        self.controller._SysUsbController__wait_for_domid = mock.Mock(return_value=5)
+
+    def test_all_channels_fail_helper(self):
+        """All helper calls fail → component stays STARTING."""
+        self.controller._SysUsbController__run_channels_helper.return_value = False
+        with (
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW), ("app2", MountMode.RO)],
+            ),
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__log_channel_event",
+            ),
+        ):
+            self.controller._SysUsbController__start_direct_mount_channels()
+        self.assertEqual(
+            self.controller._SysUsbController__direct_mount_state,
+            ComponentState.STARTING,
+        )
+        # No channels tracked (all failed)
+        self.assertEqual(self.controller._SysUsbController__sftp_channels, [])
+
+    def test_partial_failure(self):
+        """1 of 2 domains fails → component stays STARTING."""
+        self.controller._SysUsbController__run_channels_helper.side_effect = [
+            False,  # app1 fails
+            True,  # app2 succeeds
+        ]
+        with (
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW), ("app2", MountMode.RO)],
+            ),
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch("os.path.exists") as mock_exists,
+            mock.patch("pathlib.Path.read_text") as mock_read,
+        ):
+            # Make liveness verification pass for app2 (the one that succeeded)
+            mock_exists.return_value = True
+            mock_read.return_value = "9999\n"
+            self.controller._SysUsbController__start_direct_mount_channels()
+        self.assertEqual(
+            self.controller._SysUsbController__direct_mount_state,
+            ComponentState.STARTING,
+        )
+        # Only app2 should be tracked
+        self.assertEqual(self.controller._SysUsbController__sftp_channels, ["app2"])
+
+    def test_all_channels_verified_alive(self):
+        """All channels start and pass liveness → READY."""
+        with (
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW), ("app2", MountMode.RO)],
+            ),
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch("os.path.exists") as mock_exists,
+            mock.patch("pathlib.Path.read_text") as mock_read,
+            mock.patch("time.sleep"),
+        ):
+            mock_exists.return_value = True
+            mock_read.return_value = "9999\n"
+            self.controller._SysUsbController__start_direct_mount_channels()
+        self.assertEqual(
+            self.controller._SysUsbController__direct_mount_state,
+            ComponentState.READY,
+        )
+        self.assertEqual(
+            self.controller._SysUsbController__sftp_channels,
+            ["app1", "app2"],
+        )
+
+    def test_domid_returns_none_then_value(self):
+        """Domid appears after a delay: the bounded wait finds it.
+
+        Simulates __wait_for_domid eventually resolving a domid (3) for
+        "app1", exercising the all-or-nothing READY logic.
+        """
+        # Reset the setUp mock's call count so assertion works.
+        self.controller._SysUsbController__run_channels_helper.reset_mock()
+        with (
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__wait_for_domid",
+                return_value=3,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch("os.path.exists", return_value=True),
+            mock.patch("pathlib.Path.read_text", return_value="9999\n"),
+            mock.patch("time.sleep"),
+        ):
+            self.controller._SysUsbController__start_direct_mount_channels()
+        self.assertEqual(
+            self.controller._SysUsbController__direct_mount_state,
+            ComponentState.READY,
+        )
+        self.controller._SysUsbController__run_channels_helper.assert_called_once_with(
+            {"action": "start", "name": "app1", "domid": 3, "mode": "rw"}
+        )
+
+    def test_empty_pairs_ready(self):
+        """Empty pairs → READY (backward compatible)."""
+        with (
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[],
+            ),
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__log_channel_event",
+            ),
+        ):
+            self.controller._SysUsbController__start_direct_mount_channels()
+        self.assertEqual(
+            self.controller._SysUsbController__direct_mount_state,
+            ComponentState.READY,
+        )
+
+    def test_liveness_verification_passes(self):
+        """Pidfiles exist, procs alive, socket exists → verification passes."""
+        with (
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch("os.path.exists") as mock_exists,
+            mock.patch("pathlib.Path.read_text", return_value="9999\n"),
+            mock.patch("time.sleep"),
+        ):
+            mock_exists.return_value = True
+            self.controller._SysUsbController__start_direct_mount_channels()
+        self.assertEqual(
+            self.controller._SysUsbController__direct_mount_state,
+            ComponentState.READY,
+        )
+
+    def test_liveness_verification_fails_missing_socket(self):
+        """Socket doesn't exist → liveness fails → channel not tracked."""
+        with (
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch("os.path.exists") as mock_exists,
+            mock.patch("pathlib.Path.read_text", return_value="9999\n"),
+            mock.patch("time.sleep"),
+        ):
+            # pidfile procs exist, but vchan socket doesn't
+            mock_exists.side_effect = lambda p: not p.endswith(".sock")
+            self.controller._SysUsbController__start_direct_mount_channels()
+        self.assertEqual(
+            self.controller._SysUsbController__direct_mount_state,
+            ComponentState.STARTING,
+        )
+        self.assertEqual(self.controller._SysUsbController__sftp_channels, [])
+
+    def test_liveness_verification_fails_missing_pidfile(self):
+        """Pidfile doesn't exist → liveness fails."""
+        with (
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch.object(
+                SysUsbController,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch("os.path.exists") as mock_exists,
+            mock.patch("pathlib.Path.read_text", side_effect=FileNotFoundError),
+            mock.patch("time.sleep"),
+        ):
+            mock_exists.return_value = True
+            self.controller._SysUsbController__start_direct_mount_channels()
+        self.assertEqual(
+            self.controller._SysUsbController__direct_mount_state,
+            ComponentState.STARTING,
+        )
+        self.assertEqual(self.controller._SysUsbController__sftp_channels, [])
 
 
 if __name__ == "__main__":

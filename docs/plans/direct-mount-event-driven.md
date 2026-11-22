@@ -69,7 +69,7 @@ Published on `system/discover/components/response` alongside the other two.
 | State | Set when | Publish |
 |---|---|---|
 | `STARTING` | controller startup (SFTP channels not yet up) | at `__on_mqtt_connected` (the existing proactive `__handle_discover_components` call) |
-| `READY` | the SFTP channel start pass completed for every `direct_mount` domain (channels started, or skipped with a logged warning); also when there is **zero** `direct_mount` domain | `__set_direct_mount_state(READY)` |
+| `READY` | every `direct_mount` SFTP channel is started **and verified alive** (pidfiles + UNIX socket); also when there is **zero** `direct_mount` domain | `__set_direct_mount_state(READY)` |
 | `OFF` | `system/workflow/restart_domain` for `sys-usb` (reboot), or `stop()` | `__handle_restart` publishes all three components `OFF` before the reboot |
 
 `__handle_discover_components` reports the **current** state of
@@ -95,14 +95,15 @@ Diagnostic value: `safecor_disk_controller=READY` +
    - `pairs = self.__query_direct_mount_domains()` — `None` (query failed)
      ⇒ `warn` log, the component **stays `STARTING`** (no retry — NFR-3);
      `[]` ⇒ `READY` (nothing to start).
-   - For each `(name, mode)`: **single non-blocking** domid read
-     (`System().get_domain_domid(name)`, NFR-1 compliant — the old 60 s
-     xenstore polling is gone). Dom0 registers the domids of every domain at
-     domain creation, which precedes the guest openrc boot of sys-usb, so
-     the domid is resolvable at this point; if it is not (edge case), the
-     domain's channel is skipped with a `warn` log and the component still
-     becomes `READY` (the other domains stay functional; the missing channel
-     is visible in the controller log).
+   - For each `(name, mode)`: **bounded domid wait** (`__wait_for_domid`,
+     polling `System().get_domain_domid(name)` every 1 s, 60 s timeout per
+     domain — the pre-refactor historical value). Blocking is allowed: it
+     runs in the dedicated channel thread (NFR-1 constrains MQTT callbacks
+     only). Dom0 registers the domids at `xl create`, which can happen after
+     the channel thread begins on slow boots (run 17: the domids appeared
+     ~10 s after the one-shot read). If the domid is not found after the
+     timeout, an `error` event names the domain, the channel counts as a
+     failure, and the pass continues.
    - Each channel is started **as root, via doas**: the controller runs as
      `svc-sys-usb-controller`, but the per-session sandbox
      (`bwrap` → `setpriv` → `sftp-server`) needs a root parent to drop to
@@ -112,7 +113,19 @@ Diagnostic value: `safecor_disk_controller=READY` +
      from the library and runs the `start-stop-daemon` sequence only. The
      doas permission is explicit and narrow (one script), mirroring the
      existing `doas /sbin/reboot` pattern.
-   - When the pass completes: `__set_direct_mount_state(READY)`.
+   - After the helper starts a channel, a **liveness verification** runs
+     after a ~1 s settle: both pidfiles (`socat-<name>.pid`,
+     `vchan-<name>.pid`) exist and point to live processes, and the UNIX
+     socket `vchan-<name>.sock` exists.
+   - **All-or-nothing READY** (issue #270): `__set_direct_mount_state(READY)`
+     only when there were **zero failures** (every channel started and
+     verified alive). Otherwise the component **stays `STARTING`** and an
+     `error` event summarizes the failed domains. Recovery:
+     `rc-service safecor-sys-usb-controller restart` re-runs the pass
+     (idempotent) and converges.
+   - Every channel-lifecycle event is also appended to the local persistent
+     log `/var/log/safecor/direct-mount.log` (created by the controller
+     initd), complementing the ephemeral MQTT `Logger`.
 3. **Channel runtime files** (new dedicated directory, created by the
    controller initd as root, owned by the controller user):
    `/var/run/safecor/direct-mount/` — the UNIX socket
@@ -224,8 +237,10 @@ whole (no per-file sha512).
     hardcoded READY);
   - `__on_mqtt_message` routes the `my_config` response to the waiter;
   - `__start_direct_mount_channels`: query failed ⇒ `STARTING` + warn; zero
-    domains ⇒ `READY`; domid missing ⇒ channel skipped + warn, still
-    `READY`; normal case ⇒ doas helper invoked per domain + `READY`;
+    domains ⇒ `READY`; domid timeout ⇒ `error` event, channel not started,
+    stays `STARTING`; helper failure or liveness failure ⇒ `error` event,
+    stays `STARTING`; normal case ⇒ doas helper invoked per domain +
+    liveness verified + `READY`;
   - `__handle_restart` (sys-usb): all three components published `OFF`,
     channels stopped, reboot invoked;
   - `stop()`: state `OFF`, channels stopped.

@@ -62,6 +62,10 @@ except ImportError:
 # per-session sandbox (bwrap -> setpriv -> sftp-server) needs a root parent
 # to drop to the SFTP service account. See the component documentation
 # (docs/architecture/components/direct-usb-mount.md).
+#
+# A local persistent log at /var/log/safecor/direct-mount.log (created by the
+# controller initd) records all channel-lifecycle events, complementing the
+# ephemeral MQTT-based Logger.
 
 # /media/usb is bound at the same path in the sandbox and made the working
 # directory, so a disk mounted at /media/usb/<label> on sys-usb appears at
@@ -826,10 +830,14 @@ class SysUsbController:
 
         The direct mount component (``safecor_direct_mount``) carries the
         current state of the SFTP channels: STARTING until the channel
-        start pass completed (or the my_config query failed), READY after,
-        OFF on shutdown. It is the single synchronization point of the
-        direct USB mount (NFR-3): the business DomUs react to its
-        notification (READY => mount, OFF => unmount) instead of polling.
+        start pass completed for every direct_mount domain (channels started
+        and verified alive), READY only when all channels are alive (otherwise
+        the component stays STARTING with an error naming the failed domains
+        — recovery by restarting the controller service), OFF on shutdown.
+        Channel-lifecycle events are also recorded to /var/log/safecor/direct-mount.log.
+        It is the single synchronization point of the direct USB mount
+        (NFR-3): the business DomUs react to its notification (READY => mount,
+        OFF => unmount) instead of polling.
         """
         comp1 = ResponseFactory.create_entry_component_state(
             Constants.SAFECOR_DISK_CONTROLLER,
@@ -847,7 +855,7 @@ class SysUsbController:
         )
         comp3 = ResponseFactory.create_entry_component_state(
             Constants.SAFECOR_DIRECT_MOUNT,
-            "Direct USB mount (SFTP channels)",
+            "Direct USB mount",
             "sys-usb",
             self.__direct_mount_state,
             "core",
@@ -919,6 +927,7 @@ class SysUsbController:
     def __set_direct_mount_state(self, state: ComponentState) -> None:
         """Updates the state of the direct mount component and publishes it."""
         self.__direct_mount_state = state
+        self.__log_channel_event(f"Direct USB mount component state -> {state.value}")
         self.__publish_component_states()
 
     def __accept_my_config_response(self, payload: dict) -> bool:
@@ -952,48 +961,137 @@ class SysUsbController:
             return None
         return parse_direct_mount_domains(self.__my_config_result)
 
+    def __log_channel_event(self, message: str, level: str = "info") -> None:
+        """Emits a channel-lifecycle event through Logger and the local log file.
+
+        Publishes through the existing Logger (MQTT bus, ephemeral) at the
+        given level (default info) and appends a timestamped line to
+        /var/log/safecor/direct-mount.log (persistent, best-effort). A failed
+        local write never raises -- a write error is silently ignored so it
+        never breaks the controller.
+        """
+        if level == "error":
+            Logger().error(message)
+        else:
+            Logger().info(message)
+        try:
+            Path("/var/log/safecor").mkdir(parents=True, exist_ok=True)
+            with open("/var/log/safecor/direct-mount.log", "a") as f:
+                ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                f.write(f"{ts} {message}\n")
+        except OSError:
+            pass  # best-effort: never break the controller
+
+    def __wait_for_domid(
+        self, name: str, timeout: float = 60.0, interval: float = 1.0
+    ) -> int | None:
+        """Polls for a domain's domid until it is found or timeout elapses.
+
+        Runs in the dedicated channel thread (blocking is allowed).
+        Returns the domid when found, or None on timeout.
+        """
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            domid = System().get_domain_domid(name)
+            if domid is not None:
+                return domid
+            time.sleep(interval)
+        return None
+
     def __start_direct_mount_channels(self) -> None:
         """Starts the SFTP channels of the direct_mount domains (dedicated thread).
 
         The my_config query is one-shot (NFR-3): if it fails the component
         stays STARTING (visible in the diagnostics) instead of retrying.
-        The domid of each domain is read once, non-blocking (NFR-1): Dom0
-        registers the domids at domain creation, which precedes the openrc
-        boot of sys-usb. A missing domid (edge case) skips the channel of
-        that domain with a logged warning.
+        The domid of each domain is fetched with a bounded wait (1 s interval,
+        60 s per domain timeout): Dom0 registers the domids at domain creation,
+        which may happen after the channel thread begins on slow boots.
+        If a domid is not found after the timeout, the channel is skipped with
+        an ERROR event naming the domain, and the component stays STARTING.
+        After all channels are started, a liveness verification (pidfiles +
+        socket, ~1 s settle) runs; if it fails the channel is marked failed.
+        READY is published only when every channel has started and is alive;
+        otherwise the component stays STARTING with an ERROR event summarizing
+        the failed domains. Each channel-lifecycle event is logged both to the
+        MQTT Logger and to /var/log/safecor/direct-mount.log (best-effort).
         """
         pairs = self.__query_direct_mount_domains()
         if pairs is None:
-            Logger().warn(
+            self.__log_channel_event(
                 "The direct_mount domains could not be determined "
                 "(my_config timeout), the SFTP channels are not started"
             )
             return
 
         if not pairs:
-            Logger().debug("No domain with direct_mount in the topology")
+            self.__log_channel_event("No domain with direct_mount in the topology")
             self.__set_direct_mount_state(ComponentState.READY)
             return
 
+        failures: list[str] = []
+
         for name, mode in pairs:
-            domid = System().get_domain_domid(name)
+            domid = self.__wait_for_domid(name)
             if domid is None:
-                Logger().warn(
-                    f"No domid found for domain {name}, its SFTP channel is skipped"
+                self.__log_channel_event(
+                    f"No domid found for domain {name} after timeout, "
+                    f"its SFTP channel is skipped",
+                    level="error",
                 )
+                failures.append(name)
                 continue
-            Logger().info(
+            self.__log_channel_event(
                 f"Starting the SFTP channel for {name} (domid {domid}, "
                 f"mode {mode.value})"
             )
             if not self.__run_channels_helper(
                 {"action": "start", "name": name, "domid": domid, "mode": mode.value}
             ):
-                Logger().warn(f"Starting the SFTP channel for {name} failed")
+                self.__log_channel_event(
+                    f"Starting the SFTP channel for {name} failed (helper error)",
+                    level="error",
+                )
+                failures.append(name)
+                continue
+            # Liveness verification: wait for settle, then check pidfiles + socket.
+            time.sleep(1)
+            verified = True
+            for kind in ("socat", "vchan"):
+                pidfile = f"{SFTP_RUNTIME_DIR}/{kind}-{name}.pid"
+                try:
+                    pid = int(Path(pidfile).read_text().strip())
+                except (OSError, ValueError):
+                    verified = False
+                    break
+                if not os.path.exists(f"/proc/{pid}"):
+                    verified = False
+                    break
+            if kind == "vchan" and not os.path.exists(
+                f"{SFTP_RUNTIME_DIR}/vchan-{name}.sock"
+            ):
+                verified = False
+            if not verified:
+                self.__log_channel_event(
+                    f"Starting the SFTP channel for {name} failed "
+                    f"(liveness verification)",
+                    level="error",
+                )
+                failures.append(name)
                 continue
             self.__sftp_channels.append(name)
 
-        self.__set_direct_mount_state(ComponentState.READY)
+        if failures:
+            self.__log_channel_event(
+                f"SFTP channel start completed with failures: "
+                f"{', '.join(failures)} — component stays STARTING",
+                level="error",
+            )
+            # Do NOT set READY; stay STARTING.
+        else:
+            self.__log_channel_event(
+                "All SFTP channels started and verified alive — component READY"
+            )
+            self.__set_direct_mount_state(ComponentState.READY)
 
     def __run_channels_helper(self, spec: dict) -> bool:
         """Runs the root channels helper (through doas) with a JSON spec.
@@ -1032,9 +1130,13 @@ class SysUsbController:
         self.__sftp_channels.clear()
 
     def __shutdown_direct_mount(self) -> None:
-        """Publishes the components OFF and stops the SFTP channels (best-effort)."""
+        """Publishes the components OFF and stops the SFTP channels (best-effort).
+
+        Logs the transition to the local log file (/var/log/safecor/direct-mount.log).
+        """
         self.__controller_state = ComponentState.OFF
         self.__direct_mount_state = ComponentState.OFF
+        self.__log_channel_event("Direct USB mount component state -> off (shutdown)")
         self.__publish_component_states()
         self.__stop_direct_mount_channels()
 

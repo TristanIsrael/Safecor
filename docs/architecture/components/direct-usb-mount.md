@@ -41,11 +41,11 @@ The readiness of the SFTP side is published as the state of the **`safecor_direc
 
 | State | Meaning |
 |-------|---------|
-| `STARTING` | boot: the SFTP channels are not up yet (or the one-shot `my_config` query timed out — the component stays `STARTING`, **no retry**, and it is visible in the diagnostics as the SFTP side being broken while the disks are fine). |
-| `READY` | the SFTP channel start pass completed for every `direct_mount` domain (channels started, or skipped with a logged warning), **or** there is zero `direct_mount` domain. |
+| `STARTING` | boot: the SFTP channels are not up yet (domid resolution, channel start, liveness verification), or the one-shot `my_config` query timed out, or the start pass failed (domid timeout, helper error, liveness verification failure — an `error` event names the failed domains and the local log records it). The component does **no retry** itself: recover with `rc-service safecor-sys-usb-controller restart`. Visible in the diagnostics as the SFTP side being broken while the disks are fine. |
+| `READY` | every `direct_mount` SFTP channel is started **and verified alive** (pidfiles + UNIX socket, ~1 s settle after the helper), **or** there is zero `direct_mount` domain. |
 | `OFF` | sys-usb is shutting down or restarting: the consumers unmount. |
 
-The controller resolves the topology with a **one-shot `my_config` query** (a bounded wait in a dedicated thread, NFR-1), reads each domain's domid once from xenstore (NFR-1), and starts/stops the per-domain channels through the **`safecor-dm-channels.py`** root helper (run via `doas`, the only privilege elevation — the per-session sandbox needs a root parent to drop to the `svc-sys-usb-sftp` account).
+The controller resolves the topology with a **one-shot `my_config` query** (a bounded wait in a dedicated thread, NFR-1), resolves each domain's domid with a **bounded wait** (polling every 1 s, 60 s timeout per domain — blocking is allowed in the dedicated channel thread, NFR-1), starts/stops the per-domain channels through the **`safecor-dm-channels.py`** root helper (run via `doas`, the only privilege elevation — the per-session sandbox needs a root parent to drop to the `svc-sys-usb-sftp` account), and **verifies each started channel is alive** (pidfiles + UNIX socket) before publishing `READY` — a start failure keeps the component `STARTING` (issue #270). Every channel-lifecycle event is appended to the local persistent log `/var/log/safecor/direct-mount.log` (created by the controller initd, owned by `svc-sys-usb-controller`), complementing the ephemeral MQTT `Logger`.
 
 ## `DirectMountManager` (DomU side)
 
