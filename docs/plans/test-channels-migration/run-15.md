@@ -12,15 +12,118 @@ Preparation:
 - [x] Full cold boot in debug mode with a USB disk connected before boot
 
 Verification — #260, the sshfs direct mount:
-- [ ] On sys-usb, the sftp chroot is built at boot: `ls -l /media/usb/usr/lib/ssh/` contains `sftp-server`, the shared libraries and `/lib64/ld-linux-x86-64.so.2`
-- [ ] On sys-usb, for each direct_mount domain: one `socat UNIX-LISTEN:/var/run/safecor/vchan-<name>.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 ..."` and one `vchan-socket-proxy -m server <domid> /local/domain/system/vchan/<name>/sftp /var/run/safecor/vchan-<name>.sock` (the socat started before the proxy)
-- [ ] The `ro` domains get `sftp-server -u 077 -R`, the `rw` domains `-u 077` only
-- [ ] On a business domain with `direct_mount`, `/media/usb` is mounted automatically at boot (`mount | grep /media/usb`)
-- [ ] The sshfs options include `reconnect` (`cat /proc/$(pidof sshfs)/cmdline`)
-- [ ] A file from the USB disk connected before boot is readable through the mount: `cat /media/usb/<disk>/<file>`
+- [x] On sys-usb, the sftp chroot is built at boot: `ls -l /media/usb/usr/lib/ssh/` contains `sftp-server`, the shared libraries and `/lib64/ld-linux-x86-64.so.2`
+  - `/media/usb/usr/lib/ssh/` only contains `sftp-server`
+- [x] On sys-usb, for each direct_mount domain: one `socat UNIX-LISTEN:/var/run/safecor/vchan-<name>.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 ..."` and one `vchan-socket-proxy -m server <domid> /local/domain/system/vchan/<name>/sftp /var/run/safecor/vchan-<name>.sock` (the socat started before the proxy)
+  - There are multiple `socat` for each client and 2 of them are constantly restarting: 
+```
+ps ax | grep "socat UNIX"
+ 2350 root      0:06 /usr/bin/socat UNIX-LISTEN:/var/run/safecor/vchan-saphir-av-clamav.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 -R"
+ 2357 root      0:06 /usr/bin/socat UNIX-LISTEN:/var/run/safecor/vchan-saphir-av-eset.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 -R"
+15508 root      0:00 /usr/bin/socat UNIX-LISTEN:/var/run/safecor/vchan-saphir-av-clamav.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 -R"
+15511 root      0:00 grep socat UNIX
+15512 root      0:00 /usr/bin/socat UNIX-LISTEN:/var/run/safecor/vchan-saphir-av-eset.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 -R"
+```
+- [x] The `ro` domains get `sftp-server -u 077 -R`, the `rw` domains `-u 077` only
+  - Lots of `sftp-server` processes are zombies and some of them have the correct options.
+```
+ps ax | grep sftp
+ 2350 root      0:13 /usr/bin/socat UNIX-LISTEN:/var/run/safecor/vchan-saphir-av-clamav.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 -R"
+ 2352 root      0:01 /usr/bin/vchan-socket-proxy -m server 3 /local/domain/system/vchan/saphir-av-clamav/sftp /var/run/safecor/vchan-saphir-av-clamav.sock
+ 2357 root      0:13 /usr/bin/socat UNIX-LISTEN:/var/run/safecor/vchan-saphir-av-eset.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 -R"
+ 2359 root      0:01 /usr/bin/vchan-socket-proxy -m server 4 /local/domain/system/vchan/saphir-av-eset/sftp /var/run/safecor/vchan-saphir-av-eset.sock
+ 3783 root      0:00 [sftp-server]
+ 3785 root      0:00 [sftp-server]
+ 3795 root      0:00 [sftp-server]
+ 3799 root      0:00 [sftp-server]
+ 3809 root      0:00 [sftp-server]
+ 3817 root      0:00 [sftp-server]
+ 3821 root      0:00 [sftp-server]
+ 3827 root      0:00 [sftp-server]
+ 3829 root      0:00 [sftp-server]
+ 3832 root      0:00 [sftp-server]
+ 3833 root      0:00 [sftp-server]
+ 3836 root      0:00 [sftp-server]
+ 3837 root      0:00 [sftp-server]
+ 3840 root      0:00 [sftp-server]
+ 3841 root      0:00 [sftp-server]
+ 3844 root      0:00 [sftp-server]
+ 3845 root      0:00 [sftp-server]
+ 3848 root      0:00 [sftp-server]
+ 3849 root      0:00 [sftp-server]
+ 3852 root      0:00 [sftp-server]
+ 3853 root      0:00 [sftp-server]
+ 3857 root      0:00 [sftp-server]
+ 3860 root      0:00 [sftp-server]
+ 3864 root      0:00 [sftp-server]
+ 3865 root      0:00 [sftp-server]
+ 3868 root      0:00 [sftp-server]
+ 3872 root      0:00 [sftp-server]
+ 3873 root      0:00 [sftp-server]
+ 3876 root      0:00 [sftp-server]
+ 3877 root      0:00 [sftp-server]
+ 3880 root      0:00 [sftp-server]
+ 3881 root      0:00 [sftp-server]
+ 3885 root      0:00 [sftp-server]
+ 3887 root      0:00 [sftp-server]
+ 3889 root      0:00 [sftp-server]
+ 3891 root      0:00 [sftp-server]
+ 3893 root      0:00 [sftp-server]
+ 3899 root      0:00 [sftp-server]
+ 3901 root      0:00 [sftp-server]
+ 3904 root      0:00 [sftp-server]
+ 3905 root      0:00 [sftp-server]
+ 3907 root      0:00 [sftp-server]
+ 3909 root      0:00 [sftp-server]
+ 3911 root      0:00 [sftp-server]
+ 3916 root      0:00 [sftp-server]
+ 3917 root      0:00 [sftp-server]
+ 3920 root      0:00 [sftp-server]
+ 3921 root      0:00 [sftp-server]
+ 3924 root      0:00 [sftp-server]
+ 3925 root      0:00 [sftp-server]
+ 3929 root      0:00 [sftp-server]
+ 3933 root      0:00 [sftp-server]
+ 3937 root      0:00 [sftp-server]
+ 3940 root      0:00 [sftp-server]
+ 3941 root      0:00 [sftp-server]
+ 3945 root      0:00 [sftp-server]
+ 3948 root      0:00 [sftp-server]
+ 3949 root      0:00 [sftp-server]
+ 3951 root      0:00 [sftp-server]
+ 3953 root      0:00 [sftp-server]
+ 3956 root      0:00 [sftp-server]
+ 3960 root      0:00 [sftp-server]
+ 3964 root      0:00 [sftp-server]
+ 3965 root      0:00 [sftp-server]
+ 3967 root      0:00 [sftp-server]
+ 3971 root      0:00 [sftp-server]
+ 3976 root      0:00 [sftp-server]
+ 3977 root      0:00 [sftp-server]
+ 3993 root      0:00 [sftp-server]
+ 3996 root      0:00 [sftp-server]
+ 4005 root      0:00 grep sftp
+ 4006 root      0:00 /usr/bin/socat UNIX-LISTEN:/var/run/safecor/vchan-saphir-av-clamav.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 -R"
+ 4008 root      0:00 /usr/bin/socat UNIX-LISTEN:/var/run/safecor/vchan-saphir-av-eset.sock,fork EXEC:"chroot /media/usb /usr/lib/ssh/sftp-server -u 077 -R"
+```
+- [x] On a business domain with `direct_mount`, `/media/usb` is mounted automatically at boot (`mount | grep /media/usb`)
+  - KO. The command `df` is stucked and there is no `/media/usb`.
+- [x] The sshfs options include `reconnect` (`cat /proc/$(pidof sshfs)/cmdline`)
+  - OK
+```
+ps ax | grep sshfs
+ 2773 root      0:00 sshfs -f -o ssh_command=/usr/local/bin/vchan-sftp,noexec,nosuid,nodev,default_permissions,max_read=131072,reconnect,ro none:/ /media/usb
+```
+- [x] A file from the USB disk connected before boot is readable through the mount: `cat /media/usb/<disk>/<file>`
+  - KO
 - [ ] `rw` domain: a file written through the mount is visible on the USB disk (and vice versa)
-- [ ] `ro` domain: a write through the mount is refused
-- [ ] USB hot-plug: connect a second USB disk after boot, it appears in the `/media/usb` mount of the business domains without reboot
+  - Not tested
+- [x] `ro` domain: a write through the mount is refused
+  - Not tested because of previous errors
+- [x] USB hot-plug: connect a second USB disk after boot, it appears in the `/media/usb` mount of the business domains without reboot
+  - Not tested because of previous errors
+
+>>> Test run ended here
 
 Verification — #262, the vchans after an API reboot (requires the Phase C fix):
 - [ ] After the reboot, `/local/domain/system/domids/<name>` holds the new domid (written only once the domain is Running again)

@@ -42,6 +42,12 @@ permissions:
     resource: "git log *"
     effect: allow
   - action: shell
+    resource: "git commit *"
+    effect: ask
+  - action: shell
+    resource: "git push *"
+    effect: ask
+  - action: shell
     resource: "echo *"
     effect: allow
   - action: shell
@@ -55,13 +61,34 @@ permissions:
     effect: allow
   - action: shell
     resource: "cut *"
-    effect: allow
-  - action: shell
-    resource: "git push *"
-    effect: ask
+    effect: allow  
   - action: shell
     resource: "rm *"
     effect: deny
+  - action: shell
+    resource: "wc *"
+    effect: allow
+  - action: shell
+    resource: "sha512sum *"
+    effect: allow
+  - action: shell
+    resource: "diff *"
+    effect: allow
+  - action: shell
+    resource: "mmdc *"
+    effect: allow
+  - action: shell
+    resource: "printf *"
+    effect: allow
+  - action: shell
+    resource: "python *"
+    effect: allow
+  - action: shell
+    resource: "sort *"
+    effect: allow
+  - action: shell
+    resource: "grep *"
+    effect: allow
 ---
 
 You are the project developer.
