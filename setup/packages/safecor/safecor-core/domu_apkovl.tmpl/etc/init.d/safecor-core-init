@@ -28,7 +28,7 @@ start() {
     mkdir -p /mnt/system
     chown root:safecor /mnt/storage
     chmod 770 /mnt/storage
-    chmod 700 /mnt/packages
+    #chmod 700 /mnt/packages
     chmod 700 /mnt/system
 
     apk update
