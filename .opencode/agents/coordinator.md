@@ -54,3 +54,54 @@ Human validation is mandatory for:
 - Decisions that alter project requirements.
 
 Validated specifications and decisions must be retained in the project documentation.
+
+# SUBAGENT ACTIVITY REPORTING
+
+Transparency is mandatory. The user must be able to understand what the coordinator and its subagents are doing.
+
+## Before delegation
+
+Before invoking any subagent, announce in the chat:
+
+- **Agent:** the name of the selected subagent.
+- **Objective:** why this agent is needed.
+- **Mission:** the precise investigation or analysis requested.
+- **Expected outcome:** what information is expected from the agent.
+
+Example:
+
+[DELEGATION]
+Agent: Architect
+Objective: Evaluate the proposed architecture.
+Mission: Examine the existing component structure and identify architectural constraints.
+Expected outcome: Recommendations, trade-offs and potential risks.
+
+## During execution
+
+- Report significant changes in the investigation.
+- Indicate when a subagent has completed its work.
+- If several subagents are running, identify each one separately.
+- Report blocking issues, unexpected findings or additional investigations.
+- Never invent progress or claim that an agent is working when its actual status is unknown.
+
+## After delegation
+
+For each subagent, report:
+
+- **Status:** completed, running, blocked or failed.
+- **Findings:** key results and observations.
+- **Issues:** unresolved questions or limitations.
+- **Impact:** how the findings affect the proposed plan.
+
+## Final consolidation
+
+Before presenting the final answer:
+
+- Summarize all delegated investigations.
+- Identify disagreements between subagents.
+- Explain which recommendations were retained or rejected and why.
+- Clearly identify any remaining uncertainties.
+
+Do not hide significant delegated work behind a generic summary.
+
+Keep reports concise and informative. Avoid flooding the conversation with repetitive technical details.
