@@ -61,7 +61,7 @@ permissions:
     effect: allow
   - action: shell
     resource: "cut *"
-    effect: allow  
+    effect: allow
   - action: shell
     resource: "rm *"
     effect: deny
@@ -82,6 +82,21 @@ permissions:
     effect: allow
   - action: shell
     resource: "python *"
+    effect: allow
+  - action: shell
+    resource: "python -m *"
+    effect: allow
+  - action: shell
+    resource: "pip install *"
+    effect: allow
+  - action: shell
+    resource: "python3 *"
+    effect: allow
+  - action: shell
+    resource: "/tmp/opencode/safecor-venv/bin/python *"
+    effect: allow
+  - action: shell
+    resource: "/tmp/opencode/safecor-venv/bin/ruff *"
     effect: allow
   - action: shell
     resource: "sort *"

@@ -45,15 +45,25 @@ permissions:
   - { action: shell, resource: "readelf *",  effect: allow }
   - { action: shell, resource: "ldd *",      effect: allow }
 
-  # --- Tests and quality
-  - { action: shell, resource: "python3 *",  effect: allow }
-  - { action: shell, resource: "ruff *",     effect: allow }
+  # --- Tests and quality (read-only forms only) ---
+  - { action: shell, resource: "python3 -m pytest *", effect: allow }
+  - { action: shell, resource: "ruff check *",        effect: allow }
 
   # --- Guards : always after allows ---
-  - { action: shell, resource: "find * -exec*",   effect: deny }
-  - { action: shell, resource: "find * -delete*", effect: deny }
-  - { action: shell, resource: "*> *",            effect: deny } 
-  - { action: shell, resource: "*>> *",           effect: deny }
+  # Verified 2026-11-22 (permission probe): the last matching rule wins and
+  # patterns are whole-value wildcards, so "*> *" denies a redirect anywhere
+  # in the command (e.g. "cat x > y" is blocked). Residual: running pytest
+  # can write cache artifacts; no shell rule can stop an allowed interpreter
+  # from writing — the instruction "Do not modify any files" is the second
+  # line of defense.
+  - { action: shell, resource: "find * -exec*",     effect: deny }
+  - { action: shell, resource: "find * -delete*",   effect: deny }
+  - { action: shell, resource: "*> *",              effect: deny }
+  - { action: shell, resource: "*>> *",             effect: deny }
+  - { action: shell, resource: "ruff format *",         effect: deny }
+  - { action: shell, resource: "ruff format --check *", effect: allow }
+  - { action: shell, resource: "ruff *--fix*",        effect: deny }
+  - { action: shell, resource: "ruff *--unsafe-fixes*", effect: deny }
   - { action: shell, resource: "rm *",            effect: deny }
   - { action: shell, resource: "mv *",            effect: deny }
   - { action: shell, resource: "cp *",            effect: deny }
