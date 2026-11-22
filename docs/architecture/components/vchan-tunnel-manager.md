@@ -15,7 +15,7 @@
 | `msg` | `/tmp/mqtt-<domain name>.sock` | the Dom0 Mosquitto broker (see [messaging.md](messaging.md)) |
 | `input` | `/var/run/safecor/input.sock` | the orchestrator's inputs proxy (see [inputs.md](inputs.md)) |
 | `tty` | `/var/run/safecor/sys-usb-tty.sock` | the debug tty terminal (see [sys-usb-controller.md](sys-usb-controller.md)) |
-| `sftp` | a per-domain UNIX socket served by `safecor-vchan-sftp.py` in `sys-usb` | the SFTP server (see [direct-usb-mount.md](direct-usb-mount.md)) |
+| `sftp` | a per-domain UNIX socket (`/var/run/safecor/direct-mount/vchan-<domain>.sock`) served in `sys-usb` by the `SysUsbController` (`safecor_direct_mount` component) | the SFTP server (see [direct-usb-mount.md](direct-usb-mount.md)) |
 
 The vchan data is published in the shared xenstore namespace `/local/domain/system/vchan/<domain name>/<channel>/{ring-ref,event-channel}` (a DomU cannot read `/local/domain/0`). The **server side creates the channel** at runtime and grants read access to the peer domain.
 

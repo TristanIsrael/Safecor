@@ -4,7 +4,6 @@
 
 
 name="safecor-sys-usb-controller"
-user="svc-sys-usb-controller"
 
 depend() {
     after setup-vchan
@@ -14,7 +13,15 @@ depend() {
 start() {
     ebegin "Starting Safecor sys-usb controller"
 
-    start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --umask 0007 --pidfile /var/run/$name.pid --background --user "$user" -- /usr/lib/safecor/bin/safecor-sys-usb-controller.py
+    # Runtime files of the direct mount SFTP channels (the UNIX socket,
+    # the pidfiles, the per-domain log and the sandbox passwd of every
+    # channel). /var/run is a tmpfs, so the directory is created at every
+    # boot; the controller user owns it (it reads and writes these files).
+    mkdir -p /var/run/safecor/direct-mount
+    chown svc-sys-usb-controller:safecor /var/run/safecor/direct-mount
+    chmod 770 /var/run/safecor/direct-mount
+
+    start-stop-daemon --start --make-pidfile --exec /usr/bin/python3 --umask 0007 --pidfile /var/run/$name.pid --background --user svc-sys-usb-controller -- /usr/lib/safecor/bin/safecor-sys-usb-controller.py
 
     eend $?
 }

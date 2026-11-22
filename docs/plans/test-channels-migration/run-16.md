@@ -1,5 +1,12 @@
 # Run 16
 
+> **Superseded by [run 17](run-17.md).** This run targeted the *previous* direct-mount architecture: the SFTP channels were a separate `safecor-vchan-sftp` openrc service, and the mount was re-established by polling. That design was refactored (issue #253, `docs/plans/direct-mount-event-driven.md`): the SFTP channels are now started by the `SysUsbController` and published as the **`safecor_direct_mount`** component (the single synchronization point, NFR-3), the `DirectMountManager` is event-driven, and the `safecor-vchan-sftp` service is **deleted**. The hardware validation of the new design is **run 17**. The content below is kept as the historical record of what was actually tested on this build.
+
+> **Conclusions carried forward to run 17**
+> - **SFTP "silence" = test artifact, no code change.** `openssh-sftp-server` 10.3p1 handles the stdin EOF *before* flushing the output queue that holds `SFTP_VERSION`, so a piped `SFTP_INIT` + immediate EOF loses the answer (probe D: `exit=124`, `out.bin`/`err.txt` empty, `init.bin` = `0000 000c 0000 0001 0000 0003` — the process is alive and blocked, not crashed). A real client (sshfs over the vchan) keeps the channel open, so production is unaffected. Run 17 re-confirms this with the actual sshfs mount (and an optional probe E).
+> - **Topology regression = stale in-memory topology, not a code bug.** The installed Dom0 lib is post-`628ae9c` (at `/usr/lib/python3.14/site-packages/safecor`), `topology.json` has the `direct_mount` entries, and `System.get_topology()` (called at `_dom0_controller.py:484`) parses them — but the *running* Dom0 controller cached the topology before the entries were added and never reloads it. **Fix = reboot the Dom0** (no rebuild).
+> - **Empty `/media/usb` on sys-usb = a third, separate regression** (the mdev mount hook did not mount the connected disks). Run 17 diagnoses it (`lsblk`/`dmesg`/mdev log) — it must be resolved for the direct mount to serve real files.
+
 Purpose: validate the #260 fix re-implemented as a per-session bubblewrap sandbox (run 15: the boot-time chroot was empty — musl `ldd` format), the #262 fix (the domid write race in `reboot-domain.sh`), diagnose the debug tty regression (Phase D), and re-validate the five objectives of `test-channels-migration.md`.
 
 Preparation:
@@ -214,3 +221,23 @@ Verification — the five objectives (test-channels-migration.md) + regressions:
 - [ ] The local brokers stay connected across the reboots tested above
 
 If everything is green: close #256 (and #258, #264, #260, #262 as validated), update `docs/project-status.md`, check the objectives in `test-channels-migration.md`, and move to the second pass (Phase F: #259, #261).
+
+Résultats Phase D:
+- `printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' > /tmp/init.bin`
+- `echo "--- init.bin";xxd /tmp/init.bin`
+```
+--- init.bin
+00000000: 0000 000c 0000 0001 0000 0003            ............
+```
+- `timeout 5 /usr/lib/ssh/sftp-server -u 077 /tmp/init.bin > /tmp/out.bin 2>/tmp/err.txt`
+- `echo "exit=$?"`
+`exit=124`
+- `/tmp/out.bin` is empty
+- `/tmp/err.txt` is empty
+
+Topology -> grep de discrimination
+```
+grep -n "topo = System.get_topology()" /usr/lib/python3.14/site-packages/safecor/_dom0_controller.py
+484:            topo = System.get_topology()
+```
+- Attention : Safecor lib files are in `/usr/lib/python3.14/site-packages/safecor`.

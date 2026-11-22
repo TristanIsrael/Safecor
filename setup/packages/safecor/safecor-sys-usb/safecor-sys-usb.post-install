@@ -44,9 +44,11 @@ chgrp safecor /dev/hvc*
 rc-update add safecor-sys-usb-controller
 rc-service safecor-sys-usb-controller start
 
-# Start vchan SFTP server for direct mount
-rc-update add safecor-vchan-sftp
-rc-service safecor-vchan-sftp start
+# Remove the deprecated safecor-vchan-sftp service (upgrade path): the
+# SFTP channels of the direct mount are now started by the sys-usb
+# controller (component safecor_direct_mount)
+rc-service safecor-vchan-sftp stop 2>/dev/null || true
+rc-update del safecor-vchan-sftp 2>/dev/null || true
 
 # Start vchan servers (msg, input, tty)
 rc-update add setup-vchan default

@@ -107,6 +107,13 @@ the kernel command line.
 | C1 | Discover components | `discover_components()` | `discover/components` | req/resp | resp: `components[]` of `{id, domain_name, label, type, state, version?, description?}` | Dom0 + sys-usb | ✅ (both mocks respond) |
 | C2 | Publish own components | `publish_components(components)` | `discover/components` | resp | product publishes its own component states | (product) | n/a (product side) |
 
+The `SysUsbController` (sys-usb) publishes, besides the disk and input
+controllers, the **`safecor_direct_mount`** component: the state of the SFTP
+channels of the direct USB mount. It is the **single synchronization point**
+of the direct USB mount (NFR-3): the business DomUs react to its
+notification (`READY` ⇒ mount `/media/usb`, `OFF` ⇒ unmount) instead of
+polling.
+
 ## 7. Logging (provided by the `Logger`, published by Dom0 / DomUs)
 
 `Api().debug/info/warn/error/critical` write to the local log file **and** publish on the
@@ -170,6 +177,7 @@ Runtime topology access over MQTT, used by DomUs to discover their own configura
 |---|-----|-------|-----------|
 | NFR-1 | Functions called from MQTT callbacks must be **non-blocking**. | All `safecor` library API methods invoked in the MQTT event loop (callbacks, message handlers). | A blocking call (sleep, polling, I/O with timeout) in a callback stalls all other message processing. Long-running or retry logic must be delegated to the caller (e.g., a dedicated thread/task like `DirectMountManager`). |
 | NFR-2 | Functions called from MQTT callbacks must have **error handling** (no unhandled exceptions). | All `safecor` library API methods invoked in the MQTT event loop. | An unhandled exception in a callback can crash the MQTT handler or leave the system in an inconsistent state. All public API methods must catch and log exceptions, returning a safe default or raising a typed error. |
+| NFR-3 | **Synchronization by messages, not by polling.** Cross-component and cross-domain readiness is established **only** through the **messages and notifications of the MQTT bus** (component states on `system/discover/components`, events). **Polling and retry loops are forbidden** to establish the readiness of a remote component. | All components that establish the readiness of a remote component over the bus. | A component **publishes its state**, the consumers **react to the notification**. A **one-shot** request/response (e.g. `my_config`, `discover_components`) is allowed to fetch the current state at subscribe time. Scope: NFR-3 concerns *cross-domain readiness over the bus*; local state checks (e.g. `System.is_usb_mountpoint_ready()` reading `/proc/mounts`) are out of scope. |
 
 ---
 

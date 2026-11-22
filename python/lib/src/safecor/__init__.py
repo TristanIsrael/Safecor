@@ -20,6 +20,7 @@ from ._constants import (
     BenchmarkId,
     ComponentState,
     DiskState,
+    MountMode,
     Settings,
 )
 from ._syslogger import SysLogger
@@ -85,6 +86,7 @@ __all__ = [
     "Domain",
     "DomainType",
     "DiskState",
+    "MountMode",
     "XenStore",
     "XsDomain",
     "XsKey",

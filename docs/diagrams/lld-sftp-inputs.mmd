@@ -14,8 +14,8 @@ flowchart LR
     subgraph SYSUSB["sys-usb — USB controller domain, trust low"]
         direction TB
         USBST["USB storage devices<br/>mounted /media/usb/&lt;label&gt;"]
-        SFTPS["vchan-socket-proxy, server mode<br/>one per authorized domain, sftp channel<br/>started by safecor-vchan-sftp.py"]
-        SOCAT["socat<br/>UNIX-LISTEN /var/run/safecor/vchan-&lt;domain&gt;.sock, fork<br/>spawns the sftp-server per connection"]
+        SFTPS["vchan-socket-proxy, server mode<br/>one per authorized domain, sftp channel<br/>started by the SysUsbController (safecor_direct_mount)"]
+        SOCAT["socat<br/>UNIX-LISTEN /var/run/safecor/direct-mount/vchan-&lt;domain&gt;.sock, fork<br/>spawns the sftp-server per connection"]
         SFTP["openssh sftp-server<br/>bwrap sandbox (root /media/usb)<br/>read-only, request filters, umask"]
         INPD["sys-usb controller<br/>inputs daemon, evdev<br/>keyboard, mouse, touch"]
         VCIN["vchan-socket-proxy, client mode<br/>input channel<br/>socket /var/run/safecor/input.sock"]

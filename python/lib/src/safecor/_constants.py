@@ -37,6 +37,17 @@ class DiskState(Enum):
     UNMOUNTED = "unmounted"
 
 
+class MountMode(Enum):
+    """The direct mount mode of a domain.
+
+    Used for the ``direct_mount`` topology entry: ``RO`` for read-only
+    access to the USB storage from the domain, ``RW`` for read-write.
+    """
+
+    RO = "ro"
+    RW = "rw"
+
+
 class Constants:
     """This class defined constants for the whole system"""
 
@@ -74,6 +85,7 @@ class Constants:
     # System components
     SAFECOR_DISK_CONTROLLER = "safecor_disk_controller"
     SAFECOR_INPUT_CONTROLLER = "safecor_input_controller"
+    SAFECOR_DIRECT_MOUNT = "safecor_direct_mount"
     IO_BENCHMARK = "safecor_io_benchmark"
     SAFECOR_SYSTEM_CONTROLLER = "safecor_system_controller"
 

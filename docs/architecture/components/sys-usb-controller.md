@@ -2,7 +2,7 @@
 
 > **Scope**: the USB controller domain — USB storage management, file API over disks, inputs daemon, debug TTY.
 >
-> **Last updated**: 2026-11-20
+> **Last updated**: 2026-11-22
 >
 > **Main artifacts**: `SysUsbController` (`_sys_usb_controller.py`), the `safecor-sys-usb` package (post-install, `hardening.sh`), `create-tty-tunnel.sh`, `create-tty-terminal.sh`.
 
@@ -13,7 +13,7 @@
 - **USB storage management**: USB disks are mounted under `/media/usb/<label>`; archives (`.iso`, `.zip`, `.tar`, ...) can be mounted as virtual disks (`mount_file` / `unmount`).
 - **File API over disks**: answers `list_disks`, `list_files`, `read_file` (stages into the repository), `copy_file`, `create_file`, `file_fingerprint` (md5), `delete_file`. See [../../development/protocol.md](../../development/protocol.md) for the payloads.
 - **Inputs daemon**: reads the evdev events of the physical keyboard/mouse/touch and forwards them over the vchan `input` channel (see [inputs.md](inputs.md)).
-- **Direct mount server side**: for each authorized domain, the SFTP server over the vchan `sftp` channel (see [direct-usb-mount.md](direct-usb-mount.md)).
+- **Direct mount server side**: for each authorized domain, the SFTP server over the vchan `sftp` channel, started through the `safecor-dm-channels.py` root helper and published as the **`safecor_direct_mount`** component (the single synchronization point of the direct USB mount, NFR-3) (see [direct-usb-mount.md](direct-usb-mount.md)).
 - **Queue management**: `system/sys-usb/clear-queues` clears the pending commands.
 
 ## Hardening

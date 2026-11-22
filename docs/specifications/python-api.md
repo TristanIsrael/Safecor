@@ -68,6 +68,7 @@ These rules apply to **all** `safecor` library API methods invoked in the MQTT e
 |---|-----|-----------|
 | NFR-1 | Functions called from MQTT callbacks must be **non-blocking**. | A blocking call (sleep, polling, I/O with timeout) in a callback stalls all other message processing. Long-running or retry logic must be delegated to the caller (e.g. a dedicated thread/task like `DirectMountManager`). |
 | NFR-2 | Functions called from MQTT callbacks must have **error handling** (no unhandled exceptions). | An unhandled exception in a callback can crash the MQTT handler or leave the system in an inconsistent state. All public API methods must catch and log exceptions, returning a safe default or raising a typed error. |
+| NFR-3 | **Synchronization by messages, not by polling.** Cross-component and cross-domain readiness is established **only** through the **messages and notifications of the MQTT bus** (component states on `system/discover/components`, events). **Polling and retry loops are forbidden** to establish the readiness of a remote component: a component **publishes its state**, the consumers **react to the notification**. | All components that establish the readiness of a remote component over the bus. A **one-shot** request/response (e.g. `my_config`, `discover_components`) is allowed to fetch the current state at subscribe time. NFR-3 concerns *cross-domain readiness over the bus*; local state checks (e.g. `System.is_usb_mountpoint_ready()` reading `/proc/mounts`) are out of scope. |
 
 ## Library module map
 
@@ -78,7 +79,7 @@ These rules apply to **all** `safecor` library API methods invoked in the MQTT e
 | `_api.py` | `Api` | The DomU-facing asynchronous API (singleton) |
 | `_api_helper.py` | `ApiHelper` | Helper utilities around the `Api` |
 | `_dom0_controller.py` | `Dom0Controller` | Dom0-side command handler (see [../architecture/components/core-controller.md](../architecture/components/core-controller.md) for the dispatch pattern) |
-| `_sys_usb_controller.py` | `SysUsbController` | Core DomU: real USB/disk controller (the emulator's `MockSysUsbController` stands in for it) |
+| `_sys_usb_controller.py` | `SysUsbController` | Core DomU: real USB/disk controller (the emulator's `MockSysUsbController` stands in for it). Also hosts the SFTP channels of the direct USB mount (module-level sandbox/channel functions) and publishes the **`safecor_direct_mount`** component — the single synchronization point of the direct USB mount (NFR-3). |
 | `_mqtt_client.py` | `MqttClient`, `ConnectionType` | MQTT transport (UNIX socket / TCP) |
 | `_mqtt_factory.py` | `MqttFactory` | Creates a Dom0 or DomU client (incl. `create_mqtt_network_dev` for development) |
 | `_mqtt_helper.py` | `MqttHelper` | MQTT payload helpers |
@@ -87,7 +88,7 @@ These rules apply to **all** `safecor` library API methods invoked in the MQTT e
 | `_configuration_helper.py` | `ConfigurationHelper`, `Configuration` | Applies the matching hardware configuration from the topology |
 | `_request_factory.py` / `_response_factory.py` / `_notification_factory.py` | factories | Build the JSON payloads for requests / responses / notifications |
 | `_topics.py` | `Topics` | The topic-name reference |
-| `_constants.py` | `Constants`, `Settings`, `DiskState`, `ComponentState`, `InputType` | System-wide constants |
+| `_constants.py` | `Constants`, `Settings`, `DiskState`, `ComponentState`, `InputType`, `MountMode` | System-wide constants. `MountMode` (`RO`/`RW`) is the direct USB mount mode. |
 | `_logger.py` / `_syslogger.py` | `Logger`, `SysLogger` | Logging (local file + MQTT `system/events/*`) |
 | `_file_helper.py` | `FileHelper` | File listing, fingerprinting (md5), folder traversal |
 | `_disk_monitor.py` | `DiskMonitor` | inotify-based disk/file monitoring |
@@ -98,5 +99,5 @@ These rules apply to **all** `safecor` library API methods invoked in the MQTT e
 | `_tasks_runner.py` | `TaskRunner` | Background task execution |
 | `_components_helper.py` | `ComponentsHelper` | Component discovery helpers |
 | `_debugging.py` | `Debugging` | Debugging utilities |
-| `_direct_mount_manager.py` | `DirectMountManager` | Manages the direct USB mount from sys-usb via vchan+sshfs. Runs as a standalone process in a DomU. Handles the full flow: query topology → discover domid → generate vchan script → mount via sshfs. |
+| `_direct_mount_manager.py` | `DirectMountManager` | Manages the direct USB mount from sys-usb via vchan+sshfs. Runs as a standalone process in a DomU. **Event-driven (NFR-3)**: keeps a persistent MQTT client and reacts to the bus — a one-shot `my_config` query determines the mount mode, and the `safecor_direct_mount` component state triggers the mount (`READY`) or unmount (`OFF`); a watchdog thread blocked on the sshfs process remounts on its death. |
 | `deprecated/` | — | Legacy code, do not extend |

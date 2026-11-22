@@ -32,8 +32,7 @@ options="!check"  # no tests provided
   hardening.sh
   fuse.conf
   doas-svc-sys-usb-controller.conf
-  safecor-vchan-sftp.initd
-  safecor-vchan-sftp.py
+  safecor-dm-channels.py
   "
 
 CONFDIR="/etc/safecor"
@@ -60,9 +59,8 @@ package() {
     install -D -m755 "$srcdir"/hardening.sh "$pkgdir"/usr/lib/safecor/bin/hardening.sh
     install -D -m644 "$srcdir"/doas-svc-sys-usb-controller.conf "$pkgdir"/etc/doas.d/doas-svc-sys-usb-controller.conf
 
-    # Direct mount (vchan SFTP)
-    install -D -m755 "$srcdir"/safecor-vchan-sftp.initd "$pkgdir"/etc/init.d/safecor-vchan-sftp
-    install -D -m755 "$srcdir"/safecor-vchan-sftp.py "$pkgdir"/$BINDIR/safecor-vchan-sftp.py
+    # Direct mount (vchan SFTP channels, started by the controller)
+    install -D -m755 "$srcdir"/safecor-dm-channels.py "$pkgdir"/$BINDIR/safecor-dm-channels.py
 
     # The vchan clients (msg, input, tty) come from safecor-domu-base
     # (a dependency of this package).
@@ -70,7 +68,7 @@ package() {
 
 sha512sums="
 74411c9f8b5343a31e5a67b6517e781cff650cc22dde2985793d106b44f6313a2659ad0cce614aa51301ee8c8b3fe5f9aab4ce5e84445624df4cf3db2064db0d  modules
-87e5c243794a541c64d64e5a6c68e48c272181960e3c6c8eea3ec84ee3d880b74944dffb4a372207b5f883ca81ed32d9bc54f4e5ce32f9cb9d22d83c4c0c3c50  safecor-sys-usb-controller.initd
+291fd74ac959b4f89c622b90ba43415e2e41e0895c5211664fe5b072ba7481fe9d80a71e11ebaa67494d866f354187415ebd98ec238eb4a23c4b41291a58fbee  safecor-sys-usb-controller.initd
 6e840f4fc122380c45dfdbf61f85e2842fc1cb6065cb14d9d1b450daa6fd167a6a6cb6b5adbde47f3ae723f35d5028603caf66d5ee8b2f5a67a50247914c043a  notify-disk-added.py
 4f773ace7c353c55e0852c0bbad9c4108a605335ad57328d9a5f05356a7fc1785523771b26a6faf3660aafae56be2d92396fa73b8624d72cae5ffd1f52b1ad10  notify-disk-removed.py
 f203df50179a2993252abc656c05e4d4552006fa232d16d9cbd7fad18b7406c37fcd74d571622416acb7f839ee2eeb96b875503e3aa3dd8c5097c5dded7cafe3  mdev-usb-storage.sh
@@ -80,7 +78,6 @@ e61d8783fb439ec66adf8e70c5b9b59cb1df2590118be80cdc792c70ba2e1fea9afd247ccc1d4c96
 f90d16fe706e2c81392eebc715ec2ec00746ebd83c50206a6d216adbdacacb2462f080a6b8af36dcf0fc2cc41fa5c41b8a4f6bd578f00ee29cc29e2dd2f63bd7  create-tty-tunnel.sh
 a34c407004e72b2f20b2c720e474e5a3e843554f3dab82c64ce029d56a95a0e5fb4e89e41c4d217e6e85dcd234f48c8341097a79e5fba5373414fcd0b72cbf57  hardening.sh
 ba274975e3c728b600dc828024f14d880183e1ca5a1214f121d20424398c402791bb85ae7eddf1118ed13801b6645bdc96946e666658999a17298e927a4afb21  fuse.conf
-3060d310c49aab0ca87d69fd5c6dda3ad6c35724ebdac29fa72f05980e40deed0d9d68bb618535a514123c49485b4f4b6f68b9b4104b9f40c09e3f711e041aa3  doas-svc-sys-usb-controller.conf
-eced1e4b0fbe8d46147e933fe0638d1942dec6988bc695174889c9f8cc067359613fddadf6836ee34889c6bdaf1491855375f6864d9a8d7056a03bfec6f5bf86  safecor-vchan-sftp.initd
-cd4a6d2d9068bc12ca0fd021973a3d60c37e2587f96314107b9a3bfee962cefa77a26fe1a94be894b0d97b2d3ca9dbef62e80adf66b0c56087422199b8ec2360  safecor-vchan-sftp.py
+d0d188e2ad39bc95fe4a61f45cebc1db61d8eab5039fc4f751138fa20028a78c09eaf13b95cbd6a7f7c355bb799892c36c26d6a7eb74d045bb9f9e1a674f5c43  doas-svc-sys-usb-controller.conf
+1fd911a35adbd5c4e9291f8f30116d2097f17e039a0f934c3d71ddd10eccf3fd71ea77241de8de4ef642e627d019d9f40748f2d5e812fbae7bb97b845b75cb59  safecor-dm-channels.py
 "

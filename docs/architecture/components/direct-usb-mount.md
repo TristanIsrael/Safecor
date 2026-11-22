@@ -4,7 +4,7 @@
 >
 > **Last updated**: 2026-11-22
 >
-> **Main artifacts**: `DirectMountManager` (`_direct_mount_manager.py`, DomU), `safecor-vchan-sftp.py` (sys-usb), the `sftp` vchan channel, `sshfs`.
+> **Main artifacts**: `SysUsbController` + the `safecor_direct_mount` component (`_sys_usb_controller.py`, sys-usb), the `safecor-dm-channels.py` root helper (sys-usb), `DirectMountManager` (`_direct_mount_manager.py`, DomU), the `sftp` vchan channel, `sshfs`.
 
 ## What it is
 
@@ -25,8 +25,8 @@ application (DomU) opens files under /media/usb
   → vchan-socket-proxy, client mode, stdio
       -m client <sys-usb domid> /local/domain/system/vchan/<domain>/sftp -
   → vchan "sftp" PV channel (ring in xenstore /local/domain/system/vchan/<domain>/sftp)
-  → vchan-socket-proxy, server mode (sys-usb, one per authorized domain, started by safecor-vchan-sftp.py)
-  → socat (UNIX-LISTEN /var/run/safecor/vchan-<domain>.sock, fork)
+  → vchan-socket-proxy, server mode (sys-usb, one per authorized domain, started by the SysUsbController through the safecor-dm-channels.py doas helper)
+  → socat (UNIX-LISTEN /var/run/safecor/direct-mount/vchan-<domain>.sock, fork)
   → bubblewrap (per session: private tmpfs root, /media/usb bound at the same path and made the working directory, sftp-server + setpriv + its libraries + minimal /etc/passwd + musl loader read-only, fresh /dev, unshared pid/ipc/uts/net namespaces)
   → openssh sftp-server (read-only on ro channels, request filters, umask)
 ```
@@ -35,14 +35,31 @@ application (DomU) opens files under /media/usb
 
 When a USB disk is added, removed or changed, the mdev hook (`mdev-usb-storage.sh`) kills the existing sftp sessions: each session's sandbox is a mount-table snapshot taken at spawn, so the clients' sshfs (with the `reconnect` option) must reconnect to pick up the new mount state.
 
+## The `safecor_direct_mount` component (the single synchronization point)
+
+The readiness of the SFTP side is published as the state of the **`safecor_direct_mount`** component, on `system/discover/components`, by the `SysUsbController` (sys-usb). It is the **single synchronization point** of the feature (NFR-3): the consumers react to its notification, they never poll.
+
+| State | Meaning |
+|-------|---------|
+| `STARTING` | boot: the SFTP channels are not up yet (or the one-shot `my_config` query timed out — the component stays `STARTING`, **no retry**, and it is visible in the diagnostics as the SFTP side being broken while the disks are fine). |
+| `READY` | the SFTP channel start pass completed for every `direct_mount` domain (channels started, or skipped with a logged warning), **or** there is zero `direct_mount` domain. |
+| `OFF` | sys-usb is shutting down or restarting: the consumers unmount. |
+
+The controller resolves the topology with a **one-shot `my_config` query** (a bounded wait in a dedicated thread, NFR-1), reads each domain's domid once from xenstore (NFR-1), and starts/stops the per-domain channels through the **`safecor-dm-channels.py`** root helper (run via `doas`, the only privilege elevation — the per-session sandbox needs a root parent to drop to the `svc-sys-usb-sftp` account).
+
 ## `DirectMountManager` (DomU side)
 
-Runs as a standalone process in the DomU. Full flow:
+Runs as a standalone process in the DomU. **Event-driven (NFR-3)** — it keeps a persistent MQTT client for the whole process life and reacts to the bus instead of polling:
 
-1. Query the topology (`system/topology/my_config`) to check that `direct_mount` is enabled for this domain.
-2. Discover the `sys-usb` domid (xenstore `domids/sys-usb`).
-3. Generate the `vchan-sftp` script (the `ssh_command` of sshfs).
-4. Mount `/media/usb` with sshfs (read-only option when the mode is `ro`).
+1. At subscribe time it issues the two one-shot requests allowed by NFR-3: a `my_config` query (the domain's mount mode) and a `discover_components` request (the component states).
+2. The one-shot `my_config` answer determines the mode: `RO`/`RW` ⇒ enabled, `False` (not enabled) ⇒ the process logs and **exits cleanly**.
+3. On every `safecor_direct_mount` notification it updates the component state (a state update only — NFR-1) and wakes a worker thread:
+   - `READY` + mode known + not mounted ⇒ generate the `vchan-sftp` script and mount `/media/usb` with sshfs (read-only option when the mode is `ro`), then start a watchdog thread blocked on the sshfs process.
+   - `OFF` ⇒ unmount.
+   - `STARTING` ⇒ nothing (the mount waits for `READY`).
+4. The **watchdog** is blocked on the sshfs process (an event, not a poll): when sshfs dies it remounts, unless the process is stopping or the component is `OFF`.
+
+The mount is **proactive at the end of the domain startup and kept permanent**, whether or not a USB disk is connected (the sshfs mount of `sys-usb`'s `/media/usb` directory succeeds even when empty). Product applications use `System.is_usb_mountpoint_ready()` / `System.on_usb_mountpoint_ready()` rather than the manager directly.
 
 ## Low Level Design (SFTP + inputs channels)
 
@@ -63,8 +80,8 @@ flowchart LR
     subgraph SYSUSB["sys-usb — USB controller domain, trust low"]
         direction TB
         USBST["USB storage devices<br/>mounted /media/usb/&lt;label&gt;"]
-        SFTPS["vchan-socket-proxy, server mode<br/>one per authorized domain, sftp channel<br/>started by safecor-vchan-sftp.py"]
-        SOCAT["socat<br/>UNIX-LISTEN /var/run/safecor/vchan-&lt;domain&gt;.sock, fork<br/>spawns the sftp-server per connection"]
+        SFTPS["vchan-socket-proxy, server mode<br/>one per authorized domain, sftp channel<br/>started by the SysUsbController (safecor_direct_mount)"]
+        SOCAT["socat<br/>UNIX-LISTEN /var/run/safecor/direct-mount/vchan-&lt;domain&gt;.sock, fork<br/>spawns the sftp-server per connection"]
         SFTP["openssh sftp-server<br/>bwrap sandbox (root /media/usb)<br/>read-only, request filters, umask"]
         INPD["sys-usb controller<br/>inputs daemon, evdev<br/>keyboard, mouse, touch"]
         VCIN["vchan-socket-proxy, client mode<br/>input channel<br/>socket /var/run/safecor/input.sock"]
