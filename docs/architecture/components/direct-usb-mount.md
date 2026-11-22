@@ -2,7 +2,7 @@
 
 > **Scope**: the `direct_mount` feature — a DomU mounts `/media/usb` directly from `sys-usb` over a vchan SFTP channel (sshfs).
 >
-> **Last updated**: 2026-11-20
+> **Last updated**: 2026-11-22
 >
 > **Main artifacts**: `DirectMountManager` (`_direct_mount_manager.py`, DomU), `safecor-vchan-sftp.py` (sys-usb), the `sftp` vchan channel, `sshfs`.
 
@@ -27,11 +27,11 @@ application (DomU) opens files under /media/usb
   → vchan "sftp" PV channel (ring in xenstore /local/domain/system/vchan/<domain>/sftp)
   → vchan-socket-proxy, server mode (sys-usb, one per authorized domain, started by safecor-vchan-sftp.py)
   → socat (UNIX-LISTEN /var/run/safecor/vchan-<domain>.sock, fork)
-  → bubblewrap (per session: /media/usb bound as the sandbox root, sftp-server + musl loader read-only, fresh /dev, unshared pid/ipc/uts/net namespaces)
+  → bubblewrap (per session: private tmpfs root, /media/usb bound at the same path and made the working directory, sftp-server + setpriv + its libraries + minimal /etc/passwd + musl loader read-only, fresh /dev, unshared pid/ipc/uts/net namespaces)
   → openssh sftp-server (read-only on ro channels, request filters, umask)
 ```
 
-**Security constraints on the server side**: the `sftp-server` runs in a **per-session bubblewrap sandbox** (`bwrap`, spawned by socat for every connection — no boot-time assembly): `/media/usb` is bound as the sandbox root (read-only for the `ro` channels), the `sftp-server` binary and the musl dynamic loader are bound in read-only, a fresh `/dev` is mounted, the pid/ipc/uts/net namespaces are unshared, and the `sftp-server` runs as the dedicated `svc-sys-usb-sftp` service account with no capabilities: `setpriv` (bound in read-only) drops to the account inside the sandbox before exec, and only `CAP_SETUID`, `CAP_SETGID` and `CAP_SETPCAP` remain in the bounding set for the short-lived root switch — the disks are owned by the account (mdev mount options), so no DAC override is needed. The sandbox root is installed by a double `pivot_root` with the old root detached, so the host root filesystem is unreachable from the sandbox (unlike a plain chroot, which a root process can escape). The `sftp-server` is read-only when the channel mode is `ro`, applies request filters and a restrictive umask, and only the domains listed in the topology are authorized (one server per authorized domain).
+**Security constraints on the server side**: the `sftp-server` runs in a **per-session bubblewrap sandbox** (`bwrap`, spawned by socat for every connection — no boot-time assembly). The sandbox root is a **private tmpfs** that exists only for the duration of the session: nothing it creates ever reaches the host filesystem or the client's sshfs view. `/media/usb` is bound at the same path (read-only for the `ro` channels) and made the working directory, so the served SFTP root is exactly the USB mount tree. The `sftp-server` binary, the `setpriv` helper (its path is resolved with `shutil.which` at start — it moves across Alpine releases) and the shared libraries `setpriv` needs (resolved with `ldd` at start, so the bind list stays correct across util-linux versions), a **minimal one-account `/etc/passwd`** (written at start, providing only the account the server runs as — `sftp-server` 10+ refuses to start if its own uid is not in `/etc/passwd`), and the musl dynamic loader are bound in read-only; a fresh `/dev` is mounted and the pid/ipc/uts/net namespaces are unshared. The `sftp-server` runs as the dedicated `svc-sys-usb-sftp` service account with no capabilities: `setpriv` (bound in read-only) drops to the account inside the sandbox before exec, and only `CAP_SETUID`, `CAP_SETGID` and `CAP_SETPCAP` remain in the bounding set for the short-lived root switch — the disks are owned by the account (mdev mount options), so no DAC override is needed. `bwrap` pivots twice into the new root and detaches the old one, so the host root filesystem is unreachable from the sandbox (unlike a plain chroot, which a root process can escape). The `sftp-server` is read-only when the channel mode is `ro`, applies request filters and a restrictive umask, and only the domains listed in the topology are authorized (one server per authorized domain).
 
 When a USB disk is added, removed or changed, the mdev hook (`mdev-usb-storage.sh`) kills the existing sftp sessions: each session's sandbox is a mount-table snapshot taken at spawn, so the clients' sshfs (with the `reconnect` option) must reconnect to pick up the new mount state.
 

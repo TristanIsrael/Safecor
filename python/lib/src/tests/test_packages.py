@@ -11,6 +11,7 @@ Safecor Licence — see python/lib/LICENCE.md
 """
 
 import importlib.util
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -204,23 +205,57 @@ class TestSafecorVchanSftp(unittest.TestCase):
             with self.assertRaises(KeyError):
                 self.mod.sftp_credentials()
 
+    @classmethod
+    def make_context(cls):
+        """A sandbox context with the Alpine 3.24 values."""
+        return cls.mod.SandboxContext(
+            setpriv="/bin/setpriv",
+            setpriv_libs=["/usr/lib/libeconf.so.0", "/usr/lib/libcap-ng.so.0"],
+            passwd="/var/run/safecor/sftp-sandbox-passwd",
+        )
+
     def test_bwrap_args_rw(self):
         self.assertEqual(
-            self.mod.bwrap_args("rw", 1002, 2000),
+            self.mod.bwrap_args("rw", 1002, 2000, self.make_context()),
             [
                 "bwrap",
+                "--tmpfs",
+                "/",
+                "--dir",
+                "/media/usb",
                 "--bind",
                 "/media/usb",
-                "/",
+                "/media/usb",
+                "--dir",
+                "/etc",
                 "--ro-bind",
-                "/usr/lib/ssh/sftp-server",
-                "/usr/lib/ssh/sftp-server",
+                "/var/run/safecor/sftp-sandbox-passwd",
+                "/etc/passwd",
+                "--dir",
+                "/bin",
                 "--ro-bind",
-                "/usr/bin/setpriv",
-                "/usr/bin/setpriv",
+                "/bin/setpriv",
+                "/bin/setpriv",
+                "--dir",
+                "/lib",
                 "--ro-bind",
                 "/lib/ld-musl-x86_64.so.1",
                 "/lib/ld-musl-x86_64.so.1",
+                "--dir",
+                "/usr",
+                "--dir",
+                "/usr/lib",
+                "--ro-bind",
+                "/usr/lib/libeconf.so.0",
+                "/usr/lib/libeconf.so.0",
+                "--ro-bind",
+                "/usr/lib/libcap-ng.so.0",
+                "/usr/lib/libcap-ng.so.0",
+                "--dir",
+                "/usr/lib/ssh",
+                "--ro-bind",
+                "/usr/lib/ssh/sftp-server",
+                "/usr/lib/ssh/sftp-server",
                 "--cap-drop",
                 "ALL",
                 "--cap-add",
@@ -237,9 +272,9 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "--unshare-net",
                 "--die-with-parent",
                 "--chdir",
-                "/",
+                "/media/usb",
                 "--",
-                "/usr/bin/setpriv",
+                "/bin/setpriv",
                 "--reuid",
                 "1002",
                 "--regid",
@@ -254,21 +289,46 @@ class TestSafecorVchanSftp(unittest.TestCase):
 
     def test_bwrap_args_ro(self):
         self.assertEqual(
-            self.mod.bwrap_args("ro", 1002, 2000),
+            self.mod.bwrap_args("ro", 1002, 2000, self.make_context()),
             [
                 "bwrap",
+                "--tmpfs",
+                "/",
+                "--dir",
+                "/media/usb",
                 "--ro-bind",
                 "/media/usb",
-                "/",
+                "/media/usb",
+                "--dir",
+                "/etc",
                 "--ro-bind",
-                "/usr/lib/ssh/sftp-server",
-                "/usr/lib/ssh/sftp-server",
+                "/var/run/safecor/sftp-sandbox-passwd",
+                "/etc/passwd",
+                "--dir",
+                "/bin",
                 "--ro-bind",
-                "/usr/bin/setpriv",
-                "/usr/bin/setpriv",
+                "/bin/setpriv",
+                "/bin/setpriv",
+                "--dir",
+                "/lib",
                 "--ro-bind",
                 "/lib/ld-musl-x86_64.so.1",
                 "/lib/ld-musl-x86_64.so.1",
+                "--dir",
+                "/usr",
+                "--dir",
+                "/usr/lib",
+                "--ro-bind",
+                "/usr/lib/libeconf.so.0",
+                "/usr/lib/libeconf.so.0",
+                "--ro-bind",
+                "/usr/lib/libcap-ng.so.0",
+                "/usr/lib/libcap-ng.so.0",
+                "--dir",
+                "/usr/lib/ssh",
+                "--ro-bind",
+                "/usr/lib/ssh/sftp-server",
+                "/usr/lib/ssh/sftp-server",
                 "--cap-drop",
                 "ALL",
                 "--cap-add",
@@ -285,9 +345,9 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "--unshare-net",
                 "--die-with-parent",
                 "--chdir",
-                "/",
+                "/media/usb",
                 "--",
-                "/usr/bin/setpriv",
+                "/bin/setpriv",
                 "--reuid",
                 "1002",
                 "--regid",
@@ -300,6 +360,75 @@ class TestSafecorVchanSftp(unittest.TestCase):
                 "-R",
             ],
         )
+
+    def test_parse_ldd_output(self):
+        # A setpriv 2.42 (util-linux) ldd output on a musl system.
+        output = (
+            "\tld-linux-x86-64.so.2 => /lib/ld-musl-x86_64.so.1 (0x7f0000000000)\n"
+            "\tlibcap-ng.so.0 => /usr/lib/libcap-ng.so.0 (0x7f0000001000)\n"
+            "\tlibeconf.so.0 => /usr/lib/libeconf.so.0 (0x7f0000002000)\n"
+            "\tlibc.musl-x86_64.so.1 => /lib/ld-musl-x86_64.so.1 "
+            "(0x7f0000003000)\n"
+            "\tlibmissing.so.0 => not found\n"
+        )
+        self.assertEqual(
+            self.mod.parse_ldd_output(output),
+            ["/usr/lib/libcap-ng.so.0", "/usr/lib/libeconf.so.0"],
+        )
+
+    def test_parse_ldd_output_skips_musl_and_dedups(self):
+        output = (
+            "\tlibfoo.so.0 => /usr/lib/libfoo.so.0 (0x1)\n"
+            "\tlibfoo.so.0 => /usr/lib/libfoo.so.0 (0x1)\n"
+            "\tlibc.so.0 => /lib/libc.so.0 (0x2)\n"
+            "statically linked\n"
+        )
+        self.assertEqual(
+            self.mod.parse_ldd_output(output),
+            ["/usr/lib/libfoo.so.0", "/lib/libc.so.0"],
+        )
+
+    def test_parse_ldd_output_empty(self):
+        self.assertEqual(self.mod.parse_ldd_output(""), [])
+        self.assertEqual(self.mod.parse_ldd_output("statically linked\n"), [])
+
+    def test_setpriv_library_paths(self):
+        ldd_output = (
+            "\tld-linux-x86-64.so.2 => /lib/ld-musl-x86_64.so.1 (0x1)\n"
+            "\tlibcap-ng.so.0 => /usr/lib/libcap-ng.so.0 (0x2)\n"
+        )
+        with mock.patch.object(
+            self.mod.subprocess, "run", return_value=mock.Mock(stdout=ldd_output)
+        ) as m:
+            self.assertEqual(
+                self.mod.setpriv_library_paths("/bin/setpriv"),
+                ["/usr/lib/libcap-ng.so.0"],
+            )
+            m.assert_called_once()
+            self.assertEqual(m.call_args.args[0], ["ldd", "/bin/setpriv"])
+
+    def test_bind_dirs(self):
+        self.assertEqual(
+            self.mod.bind_dirs(
+                ["/etc/passwd", "/usr/lib/ssh/sftp-server", "/usr/lib/libfoo.so.0"]
+            ),
+            ["/etc", "/usr", "/usr/lib", "/usr/lib/ssh"],
+        )
+
+    def test_bind_dirs_shallow_and_empty(self):
+        self.assertEqual(self.mod.bind_dirs(["/setpriv"]), [])
+        self.assertEqual(self.mod.bind_dirs([]), [])
+
+    def test_write_sandbox_passwd(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = str(Path(tmp) / "safecor" / "passwd")
+            result = self.mod.write_sandbox_passwd(1002, 2000, path)
+            self.assertEqual(result, path)
+            self.assertEqual(
+                Path(path).read_text(),
+                "svc-sys-usb-sftp:x:1002:2000::/:/sbin/nologin\n",
+            )
+            self.assertEqual(os.stat(path).st_mode & 0o777, 0o644)
 
 
 if __name__ == "__main__":

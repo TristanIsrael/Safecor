@@ -3,18 +3,104 @@
 Purpose: validate the #260 fix re-implemented as a per-session bubblewrap sandbox (run 15: the boot-time chroot was empty — musl `ldd` format), the #262 fix (the domid write race in `reboot-domain.sh`), diagnose the debug tty regression (Phase D), and re-validate the five objectives of `test-channels-migration.md`.
 
 Preparation:
-- [ ] Rebuild the `safecor-sys-usb` package from `version-2` (the bubblewrap switch + the idempotent `start_channel` + the hot-plug hook + the dedicated `svc-sys-usb-sftp` service account; new dependencies `bubblewrap`, `setpriv`)
-- [ ] On Dom0: `apk update && apk add safecor-core` (and the rebuilt package on the DomUs at reprovisioning)
-- [ ] Full cold boot in debug mode with a USB disk connected before boot
+- [x] Rebuild the `safecor-sys-usb` package from `version-2` (the bubblewrap switch + the idempotent `start_channel` + the hot-plug hook + the dedicated `svc-sys-usb-sftp` service account; new dependencies `bubblewrap`, `setpriv`)
+- [x] On Dom0: `apk update && apk add safecor-core` (and the rebuilt package on the DomUs at reprovisioning)
+- [x] Full cold boot in debug mode with a USB disk connected before boot
 - [ ] On the business domains with `direct_mount`: `fusermount -u /media/usb` (the run-15 FUSE mount is dead) — or rely on the cold boot
 
 Smoke test (sys-usb, before any other check — proves bwrap works under the DomU kernel, that the setpriv switch to the service account works, and that sftp-server execs in the sandbox):
-- [ ] `bwrap --version` works
-- [ ] `id svc-sys-usb-sftp` returns an account (created by the package post-install)
+- [x] `bwrap --version` works
+  - OK
+```
+bwrap --version
+bubblewrap 0.12.0
+```
+- [x] `id svc-sys-usb-sftp` returns an account (created by the package post-install)
+  - `uid=1001(svc-sys-usb-sftp) gid=2000(safecor) groups=2000(safecor),2000(safecor)`
 - [ ] The SFTP handshake succeeds in the sandbox (an `SFTP_VERSION` answer is printed):
   - `printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 bwrap --bind /media/usb / --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --ro-bind /usr/bin/setpriv /usr/bin/setpriv --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir / -- /usr/bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 | xxd | head`
   - Expected: a line starting with `0000000c 00000002 00000003`
+  - KO
+```
+printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5
+ bwrap --bind /media/usb / --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-
+server --ro-bind /usr/bin/setpriv /usr/bin/setpriv --ro-bind /lib/ld-musl-x86_64
+.so.1 /lib/ld-musl-x86_64.so.1 --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP
+_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-u
+ts --unshare-net --die-with-parent --chdir / -- /usr/bin/setpriv --reuid $(id -u
+ svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-
+server -u 077 | xxd | head
+bwrap: Can't find source path /usr/bin/setpriv: No such file or directory
+```
+  - `setpriv` is in `/bin`  
   - If it fails: check `/var/log/safecor/vchan-*.log`, and whether sftp-server needs more files in the sandbox (e.g. `/etc/passwd`) — add the missing `--ro-bind` in that case (dedicated follow-up commit)
+    - After replacing `/usr/bin/setpriv` with `/bin/setpriv` I got:
+```
+Error loading shared library libcap-ng.so.0: No such file or directory (needed by /usr/bin/setpriv)
+Error loading shared library libeconf.so.0: No such file or directory (needed by /usr/bin/setpriv)
+Error relocating /usr/bin/setpriv: capng_have_capability: symbol not found
+Error relocating /usr/bin/setpriv: capng_capability_to_name: symbol not found
+Error relocating /usr/bin/setpriv: econf_getStringValue: symbol not found
+Error relocating /usr/bin/setpriv: capng_update: symbol not found
+Error relocating /usr/bin/setpriv: capng_name_to_capability: symbol not found
+Error relocating /usr/bin/setpriv: econf_readConfig: symbol not found
+Error relocating /usr/bin/setpriv: capng_apply: symbol not found
+Error relocating /usr/bin/setpriv: econf_errString: symbol not found
+```
+  - After adding `--ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0` I got error `setpriv: failed to execute /usr/lib/ssh/sftp-server: Permission denied`.
+  - The directory `/media/usb/usr` was `0700`, we need to create the folders with the args `--dir /usr/lib --dir /usr/lib/ssh --dir /lib --dir /usr/bin`
+  - After adding permissions (`bwrap --bind /media/usb / --dir /usr --dir /usr/lib --dir /usr/lib/ssh --dir /lib --dir /usr/bin --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --ro-bind /bin/setpriv /usr/bin/setpriv --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir / -- /usr/bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077`) I got the error `No user found for uid 1001`
+  - I created a file /etc/sftp-sandbox-passwd with `echo 'svc-sys-usb-sftp:x:1001:2000::/:/sbin/nologin' > /etc/sftp-sandbox-passwd && chmod 644 /etc/sftp-sandbox-passwd`
+  - I added a bind of this file to `/etc/passwd`: `bwrap --bind /media/usb / --dir /etc --dir /usr --dir /usr/lib --dir /usr/lib/ssh --dir /lib --dir /usr/bin --ro-bind /etc/sftp-sandbox-passwd /etc/passwd --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --ro-bind /bin/setpriv /usr/bin/setpriv --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir / -- /usr/bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077` and finally I got no error.
+  - Then I tested with `printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5  bwrap --bind /media/usb / --dir /etc --dir /usr --dir /usr/lib --dir /usr/lib/ssh --dir /lib --dir /usr/bin --ro-bind /etc/sftp-sandbox-passwd /etc/passwd --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --ro-bind /bin/setpriv /usr/bin/setpriv --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir / -- /usr/bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077  | xxd | head` and got no output. The exit code was 0.
+
+>>> Ended the tests here
+
+### The fixed production smoke (new #260 commit — tmpfs sandbox root)
+
+The production script now resolves everything dynamically at start: `shutil.which("setpriv")` (the binary is in `/bin` on this target), `ldd` for setpriv's shared libraries (libeconf + libcap-ng on Alpine 3.24), and a minimal one-account `/etc/passwd` written to `/var/run/safecor/sftp-sandbox-passwd`. The sandbox root is a private tmpfs: `/media/usb` is bound at the same path and made the working directory (the SFTP root), so no junk directory ever reaches the system disk or the client.
+
+Prerequisite: rebuild the `safecor-sys-usb` package from `version-2` (the new commit) and reinstall it on sys-usb.
+
+Setup (once, as root — what the production script does at start):
+```
+mkdir -p /var/run/safecor
+echo "svc-sys-usb-sftp:x:$(id -u svc-sys-usb-sftp):$(id -g svc-sys-usb-sftp)::/:/sbin/nologin" > /var/run/safecor/sftp-sandbox-passwd
+chmod 644 /var/run/safecor/sftp-sandbox-passwd
+```
+
+- [ ] The SFTP handshake succeeds in the sandbox (an `SFTP_VERSION` answer is printed) — the exact production command (Alpine 3.24 values):
+```
+printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 bwrap --tmpfs / --dir /media/usb --bind /media/usb /media/usb --dir /etc --ro-bind /var/run/safecor/sftp-sandbox-passwd /etc/passwd --dir /bin --ro-bind /bin/setpriv /bin/setpriv --dir /lib --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --dir /usr --dir /usr/lib --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --dir /usr/lib/ssh --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir /media/usb -- /bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 | xxd | head
+```
+  - Expected: a line starting with `0000000c 00000002 00000003`
+  - Then: `ls -la /media/usb` must list only the disk subdirectories (no `/usr`, `/lib`, `/etc`, `/bin` — the sandbox root is a tmpfs, gone with the session)
+  - If it is still silent (exit code 0, no answer), run the probes A/B/C below before anything else:
+    - **A — host, no sandbox** (does sftp-server answer at all for this account on this target?):
+```
+printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 /bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 | xxd | head
+```
+    - **B — sandbox, liveness + stdin through a held-open fifo** (separates "process died" from "process alive but the pipe never reached it"):
+```
+mkfifo /tmp/sftp.in
+( sleep 300 > /tmp/sftp.in ) & WRITER=$!
+timeout 30 bwrap --tmpfs / --dir /media/usb --bind /media/usb /media/usb --dir /etc --ro-bind /var/run/safecor/sftp-sandbox-passwd /etc/passwd --dir /bin --ro-bind /bin/setpriv /bin/setpriv --dir /lib --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --dir /usr --dir /usr/lib --ro-bind /usr/lib/libeconf.so.0 /usr/lib/libeconf.so.0 --ro-bind /usr/lib/libcap-ng.so.0 /usr/lib/libcap-ng.so.0 --dir /usr/lib/ssh --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --cap-drop ALL --cap-add CAP_SETUID --cap-add CAP_SETGID --cap-add CAP_SETPCAP --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir /media/usb -- /bin/setpriv --reuid $(id -u svc-sys-usb-sftp) --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 < /tmp/sftp.in > /tmp/sftp.out 2>/tmp/sftp.err &
+sleep 2
+ps ax | grep '[s]ftp-server'            # is the process alive? note the pid
+ls -l /proc/<pid>/fd                    # is fd 0 the fifo?
+cat /proc/<pid>/wchan                   # where is it blocked?
+printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' > /tmp/sftp.in   # inject the INIT
+sleep 2
+xxd /tmp/sftp.out; cat /tmp/sftp.err
+kill $WRITER 2>/dev/null; rm -f /tmp/sftp.in /tmp/sftp.out /tmp/sftp.err
+```
+      (the `sleep 300 > fifo` holds the write end open so the reader side never sees EOF; replace `<pid>` with the pid from `ps`)
+    - **C — sandbox, no setpriv** (sftp-server runs as root in the sandbox; isolates the setuid switch — it needs a root line in its passwd):
+```
+echo "root:x:0:0::/:/sbin/nologin" > /tmp/probe-c-passwd && chmod 644 /tmp/probe-c-passwd
+printf '\x00\x00\x00\x0c\x00\x00\x00\x01\x00\x00\x00\x03' | timeout 5 bwrap --tmpfs / --dir /media/usb --bind /media/usb /media/usb --dir /etc --ro-bind /tmp/probe-c-passwd /etc/passwd --dir /lib --ro-bind /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1 --dir /usr --dir /usr/lib/ssh --ro-bind /usr/lib/ssh/sftp-server /usr/lib/ssh/sftp-server --dev /dev --unshare-pid --unshare-ipc --unshare-uts --unshare-net --die-with-parent --chdir /media/usb -- /usr/lib/ssh/sftp-server -u 077 | xxd | head
+rm -f /tmp/probe-c-passwd
+```
 
 Forensics — the run-15 socat duplication (identify the double-start trigger):
 - [ ] `tail -50 /var/log/safecor/vchan-sftp.log` — how many « starting » lines (script invocations)?
@@ -23,7 +109,7 @@ Forensics — the run-15 socat duplication (identify the double-start trigger):
 
 Verification — #260, the sshfs direct mount (bubblewrap):
 - [ ] On sys-usb, one `socat UNIX-LISTEN:/var/run/safecor/vchan-<name>.sock,fork EXEC:"bwrap ..."` and one `vchan-socket-proxy -m server <domid> /local/domain/system/vchan/<name>/sftp /var/run/safecor/vchan-<name>.sock` per direct_mount domain — no duplicated listeners, no restart loop
-- [ ] On sys-usb, when a client connects, an sftp session runs in the sandbox: `ps ax | grep bwrap` shows `bwrap --bind /media/usb / ... /usr/bin/setpriv --reuid <uid> --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 [-R]`, no zombie accumulation
+- [ ] On sys-usb, when a client connects, an sftp session runs in the sandbox: `ps ax | grep bwrap` shows `bwrap --tmpfs / --dir /media/usb --[ro-]bind /media/usb /media/usb ... /bin/setpriv --reuid <uid> --regid 2000 --clear-groups --no-new-privs /usr/lib/ssh/sftp-server -u 077 [-R]`, no zombie accumulation
 - [ ] The sftp-server process runs as `svc-sys-usb-sftp` with no capabilities: `ps ax | grep sftp-server` shows the user, and `CapEff: 0000000000000000` in `/proc/<sftp-pid>/status`
 - [ ] A USB disk mount point is owned by the account: `stat -c '%U:%G %a' /media/usb/<disk>` → `svc-sys-usb-sftp:safecor 770`
 - [ ] The `ro` domains get `sftp-server -u 077 -R`, the `rw` domains `-u 077` only

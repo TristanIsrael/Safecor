@@ -18,10 +18,12 @@ Safecor Licence — see python/lib/LICENCE.md
 
 import os
 import pwd
+import shutil
 import subprocess
 import sys
 import threading
 import time
+from dataclasses import dataclass
 
 sys.path.insert(0, "/usr/lib/safecor")
 
@@ -32,13 +34,13 @@ QUERY_TIMEOUT = 10  # seconds, per MQTT query attempt
 RETRY_INTERVAL = 5  # seconds between query attempts
 DOMAIN_WAIT_TIMEOUT = 60  # seconds to wait for a domain's domid
 
-# /media/usb is served as the SFTP root (bound to / in the sandbox), so a
-# disk mounted at /media/usb/<label> on sys-usb appears at the same path in
-# the client's /media/usb sshfs mount.
+# /media/usb is bound at the same path in the sandbox and made the working
+# directory, so a disk mounted at /media/usb/<label> on sys-usb appears at
+# the same path in the client's /media/usb sshfs mount.
 SFTP_ROOT = "/media/usb"
 SFTP_SERVER = "/usr/lib/ssh/sftp-server"
-SETPRIV = "/usr/bin/setpriv"
 MUSL_LOADER = "/lib/ld-musl-x86_64.so.1"
+SANDBOX_PASSWD = "/var/run/safecor/sftp-sandbox-passwd"
 
 # The account the sandboxed sftp-server runs as (created by the package's
 # post-install script). The USB disks are owned by this account (mdev mount
@@ -100,13 +102,98 @@ def sftp_credentials() -> tuple[int, int]:
     return pw.pw_uid, pw.pw_gid
 
 
-def bwrap_args(mode: str, uid: int, gid: int) -> list[str]:
+def parse_ldd_output(output: str) -> list[str]:
+    """The shared library paths from an ldd output (musl/busybox format).
+
+    Dependency lines look like ``libfoo.so.0 => /usr/lib/libfoo.so.0 (...)``;
+    the musl loader and libc (bound once, see bwrap_args) are skipped, as
+    are unresolved entries.
+    """
+    libs = []
+    for line in output.splitlines():
+        parts = line.split()
+        if (
+            len(parts) >= 3
+            and parts[1] == "=>"
+            and parts[2].startswith("/")
+            and "musl" not in parts[2]
+            and parts[2] not in libs
+        ):
+            libs.append(parts[2])
+    return libs
+
+
+def setpriv_library_paths(setpriv_path: str) -> list[str]:
+    """The shared libraries the setpriv binary needs at runtime (via ldd).
+
+    The setpriv package (Alpine main) is linked against version-dependent
+    libraries (libcap-ng, and libeconf since util-linux 2.42); all of them
+    must be bound into the sandbox, which has no library path.
+
+    Raises:
+        subprocess.CalledProcessError: if ldd fails.
+    """
+    result = subprocess.run(
+        ["ldd", setpriv_path], capture_output=True, text=True, check=True
+    )
+    return parse_ldd_output(result.stdout)
+
+
+def write_sandbox_passwd(uid: int, gid: int, path: str = SANDBOX_PASSWD) -> str:
+    """Write the sandbox's minimal /etc/passwd and return its path.
+
+    sftp-server (OpenSSH 10+) looks up its own uid at startup and exits if
+    the account is not in /etc/passwd; the sandbox has no /etc, so a
+    single-line file bound over /etc/passwd provides exactly the account the
+    server runs as, and nothing else.
+    """
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    with open(path, "w", encoding="ascii") as f:
+        f.write(f"{SFTP_USER}:x:{uid}:{gid}::/:/sbin/nologin\n")
+    os.chmod(path, 0o644)
+    return path
+
+
+def bind_dirs(paths: list[str]) -> list[str]:
+    """The ancestor directories of the given paths (without the root).
+
+    bwrap creates missing bind-destination parents implicitly with a
+    restrictive mode (0700), which breaks the traversal after the setpriv
+    switch to the service account; explicit ``--dir`` (0755) keeps the
+    sandbox deterministic. Each directory is emitted once, in first-seen
+    order, so it always precedes the bind that needs it.
+    """
+    dirs = []
+    for path in paths:
+        parts = [p for p in path.split("/") if p]
+        for i in range(1, len(parts)):
+            d = "/" + "/".join(parts[:i])
+            if d not in dirs:
+                dirs.append(d)
+    return dirs
+
+
+@dataclass(frozen=True)
+class SandboxContext:
+    """The host-side inputs of a sftp sandbox (resolved once at start)."""
+
+    setpriv: str
+    setpriv_libs: list[str]
+    passwd: str
+
+
+def bwrap_args(mode: str, uid: int, gid: int, ctx: SandboxContext) -> list[str]:
     """The bubblewrap command line sandboxing one sftp-server session.
 
-    The sandbox root is a bind of /media/usb (read-only for ``ro`` channels),
-    so the served SFTP root is the USB mount tree. The sftp-server binary,
-    the setpriv helper and the musl dynamic linker are bound in read-only,
-    a fresh /dev is mounted, and the pid/ipc/uts/net namespaces are unshared.
+    The sandbox root is a private tmpfs (nothing it creates reaches the host
+    or the client): /media/usb is bound at the same path (read-only for
+    ``ro`` channels) and made the working directory, so the served SFTP root
+    is the USB mount tree. The sftp-server binary, the setpriv helper, its
+    shared libraries, a minimal one-account /etc/passwd and the musl dynamic
+    linker are bound in read-only, a fresh /dev is mounted, and the
+    pid/ipc/uts/net namespaces are unshared.
 
     The command runs setpriv as root to drop to the SFTP service account
     (``uid``:``gid``) before exec'ing sftp-server, which then runs with no
@@ -120,20 +207,23 @@ def bwrap_args(mode: str, uid: int, gid: int) -> list[str]:
     a plain chroot, which a root process can escape).
     """
     root_flag = "--ro-bind" if mode == "ro" else "--bind"
-    return [
-        "bwrap",
-        root_flag,
-        SFTP_ROOT,
-        "/",
-        "--ro-bind",
-        SFTP_SERVER,
-        SFTP_SERVER,
-        "--ro-bind",
-        SETPRIV,
-        SETPRIV,
-        "--ro-bind",
-        MUSL_LOADER,
-        MUSL_LOADER,
+    binds: list[tuple[str, str]] = [
+        (ctx.passwd, "/etc/passwd"),
+        (ctx.setpriv, ctx.setpriv),
+        (MUSL_LOADER, MUSL_LOADER),
+        *[(lib, lib) for lib in ctx.setpriv_libs],
+        (SFTP_SERVER, SFTP_SERVER),
+    ]
+    args: list[str] = ["bwrap", "--tmpfs", "/", "--dir", SFTP_ROOT]
+    args += [root_flag, SFTP_ROOT, SFTP_ROOT]
+    dirs_done: set[str] = set()
+    for source, dest in binds:
+        for d in bind_dirs([dest]):
+            if d not in dirs_done:
+                args += ["--dir", d]
+                dirs_done.add(d)
+        args += ["--ro-bind", source, dest]
+    args += [
         "--cap-drop",
         "ALL",
         "--cap-add",
@@ -150,9 +240,9 @@ def bwrap_args(mode: str, uid: int, gid: int) -> list[str]:
         "--unshare-net",
         "--die-with-parent",
         "--chdir",
-        "/",
+        SFTP_ROOT,
         "--",
-        SETPRIV,
+        ctx.setpriv,
         "--reuid",
         str(uid),
         "--regid",
@@ -162,6 +252,27 @@ def bwrap_args(mode: str, uid: int, gid: int) -> list[str]:
         SFTP_SERVER,
         *sftp_server_args(mode),
     ]
+    return args
+
+
+def sandbox_context(uid: int, gid: int) -> SandboxContext:
+    """Resolve the host-side inputs of the sftp sandboxes.
+
+    - the setpriv helper (its path varies across Alpine releases: /bin or
+      /usr/bin),
+    - the shared libraries setpriv needs (ldd),
+    - the minimal /etc/passwd bound into the sandbox.
+
+    Raises:
+        FileNotFoundError: if setpriv is not installed.
+        subprocess.CalledProcessError: if ldd fails.
+    """
+    setpriv = shutil.which("setpriv")
+    if setpriv is None:
+        raise FileNotFoundError("setpriv not found in PATH")
+    libs = setpriv_library_paths(setpriv)
+    passwd = write_sandbox_passwd(uid, gid)
+    return SandboxContext(setpriv, libs, passwd)
 
 
 def query_direct_mount_domains() -> list[tuple[str, str]] | None:
@@ -221,7 +332,9 @@ def wait_for_domid(name: str) -> str:
     return ""
 
 
-def start_channel(name: str, domid: str, mode: str, uid: int, gid: int) -> None:
+def start_channel(
+    name: str, domid: str, mode: str, uid: int, gid: int, ctx: SandboxContext
+) -> None:
     """Start the socat bridge and the vchan server for one domain.
 
     Every client connection is answered with a bubblewrap-sandboxed
@@ -242,7 +355,7 @@ def start_channel(name: str, domid: str, mode: str, uid: int, gid: int) -> None:
     vchan_sock = f"/var/run/safecor/vchan-{name}.sock"
     vchan_path = f"/local/domain/system/vchan/{name}/sftp"
     vchan_log = f"/var/log/safecor/vchan-{name}.log"
-    sftp_cmd = " ".join(bwrap_args(mode, uid, gid))
+    sftp_cmd = " ".join(bwrap_args(mode, uid, gid, ctx))
 
     subprocess.run(
         [
@@ -348,13 +461,19 @@ def main() -> None:
         log(f"error: the SFTP service account {SFTP_USER!r} does not exist")
         sys.exit(1)
 
+    try:
+        ctx = sandbox_context(sftp_uid, sftp_gid)
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        log(f"error: cannot prepare the sandbox context: {e}")
+        sys.exit(1)
+
     for name, mode in domains:
         domid = wait_for_domid(name)
         if not domid:
             log(f"warning: no domid found for domain {name}, skipping")
             continue
         log(f"starting vchan SFTP channel for {name} (domid {domid}, mode {mode})")
-        start_channel(name, domid, mode, sftp_uid, sftp_gid)
+        start_channel(name, domid, mode, sftp_uid, sftp_gid, ctx)
 
     log("vchan SFTP channels started")
 
