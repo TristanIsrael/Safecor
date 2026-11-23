@@ -271,3 +271,30 @@ Note: the §2 one-shot probe result "KO" was a false negative — the probe
 script never subscribes to `system/discover/components/response`, and
 paho-mqtt only delivers messages on subscribed topics. The probe must be
 fixed before re-running §2 after the #270 fix.
+
+## SFTP sessions hang: socat EXEC address > 512 bytes (#272)
+
+Symptom: on a business domain, `/media/usb` is mounted by sshfs, but any
+I/O hangs (no data ever arrives). The per-domain socat log shows one line
+per session: `E address "EXEC:"bwrap …` — the reason is cut mid-command.
+
+Root cause (confirmed on hardware + reproduced locally): socat's address
+parser stores each parameter in a fixed 512-byte buffer
+(`char token[512]` in xioopen.c). The full bwrap command (with its
+bubblewrap sandbox, setpriv, bind mounts, and sftp-server arguments) is
+774 characters long, yielding a 781-character EXEC address on Alpine
+3.24. The address exceeds 512 bytes and is rejected at parse time; the
+EXEC side is never opened, sftp-server never spawns, and sshfs hangs.
+Hardware evidence: `/proc/<socat-pid>/cmdline` shows the full 781-byte
+address was received (782 bytes incl. NUL). The logged line is truncated
+to 290 bytes on the hardware build (512 on a local official build); the
+exact cause of the difference is unverified, but it is a cosmetic
+log-buffering artifact with no impact on the root cause or the fix.
+
+Fix: keep the socat address short by moving the bwrap command into a
+per-domain wrapper script at `/usr/lib/safecor/tmp/sandbox-<domain>`:
+single `#!/bin/sh` shebang plus `exec ` with shlex-quoted arguments;
+the EXEC address is ≈50 bytes. The root channels helper writes the
+script at channel start (with absolute bwrap path, resolved via
+`shutil.which`) and removes it at stop. The directory is created
+`root:safecor` mode 770 by the controller initd at boot.

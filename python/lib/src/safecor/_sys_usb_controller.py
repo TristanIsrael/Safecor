@@ -10,6 +10,7 @@ import base64
 import json
 import os
 import pwd
+import shlex
 import shutil
 import subprocess
 import threading
@@ -84,6 +85,15 @@ SFTP_USER = "svc-sys-usb-sftp"
 # per-domain log and the sandbox passwd of every channel.
 SFTP_RUNTIME_DIR = "/var/run/safecor/direct-mount"
 SANDBOX_PASSWD = f"{SFTP_RUNTIME_DIR}/sftp-sandbox-passwd"
+
+# Sandbox wrapper scripts of the direct mount channels, one per domain.
+# socat's address parser caps every address parameter at 512 bytes, so
+# the full bwrap command (≈780 bytes) cannot be passed inline as the
+# EXEC address; a per-domain wrapper script keeps the address short
+# (≈50 bytes). The root channels helper writes the script at channel
+# start (and removes it at stop); the controller initd creates the
+# directory at every boot and clears the stale wrappers.
+SANDBOX_WRAPPER_DIR = "/usr/lib/safecor/tmp"
 
 # The root helper that starts and stops the channels (see the doas
 # configuration of the controller user).
@@ -228,6 +238,7 @@ class SandboxContext:
     setpriv: str
     setpriv_libs: list[str]
     passwd: str
+    bwrap: str
 
 
 def bwrap_args(mode: MountMode, uid: int, gid: int, ctx: SandboxContext) -> list[str]:
@@ -240,6 +251,9 @@ def bwrap_args(mode: MountMode, uid: int, gid: int, ctx: SandboxContext) -> list
     shared libraries, a minimal one-account /etc/passwd and the musl dynamic
     linker are bound in read-only, a fresh /dev is mounted, and the
     pid/ipc/uts/net namespaces are unshared.
+
+    The first element of ``args`` is the absolute bwrap path from the
+    context.
 
     The command runs setpriv as root to drop to the SFTP service account
     (``uid``:``gid``) before exec'ing sftp-server, which then runs with no
@@ -260,7 +274,7 @@ def bwrap_args(mode: MountMode, uid: int, gid: int, ctx: SandboxContext) -> list
         *[(lib, lib) for lib in ctx.setpriv_libs],
         (SFTP_SERVER, SFTP_SERVER),
     ]
-    args: list[str] = ["bwrap", "--tmpfs", "/", "--dir", SFTP_ROOT]
+    args: list[str] = [ctx.bwrap, "--tmpfs", "/", "--dir", SFTP_ROOT]
     args += [root_flag, SFTP_ROOT, SFTP_ROOT]
     dirs_done: set[str] = set()
     for source, dest in binds:
@@ -307,10 +321,11 @@ def sandbox_context(uid: int, gid: int) -> SandboxContext:
     - the setpriv helper (its path varies across Alpine releases: /bin or
       /usr/bin),
     - the shared libraries setpriv needs (ldd),
-    - the minimal /etc/passwd bound into the sandbox.
+    - the minimal /etc/passwd bound into the sandbox,
+    - the bwrap binary (its path varies across Alpine releases).
 
     Raises:
-        FileNotFoundError: if setpriv is not installed.
+        FileNotFoundError: if setpriv or bwrap is not installed.
         subprocess.CalledProcessError: if ldd fails.
     """
     setpriv = shutil.which("setpriv")
@@ -318,13 +333,42 @@ def sandbox_context(uid: int, gid: int) -> SandboxContext:
         raise FileNotFoundError("setpriv not found in PATH")
     libs = setpriv_library_paths(setpriv)
     passwd = write_sandbox_passwd(uid, gid)
-    return SandboxContext(setpriv, libs, passwd)
+    bwrap = shutil.which("bwrap")
+    if bwrap is None:
+        raise FileNotFoundError("bwrap not found in PATH")
+    return SandboxContext(setpriv, libs, passwd, bwrap)
+
+
+def sandbox_wrapper_path(name: str) -> str:
+    """The wrapper script path of one domain's sftp sandbox."""
+    return f"{SANDBOX_WRAPPER_DIR}/sandbox-{name}"
+
+
+def write_sandbox_wrapper(name: str, args: list[str]) -> str:
+    """Writes the wrapper script of one domain's sftp sandbox (as root).
+
+    ``args`` is the full sandbox command line (see bwrap_args), whose
+    first element must be the absolute bwrap path. The script is a
+    shebang plus a single ``exec`` line with every argument
+    shlex-quoted, so the socat EXEC address stays far under the parser's
+    512-byte parameter limit (see SANDBOX_WRAPPER_DIR).
+
+    Returns:
+        The wrapper script path.
+    """
+    os.makedirs(SANDBOX_WRAPPER_DIR, exist_ok=True)
+    path = sandbox_wrapper_path(name)
+    with open(path, "w", encoding="ascii") as f:
+        f.write("#!/bin/sh\n")
+        f.write("exec " + " ".join(shlex.quote(a) for a in args) + "\n")
+    os.chmod(path, 0o755)
+    return path
 
 
 def stop_sftp_channel(name: str) -> None:
     """Stops the socat bridge and the vchan server of one domain (as root).
 
-    Best-effort: a missing pidfile or socket is not an error.
+    Best-effort: a missing pidfile, socket, or wrapper is not an error.
     """
     subprocess.run(
         [
@@ -352,6 +396,10 @@ def stop_sftp_channel(name: str) -> None:
         os.remove(f"{SFTP_RUNTIME_DIR}/vchan-{name}.sock")
     except FileNotFoundError:
         pass
+    try:
+        os.remove(sandbox_wrapper_path(name))
+    except FileNotFoundError:
+        pass
 
 
 def start_sftp_channel(
@@ -365,8 +413,10 @@ def start_sftp_channel(
     """Starts the socat bridge and the vchan server for one domain (as root).
 
     Every client connection is answered with a bubblewrap-sandboxed
-    sftp-server (see bwrap_args): the sandbox is spawned per session by
-    socat, so no assembly is needed at boot.
+    sftp-server (see bwrap_args): the per-session sandbox command line
+    is stored in a per-domain wrapper script (written at start, removed
+    at stop) because socat's address parser caps each parameter at 512
+    bytes; the sandbox is still spawned per session by socat.
 
     The start is idempotent: the existing socat and vchan-socket-proxy
     instances (by pidfile) are stopped and the stale socket removed before
@@ -385,9 +435,12 @@ def start_sftp_channel(
     vchan_sock = f"{SFTP_RUNTIME_DIR}/vchan-{name}.sock"
     vchan_path = f"/local/domain/system/vchan/{name}/sftp"
     vchan_log = f"{SFTP_RUNTIME_DIR}/vchan-{name}.log"
-    sftp_cmd = " ".join(bwrap_args(mode, uid, gid, ctx))
 
     stop_sftp_channel(name)
+
+    # The wrapper keeps the socat EXEC address under the parser's 512-byte
+    # parameter limit (see SANDBOX_WRAPPER_DIR).
+    wrapper = write_sandbox_wrapper(name, bwrap_args(mode, uid, gid, ctx))
 
     subprocess.run(
         [
@@ -405,7 +458,7 @@ def start_sftp_channel(
             "/usr/bin/socat",
             "--",
             f"UNIX-LISTEN:{vchan_sock},fork",
-            f'EXEC:"{sftp_cmd}"',
+            f'EXEC:"{wrapper}"',
         ],
         check=True,
     )

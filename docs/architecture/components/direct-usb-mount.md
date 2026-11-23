@@ -49,6 +49,12 @@ The controller resolves the topology with a **one-shot `my_config` query** (a bo
 
 The controller user (`svc-sys-usb-controller`, non-root since the #253 refactor) needs read access to `/dev/xen/xenbus` (the xenstore device, root-only by default) to resolve DomU domids and manage vchan channels. The controller initd grants this at boot by changing the device group to `safecor` and setting `chmod 640`; if the read-only permission does not suffice, it falls back to `660` (issue #271).
 
+### socat EXEC address limit (issue #272)
+
+socat's address parser stores each address parameter in a fixed 512-byte buffer. The full `bwrap` command for one sftp-server session is ≈780 bytes (≈781 bytes on Alpine 3.24); passing it inline as the EXEC address causes socat to reject it at parse time with `address "…" too long`. Because socat's log buffer is itself ≈512 bytes, the rejection reason is truncated and never appears in the logs — the symptom is that every `sshfs` mount on a business DomU hangs on any I/O.
+
+The fix uses a **per-domain wrapper script** (`/usr/lib/safecor/tmp/sandbox-<domain>`): the root channels helper (`safecor-dm-channels.py`) writes a single-`exec` script with shlex-quoted arguments at channel start, and the socat EXEC address is reduced to ≈50 bytes (the wrapper path). The wrapper is removed at channel stop. The directory is created `root:safecor` with mode 770 by the controller initd at boot (matching the Dom0 convention of group-accessible paths), and stale wrappers from a previous boot are cleaned up. The `bwrap` path is resolved once at start (like `setpriv`) and stored in the `SandboxContext`.
+
 ## `DirectMountManager` (DomU side)
 
 Runs as a standalone process in the DomU. **Event-driven (NFR-3)** — it keeps a persistent MQTT client for the whole process life and reacts to the bus instead of polling:

@@ -12,6 +12,7 @@ Safecor Licence — see python/lib/LICENCE.md
 
 import json
 import os
+import shlex
 import tempfile
 import unittest
 from pathlib import Path
@@ -30,6 +31,7 @@ def make_context():
         setpriv="/bin/setpriv",
         setpriv_libs=["/usr/lib/libeconf.so.0", "/usr/lib/libcap-ng.so.0"],
         passwd=suc.SANDBOX_PASSWD,
+        bwrap="/usr/bin/bwrap",
     )
 
 
@@ -46,6 +48,7 @@ class TestSftpChannelFunctions(unittest.TestCase):
             suc.SANDBOX_PASSWD,
             "/var/run/safecor/direct-mount/sftp-sandbox-passwd",
         )
+        self.assertEqual(suc.SANDBOX_WRAPPER_DIR, "/usr/lib/safecor/tmp")
         self.assertEqual(
             suc.DM_CHANNELS_HELPER, "/usr/lib/safecor/bin/safecor-dm-channels.py"
         )
@@ -111,7 +114,7 @@ class TestSftpChannelFunctions(unittest.TestCase):
         self.assertEqual(
             suc.bwrap_args(MountMode.RW, 1002, 2000, make_context()),
             [
-                "bwrap",
+                "/usr/bin/bwrap",
                 "--tmpfs",
                 "/",
                 "--dir",
@@ -258,6 +261,82 @@ class TestSftpChannelFunctions(unittest.TestCase):
                 "svc-sys-usb-sftp:x:1002:2000::/:/sbin/nologin\n",
             )
             self.assertEqual(os.stat(path).st_mode & 0o777, 0o644)
+
+    def test_sandbox_wrapper_path(self):
+        self.assertEqual(
+            suc.sandbox_wrapper_path("app1"),
+            "/usr/lib/safecor/tmp/sandbox-app1",
+        )
+
+    def test_write_sandbox_wrapper(self):
+        with mock.patch.object(
+            suc, "SANDBOX_WRAPPER_DIR", tempfile.mkdtemp()
+        ) as tmpdir:
+            path = suc.write_sandbox_wrapper(
+                "app1", ["/usr/bin/bwrap", "--ro-bind", "/tmp/my bwrap", "/"]
+            )
+            self.assertEqual(path, f"{tmpdir}/sandbox-app1")
+            self.assertEqual(os.stat(path).st_mode & 0o777, 0o755)
+            content = Path(path).read_text()
+            self.assertTrue(content.startswith("#!/bin/sh\nexec "))
+            # Verify the argument with a space is shlex-quoted
+            self.assertIn(shlex.quote("/tmp/my bwrap"), content)
+
+    def test_stop_sftp_channel_removes_wrapper(self):
+        with (
+            mock.patch.object(suc, "SANDBOX_WRAPPER_DIR", tempfile.mkdtemp()) as tmpdir,
+            mock.patch("safecor._sys_usb_controller.subprocess.run"),
+        ):
+            # Create a wrapper file
+            wrapper_path = os.path.join(tmpdir, "sandbox-app1")
+            Path(wrapper_path).touch()
+            self.assertTrue(Path(wrapper_path).exists())
+            suc.stop_sftp_channel("app1")
+            self.assertFalse(Path(wrapper_path).exists())
+
+    def test_stop_sftp_channel_no_wrapper_ok(self):
+        with (
+            mock.patch.object(suc, "SANDBOX_WRAPPER_DIR", tempfile.mkdtemp()),
+            mock.patch("safecor._sys_usb_controller.subprocess.run"),
+        ):
+            # No wrapper to remove — should not raise
+            suc.stop_sftp_channel("app1")
+
+    def test_start_sftp_channel_uses_short_address(self):
+        with (
+            mock.patch.object(suc, "SANDBOX_WRAPPER_DIR", tempfile.mkdtemp()) as tmpdir,
+            mock.patch("safecor._sys_usb_controller.subprocess.run") as run_mock,
+        ):
+            suc.start_sftp_channel(
+                "app1",
+                domid=5,
+                mode=MountMode.RW,
+                uid=1002,
+                gid=2000,
+                ctx=make_context(),
+            )
+            # Check that the socat start command uses the short wrapper address
+            # start_sftp_channel calls subprocess.run twice: once for socat,
+            # once for vchan-socket-proxy. We filter for the socat call.
+            socat_calls = [
+                c
+                for c in run_mock.call_args_list
+                if any("/usr/bin/socat" in str(a) for a in c.args)
+            ]
+            self.assertEqual(len(socat_calls), 1)
+            argv = socat_calls[0].args[0]
+            # The EXEC address should be short (wrapper path)
+            exec_addr = [a for a in argv if a.startswith("EXEC:")]
+            self.assertEqual(len(exec_addr), 1)
+            self.assertIn(f'EXEC:"{tmpdir}/sandbox-app1"', exec_addr)
+            # The full bwrap command should NOT be in argv
+            full_cmd = " ".join(argv)
+            self.assertNotIn("/usr/bin/bwrap --tmpfs", full_cmd)
+            # The wrapper file should exist and contain the full command
+            wrapper_path = os.path.join(tmpdir, "sandbox-app1")
+            self.assertTrue(Path(wrapper_path).exists())
+            content = Path(wrapper_path).read_text()
+            self.assertIn("/usr/bin/bwrap --tmpfs", content)
 
 
 class TestDirectMountComponentState(unittest.TestCase):

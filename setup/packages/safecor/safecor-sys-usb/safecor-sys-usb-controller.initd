@@ -35,6 +35,16 @@ start() {
         fi
     fi
 
+    # Sandbox wrapper scripts of the direct mount channels (one per domain,
+    # written by the root channels helper at channel start). Root-writable,
+    # readable and executable by the safecor group; the directory is on
+    # persistent storage, so stale wrappers from a previous boot are
+    # removed (a channel start always rewrites its own wrapper).
+    mkdir -p /usr/lib/safecor/tmp
+    chown root:safecor /usr/lib/safecor/tmp
+    chmod 770 /usr/lib/safecor/tmp
+    rm -f /usr/lib/safecor/tmp/sandbox-*
+
     # Local persistent log for direct mount channel lifecycle events
     # (see docs/architecture/components/direct-usb-mount.md).
     # The initd runs as root; the controller runs as svc-sys-usb-controller.
