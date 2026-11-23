@@ -14,7 +14,7 @@ The remaining work and the planned sequence are in [finalization-plan.md](finali
 
 ## Runs
 
-The runs are described in their own file in the same directory as this file. Run 15 is the final validation run (see [run-15.md](run-15.md)); it requires the Phase C fix (#262) to be implemented first.
+The runs are described in their own file in the same directory as this file. Runs 15–17 validated the direct-mount redesign in sequence ([run 15](run-15.md), [run 16](run-16.md), [run 17](run-17.md)); run 17 closed as **NOT GREEN** (the xenstore `EACCES` — #271 — and the socat 512-byte limit — #272). [Run 18](run-18.md) was the next hardware pass with those two fixes: **NOT GREEN** — #271 validated at boot, but the channels never started because of a new root-caused bug, the `my_config` response race (#273). [Run 19](run-19.md) is the follow-up: the #273 fix, and the first hardware pass for #272.
 
 ## Run 14 resolutions
 
@@ -26,4 +26,14 @@ Run 14 validated #258 (the DomU local MQTT broker) and #264 (the `/etc` permissi
 | 2 | After the API reboot (`system/workflow/restart_domain/request`), sys-usb is restarted but all the vchans are lost (sys-usb and the business domains' too). | Cascade of #262 (the domid write race in `reboot-domain.sh`): the stale domid prevents the Dom0 discovery loop (`create-vchan-tunnels.py`) from recreating the vchan servers with the new domid. Fix #262 (poll the domain state instead of `sleep 3`), then re-validate at run 15. | #262 |
 
 Planned sequence: see [finalization-plan.md](finalization-plan.md) (Phase B: #260, Phase C: #262, Phase D: the tty regression, Phase E: run 15 + #256 closure, Phase F: the hardening second pass #259/#261).
+
+## Run 17 resolutions
+
+Run 17 validated the event flow of the #253/#270 redesign (the `safecor_direct_mount` component reached `ready` on the bus once the channels were up, the business DomUs' `/media/usb` sshfs mounts proactively at the end of boot, the run-16 mdev regression is gone) and exposed two independent blockers that prevented the SFTP I/O from working.
+
+| # | Finding | Resolution | Tracker |
+|---|---|---|---|
+| 1 | After the #270 fix, the channels still never started at boot: the controller (non-root since the #253 refactor) had no access to xenstore at all (`EACCES` on `/dev/xen/xenbus`, root-only by default) — the domids were never readable regardless of timing. The manual `chmod 666 /dev/xen/xenbus` (transient) brought the channels and the component up. | The controller initd grants the `safecor` group read access at boot (`chgrp safecor` + `chmod 640`, fallback `660` on a read-only test as the controller user; world access excluded per design rule #10). Re-validated at run 18 on a clean reboot with no manual permission change. | #271 |
+| 2 | With the channels up (manual workaround), every SFTP session died at birth and the business DomUs' `/media/usb` sshfs hung on any I/O: the full bwrap command yields a 781-char EXEC address, above socat's 512-byte address-parameter limit (`char token[512]` in xioopen.c; the address is rejected at parse time, the per-domain log shows one truncated `E address "EXEC:"bwrap …` line per session). | A per-domain wrapper script in `/usr/lib/safecor/tmp/sandbox-<domain>` (written by the root channels helper at channel start, removed at stop, 0755) keeps the socat address ≈50 bytes; `bwrap` is resolved to an absolute path at start. Re-validated at run 18. | #272 |
+| 3 | The run-17 §2 one-shot probe reported a false negative ("NOT FOUND (timeout)") although the bus log shows the component `ready`: the probe never subscribes to `system/discover/components/response`, and paho-mqtt only delivers on subscribed topics. | The run-18 §3 probe subscribes to the response topic before issuing the request (a test-script fix in the run sheet, no product code change). | — |
 

@@ -2,6 +2,8 @@
 
 Purpose: validate the **event-driven refactoring of the direct USB mount** (issue #253, [`docs/plans/direct-mount-event-driven.md`](../direct-mount-event-driven.md)) on hardware, and resolve the two open regressions carried from [run 16](run-16.md): the **stale-topology** bug (fixed by a Dom0 reboot) and the **empty `/media/usb`** mdev regression.
 
+> **Result (2026-11-23): NOT GREEN — the next hardware pass is [run 18](run-18.md).** The event flow, the proactive mount and the component state were validated, but two independent blockers surfaced on the hardware after the #270 fix was installed: (1) the controller (non-root since the #253 refactor) had **no access to xenstore at all** (`EACCES` on `/dev/xen/xenbus`), so the channels never started at boot — **issue #271**; the manual `chmod 666 /dev/xen/xenbus` workaround (transient) brought the channels and the component up; (2) with the channels up, **every SFTP session died at birth** — the full bwrap command yields a 781-char EXEC address, above socat's 512-byte address-parameter limit — **issue #272** — so the business DomUs' `/media/usb` sshfs hung on any I/O. Both are fixed on `version-2` (`dc9bc21` for #271, `59d67a5` for #272, both reviewed); run 18 re-validates on a clean reboot with no manual permission change.
+
 > **What changed since run 16** (the design under test):
 > - The SFTP channels are **no longer a separate `safecor-vchan-sftp` service** (deleted). They are started by the **`SysUsbController`** (the `safecor-sys-usb-controller` service) through the **`safecor-dm-channels.py`** root helper (via `doas`), and their readiness is published as the **`safecor_direct_mount`** component — the single synchronization point of the feature (NFR-3).
 > - The runtime files (socket, pidfiles, per-domain log, sandbox passwd) live in **`/var/run/safecor/direct-mount/`** (created by the controller initd, owned by `svc-sys-usb-controller`).
@@ -37,25 +39,25 @@ These prove the new start path works before checking the business domains.
 ## 2. The `safecor_direct_mount` component (the synchronization point)
 
 - [x] On a business domain, the component is reported **`READY`** on the bus (a direct one-shot check — the state must be `ready` once the channels are up):
-  ```
-  python3 - <<'PY'
-  import sys, threading
-  sys.path.insert(0, "/usr/lib/safecor")
-  from safecor import Api, MqttFactory, Topics, Constants
-  done, result = threading.Event(), {}
-  def on_message(topic, payload):
-    if topic == f"{Topics.DISCOVER_COMPONENTS}/response":
-      for c in payload.get("components", []):
-        if c.get("id") == Constants.SAFECOR_DIRECT_MOUNT:
-          result["state"] = c.get("state"); done.set()
-  def on_ready():
-    Api().discover_components()
-  Api().add_ready_callback(on_ready); Api().add_message_callback(on_message)
-  Api().start(MqttFactory.create_mqtt_client_domu("component-check"))
-  done.wait(timeout=15)
-  print("safecor_direct_mount state:", result.get("state", "NOT FOUND (timeout)"))
-  PY
-  ```
+```
+python3 - <<'PY'
+import sys, threading
+sys.path.insert(0, "/usr/lib/safecor")
+from safecor import Api, MqttFactory, Topics, Constants
+done, result = threading.Event(), {}
+def on_message(topic, payload):
+  if topic == f"{Topics.DISCOVER_COMPONENTS}/response":
+    for c in payload.get("components", []):
+      if c.get("id") == Constants.SAFECOR_DIRECT_MOUNT:
+        result["state"] = c.get("state"); done.set()
+def on_ready():
+  Api().discover_components()
+Api().add_ready_callback(on_ready); Api().add_message_callback(on_message)
+Api().start(MqttFactory.create_mqtt_client_domu("component-check"))
+done.wait(timeout=15)
+print("safecor_direct_mount state:", result.get("state", "NOT FOUND (timeout)"))
+PY
+```
   - Expected: `safecor_direct_mount state: ready`. (If `starting`: the one-shot `my_config` query timed out — check the sys-usb controller log; the component stays `starting` by design, **no retry**.)
   - KO: `safecor_direct_mount state: NOT FOUND (timeout)` but in the message bus I have:
 ```
@@ -298,3 +300,33 @@ the EXEC address is ≈50 bytes. The root channels helper writes the
 script at channel start (with absolute bwrap path, resolved via
 `shutil.which`) and removes it at stop. The directory is created
 `root:safecor` mode 770 by the controller initd at boot.
+
+## Final status (2026-11-23)
+
+Run 17 is **closed as NOT GREEN**: the two blockers found on the
+hardware (the xenstore `EACCES` — #271 — and the socat 512-byte limit —
+#272) are fixed on `version-2` but **not yet re-validated on hardware**;
+that is [run 18](run-18.md).
+
+Final state per section, after the manual `chmod 666 /dev/xen/xenbus`
+workaround (transient, lost at reboot):
+
+- **§1**: with the workaround, one socat + one vchan server per
+  `direct_mount` domain; the socat carried the **long**
+  `EXEC:"bwrap …"` address (≈781 bytes — the #272 trigger), and each
+  per-domain log showed one `E address "EXEC:"bwrap …` line per session
+  (the address rejected by the socat parser).
+- **§2**: the component reached `ready` on the bus (see the
+  Complimentary analysis bus log); the one-shot probe "KO" remains a
+  probe defect (it never subscribed to the response topic), not a
+  product defect.
+- **§3**: the business DomUs' `/media/usb` sshfs mount appeared in the
+  mount table, but any I/O hung (the #272 symptom: sftp-server never
+  spawned).
+- **§4, §6, §7**: not validated (blocked by the SFTP sessions dying at
+  birth).
+- **§5**: the external storage is correctly mounted on sys-usb (the
+  run-16 mdev regression is gone).
+- **§8**: messaging, inputs and GUI re-validated; the
+  brokers-across-reboots and the no-duplicate-listeners checks were not
+  tested (they require the sys-usb restart of §6).
