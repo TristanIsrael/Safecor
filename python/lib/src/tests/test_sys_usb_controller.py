@@ -432,6 +432,53 @@ class TestMyConfigOneShot(unittest.TestCase):
             self.controller._SysUsbController__accept_my_config_response(filtered)
         )
 
+    def test_accept_my_config_response_with_direct_mount_domains(self):
+        # Full topology WITH direct_mount_domains → accepted.
+        full = {
+            "domains": [
+                {"name": "sys-usb"},
+                {"name": "saphir-av-clamav"},
+                {"name": "saphir-av-eset"},
+            ],
+            "direct_mount_domains": ["saphir-av-clamav", "saphir-av-eset"],
+        }
+        self.assertTrue(
+            self.controller._SysUsbController__accept_my_config_response(full)
+        )
+
+    def test_accept_my_config_response_filtered_for_sysusb_rejected(self):
+        # The bug: response filtered for sys-usb (no other domains in
+        # domains, but direct_mount_domains still global) → rejected.
+        filtered = {
+            "domains": [{"name": "sys-usb"}],
+            "direct_mount_domains": ["saphir-av-clamav", "saphir-av-eset"],
+        }
+        self.assertFalse(
+            self.controller._SysUsbController__accept_my_config_response(filtered)
+        )
+
+    def test_accept_my_config_response_filtered_for_other_domain_rejected(self):
+        # Filtered for a non-sys-usb direct-mount domain → rejected
+        # (no sys-usb in domains).
+        filtered = {
+            "domains": [{"name": "saphir-av-clamav"}],
+            "direct_mount_domains": ["saphir-av-clamav", "saphir-av-eset"],
+        }
+        self.assertFalse(
+            self.controller._SysUsbController__accept_my_config_response(filtered)
+        )
+
+    def test_accept_my_config_response_no_direct_mount_domains_accepted(self):
+        # Degenerate case: no direct-mount domains in topology, empty
+        # list → accepted (parses to empty pair list — correct).
+        empty = {
+            "domains": [{"name": "sys-usb"}],
+            "direct_mount_domains": [],
+        }
+        self.assertTrue(
+            self.controller._SysUsbController__accept_my_config_response(empty)
+        )
+
     def test_query_direct_mount_domains(self):
         # The query clears its state, publishes the request and waits for
         # the routed response: the mock publish simulates that response

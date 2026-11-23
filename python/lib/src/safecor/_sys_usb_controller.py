@@ -986,12 +986,19 @@ class SysUsbController:
     def __accept_my_config_response(self, payload: dict) -> bool:
         """Returns True if a my_config response is the one we asked for.
 
-        The my_config response topic is shared by all the requesters of the
-        bus: a response filtered for another domain never lists sys-usb
-        itself, while the full topology (which the controller requests
-        without a domain filter) always does.
+        The my_config response topic is shared by all requesters of the
+        bus: the full topology (which the controller requests without a
+        domain filter) lists ``sys-usb`` and every direct-mount domain,
+        while a response filtered for another domain lists that domain
+        alone (e.g. filtering for ``sys-usb`` yields ``sys-usb`` only).
+        The ``direct_mount_domains`` field is computed globally and never
+        filtered, so requiring it to be fully present alongside ``sys-usb``
+        reliably discriminates the full topology from a filtered response.
         """
-        return any(d.get("name") == "sys-usb" for d in payload.get("domains", []))
+        domain_names = {d.get("name") for d in payload.get("domains", [])}
+        if "sys-usb" not in domain_names:
+            return False
+        return domain_names >= set(payload.get("direct_mount_domains", []))
 
     def __query_direct_mount_domains(self) -> list[tuple[str, MountMode]] | None:
         """One-shot my_config query: the direct_mount domains of the topology.
