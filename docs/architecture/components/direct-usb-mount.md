@@ -47,6 +47,8 @@ The readiness of the SFTP side is published as the state of the **`safecor_direc
 
 The controller resolves the topology with a **one-shot `my_config` query** (a bounded wait in a dedicated thread, NFR-1), resolves each domain's domid with a **bounded wait** (polling every 1 s, 60 s timeout per domain — blocking is allowed in the dedicated channel thread, NFR-1), starts/stops the per-domain channels through the **`safecor-dm-channels.py`** root helper (run via `doas`, the only privilege elevation — the per-session sandbox needs a root parent to drop to the `svc-sys-usb-sftp` account), and **verifies each started channel is alive** (pidfiles + UNIX socket) before publishing `READY` — a start failure keeps the component `STARTING` (issue #270). Every channel-lifecycle event is appended to the local persistent log `/var/log/safecor/direct-mount.log` (created by the controller initd, owned by `svc-sys-usb-controller`), complementing the ephemeral MQTT `Logger`.
 
+The controller user (`svc-sys-usb-controller`, non-root since the #253 refactor) needs read access to `/dev/xen/xenbus` (the xenstore device, root-only by default) to resolve DomU domids and manage vchan channels. The controller initd grants this at boot by changing the device group to `safecor` and setting `chmod 640`; if the read-only permission does not suffice, it falls back to `660` (issue #271).
+
 ## `DirectMountManager` (DomU side)
 
 Runs as a standalone process in the DomU. **Event-driven (NFR-3)** — it keeps a persistent MQTT client for the whole process life and reacts to the bus instead of polling:

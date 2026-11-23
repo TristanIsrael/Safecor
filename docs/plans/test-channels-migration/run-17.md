@@ -258,6 +258,15 @@ Fixed by issue #270 (bounded domid wait 1 s / 60 s per domain,
 all-or-nothing READY after liveness verification, local persistent log
 `/var/log/safecor/direct-mount.log` on sys-usb).
 
+After installing the #270 code on the Saphir hardware, a second,
+independent blocker appeared: the controller user (`svc-sys-usb-controller`,
+non-root since the #253 refactor) had no access to xenstore at all
+(`EACCES` on `/dev/xen/xenbus`, root-only by default), so the domids
+never became readable regardless of timing. The manual workaround
+`chmod 666 /dev/xen/xenbus` brought both channels up and the component
+to READY; the permanent fix is issue #271 (group access granted by the
+controller initd at boot).
+
 Note: the §2 one-shot probe result "KO" was a false negative — the probe
 script never subscribes to `system/discover/components/response`, and
 paho-mqtt only delivers messages on subscribed topics. The probe must be

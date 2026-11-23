@@ -21,6 +21,20 @@ start() {
     chown svc-sys-usb-controller:safecor /var/run/safecor/direct-mount
     chmod 770 /var/run/safecor/direct-mount
 
+    # Xenstore access for the controller user: it reads the DomU domids and
+    # the vchan channel data through xenstore, whose device is root-only by
+    # default. Grant it to the safecor group only (design rule #10: no
+    # world access); fall back to group read-write if a read-only test as
+    # the controller user fails.
+    if [ -e /dev/xen/xenbus ]; then
+        chgrp safecor /dev/xen/xenbus
+        chmod 640 /dev/xen/xenbus
+        if command -v xenstore-read >/dev/null 2>&1 && \
+           ! su -s /bin/sh svc-sys-usb-controller -c "xenstore-read /" >/dev/null 2>&1; then
+            chmod 660 /dev/xen/xenbus
+        fi
+    fi
+
     # Local persistent log for direct mount channel lifecycle events
     # (see docs/architecture/components/direct-usb-mount.md).
     # The initd runs as root; the controller runs as svc-sys-usb-controller.
