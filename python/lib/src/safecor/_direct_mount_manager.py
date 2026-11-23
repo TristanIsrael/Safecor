@@ -405,7 +405,14 @@ class DirectMountManager:
 
         try:
             self.__sshfs_process = subprocess.Popen(
-                ["sshfs", "-f", "-o", self.__sshfs_opts(), "none:/", mount_point],
+                [
+                    "sshfs",
+                    "-f",
+                    "-o",
+                    self.__sshfs_opts(),
+                    f"none:{Constants.USB_MOUNT_POINT}",
+                    mount_point,
+                ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )

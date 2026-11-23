@@ -435,6 +435,7 @@ class TestMount(DirectMountManagerBase):
         self.assertEqual(args[0], "sshfs")
         opts = args[args.index("-o") + 1]
         self.assertEqual(opts, m._DirectMountManager__sshfs_opts())
+        self.assertEqual(args[-2], f"none:{Constants.USB_MOUNT_POINT}")
         self.assertEqual(args[-1], Constants.USB_MOUNT_POINT)
 
     def test_early_exit_fails(self):

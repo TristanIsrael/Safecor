@@ -69,7 +69,7 @@ Runs as a standalone process in the DomU. **Event-driven (NFR-3)** — it keeps 
    - `STARTING` ⇒ nothing (the mount waits for `READY`).
 4. The **watchdog** is blocked on the sshfs process (an event, not a poll): when sshfs dies it remounts, unless the process is stopping or the component is `OFF`.
 
-The mount is **proactive at the end of the domain startup and kept permanent**, whether or not a USB disk is connected (the sshfs mount of `sys-usb`'s `/media/usb` directory succeeds even when empty). Product applications use `System.is_usb_mountpoint_ready()` / `System.on_usb_mountpoint_ready()` rather than the manager directly.
+The mount is **proactive at the end of the domain startup and kept permanent**, whether or not a USB disk is connected (the sshfs client on the DomU mounts the remote `/media/usb` — the USB tree served by `sftp-server` — at the local `/media/usb`; `sys-usb`'s sandbox serves exactly this path, not the session root `/`). Product applications use `System.is_usb_mountpoint_ready()` / `System.on_usb_mountpoint_ready()` rather than the manager directly.
 
 ## Low Level Design (SFTP + inputs channels)
 
