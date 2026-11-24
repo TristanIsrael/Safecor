@@ -133,7 +133,7 @@ The platform provides **no permanent storage**: the local storage is an encrypte
 Domains exchange **data** through the **repository**, a staging area owned by the platform:
 
 - `Constants.STR_REPOSITORY = "__repository__"` is the virtual disk name products use.
-- It lives at `/usr/lib/safecor/storage` on Dom0 and is **not mounted in the DomUs**: file access goes through the **MQTT file API** (served by the core controller — `read_file`, `copy_file`, `delete_file`, `file_fingerprint`, `create_file`) and, when enabled, the **direct USB mount**.
+- It lives at `/usr/lib/safecor/storage` on Dom0 and is **not mounted in the DomUs**: file access goes through the **MQTT file API** (the core controller serves the repository — `list_files`, `file_fingerprint`, `delete_file`; the sys-usb controller serves the USB disks — `read_file`, `copy_file`, `create_file`, `mount_file`, `unmount`) and, when enabled, the **direct USB mount**.
 - A product `read_file(source, path)` stages a file into the repository and triggers a `new_file` notification (with source + destination fingerprints).
 - The local Alpine repository is packed on Dom0 into a read-only `packages.squashfs` image (rebuilt at every Dom0 boot) and attached to each DomU as a plain block disk (`xvde`) mounted on `/mnt/packages`.
 

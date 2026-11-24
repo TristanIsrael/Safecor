@@ -16,7 +16,7 @@ sys.path.insert(
 project = "Safecor"
 copyright = "2025-2026, Tristan Israël"
 author = "Tristan Israël"
-release = "1.2.0"
+release = "2.0.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

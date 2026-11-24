@@ -2,7 +2,7 @@
 
 > **Scope**: the Dom0-side command handler (`Dom0Controller`).
 >
-> **Last updated**: 2026-11-20
+> **Last updated**: 2026-11-24
 >
 > **Main artifacts**: `start-safecor-core-controller.py`, `_dom0_controller.py` (`safecor` library).
 
@@ -12,7 +12,7 @@ The core controller is the control side for shared services: it runs on **Dom0**
 
 | Function group | Topics (selected) |
 |----------------|-------------------|
-| File API (repository) | `system/disks/{list_files,read_file,copy_file,delete_file,file_fingerprint,create_file}` |
+| File API (repository) | `system/disks/{list_files,delete_file,file_fingerprint}` + `system/disks/repository_path` |
 | Workflow | `system/workflow/{shutdown,restart_domain}` |
 | System information | `system/info` (request/response) |
 | Energy state | `system/energy/state` |
@@ -39,4 +39,4 @@ The full contract (payloads included) is in [../../development/protocol.md](../.
 
 ## The `reboot_domain` note
 
-`reboot_domain` is currently **commented out** in `_dom0_controller.py` (the force-restart path from Dom0). It is expected to be reworked when libvirt is removed from Dom0 (issue #265 — see [../decisions/0005-remove-libvirt-from-dom0.md](../decisions/0005-remove-libvirt-from-dom0.md)).
+`restart_domain` is **active**: `Dom0Controller.__reboot_domain` runs `doas /usr/lib/safecor/bin/reboot-domain.sh <domain>` (the script polls for the domain to go down, then for the new domid, before writing xenstore — issue #262). Only the libvirt-based path is commented out, pending the libvirt removal from Dom0 (issue #265 — see [../decisions/0005-remove-libvirt-from-dom0.md](../decisions/0005-remove-libvirt-from-dom0.md)).

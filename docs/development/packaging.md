@@ -15,7 +15,7 @@
 |----------|-------------|
 | `safecor-diag-x86_64.iso` | The diagnostic app, executable from a USB key (checks VT-x/VT-d hardware compatibility). |
 | `safecor-tests-x86_64.iso` | The functional and non-regression tests app, executable from a USB key. |
-| `safecor-safecor-virt-x86_64.iso` | The official ISO image for the Domains running in Safecor (only the needed kernel modules and configuration). |
+| `alpine-safecor-virt-x86_64.iso` | The official ISO image for the Domains running in Safecor (only the needed kernel modules and configuration; installed as `/var/lib/xen/images/alpine-virt.iso`). |
 
 ### The platform packages
 
@@ -75,10 +75,10 @@ The official process creates a bootable product ISO (bootable as ISO or USB key)
 2. Clone `aports` from gitlab; copy the product's `genapkovl-<name>.sh` and `mkimg.<name>.sh` in `aports/scripts` (make them executable).
 3. Run mkimage, e.g.:
    ```console
-   TMPDIR=~/tmp ./mkimage.sh --tag v3.22 --outdir ~/iso --arch x86_64 \
+   TMPDIR=~/tmp ./mkimage.sh --tag v3.24 --outdir ~/iso --arch x86_64 \
      --repository https://www.alefbet.net/github/safecor \
-     --repository http://dl-cdn.alpinelinux.org/alpine/v3.21/main \
-     --repository http://dl-cdn.alpinelinux.org/alpine/v3.21/community \
+     --repository http://dl-cdn.alpinelinux.org/alpine/v3.24/main \
+     --repository http://dl-cdn.alpinelinux.org/alpine/v3.24/community \
      --profile <name> --hostkeys --workdir ~/tmp
    ```
 4. The ISO image is created in `~/iso`; burn it on a DVD-ROM or copy it on a USB key.
