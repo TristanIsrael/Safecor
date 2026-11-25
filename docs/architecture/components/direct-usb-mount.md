@@ -2,7 +2,7 @@
 
 > **Scope**: the `direct_mount` feature — a DomU mounts `/media/usb` directly from `sys-usb` over a vchan SFTP channel (sshfs).
 >
-> **Last updated**: 2026-11-22
+> **Last updated**: 2026-11-25
 >
 > **Main artifacts**: `SysUsbController` + the `safecor_direct_mount` component (`_sys_usb_controller.py`, sys-usb), the `safecor-dm-channels.py` root helper (sys-usb), `DirectMountManager` (`_direct_mount_manager.py`, DomU), the `sftp` vchan channel, `sshfs`.
 
@@ -132,6 +132,23 @@ flowchart LR
 ```
 
 Diagram source: [`../../diagrams/lld-sftp-inputs.mmd`](../../diagrams/lld-sftp-inputs.mmd).
+
+## SFTP Channel Supervisor (ADR 0006)
+
+The `SysUsbController` runs a **channel supervisor thread** (`__channel_supervisor`)
+that periodically reconciles all tracked SFTP channels against the live Xenstore
+domid map.  Every 5 seconds it:
+
+1. Checks that the cached domid for each channel matches the live domid in
+   Xenstore.
+2. If a channel has died (old domid gone), it restarts the channel with the
+   current live domid.
+3. If a domain has a `direct_mount` entry but no channel yet, it starts one.
+
+This self-heals the SFTP channels after a domain self-restart (issue #275):
+when `sys-usb` restarts itself, the supervisor detects the dead vchan server,
+resolves the new domid, and restarts the channel so that the direct USB mount
+feature recovers without manual intervention.
 
 ## Related
 

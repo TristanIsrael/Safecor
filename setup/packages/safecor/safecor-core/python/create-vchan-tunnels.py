@@ -5,6 +5,12 @@ server that bridges the domain's vchan channel to a local UNIX socket. The
 msg channel connects directly to a Mosquitto broker socket. The input and tty
 channels (sys-usb only) connect to their respective local sockets.
 
+The domid cache at ``/local/domain/system/domids/<name>`` is demoted to a
+self-healed convenience cache (see ADR 0006): the discovery loop always
+resolves the **live** domid from the Xen tree ``/local/domain/<N>/name``,
+uses it for the vchan servers, and writes it back to the cache only when it
+differs from the cached value.
+
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
 
@@ -14,7 +20,7 @@ Safecor Licence — see python/lib/LICENCE.md
 import os
 import subprocess
 import time
-from typing import TextIO
+from typing import Callable, TextIO
 
 from safecor import SysLogger
 
@@ -37,6 +43,30 @@ def read_xenstore(path: str) -> str:
         return ""
 
 
+def write_xenstore(path: str, value: str) -> bool:
+    """Write *value* to *path* in the Xen store.
+
+    The ``svc-vchan-tunnels`` user is non-root; writes require the narrow
+    doas grant in ``conf/doas-svc-vchan-tunnels.conf`` (ADR 0006).  Reads
+    are done directly via ``xenstore-read`` because the user already has
+    read access to the cache path.
+
+    Returns:
+        True on success, False if the write failed (for instance because the
+        calling user lacks ``xenstore-write`` privileges).
+    """
+    try:
+        result = subprocess.run(
+            ["/usr/bin/doas", "/usr/bin/xenstore-write", path, value],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.returncode == 0
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
 def list_domain_names() -> list[str]:
     try:
         result = subprocess.run(
@@ -51,7 +81,63 @@ def list_domain_names() -> list[str]:
 
 
 def get_domid(domain_name: str) -> str:
+    """Return the cached domid for *domain_name* (from the convenience cache)."""
     return read_xenstore(f"{XENSTORE_DOMIDS_PATH}/{domain_name}")
+
+
+# ---------------------------------------------------------------------------
+# Live domid resolution (ADR 0006 — cache demoted to self-healed convenience)
+# ---------------------------------------------------------------------------
+
+
+def resolve_live_domid(
+    domain_name: str,
+    xenstore_read_fn: Callable[[str], str] = read_xenstore,
+    xenstore_write_fn: Callable[[str, str], bool] | None = write_xenstore,
+) -> str:
+    """Resolve the live domid for *domain_name* from the Xen tree.
+
+    Scans ``/local/domain/<N>/name`` for every known domain; the first match
+    is the live domid (hypervisor-maintained, unforgeable).  If the resolved
+    domid differs from the cached value, the cache is updated in place and
+    ``True`` is logged.
+
+    Returns:
+        The live domid (string), or ``""`` if not found.
+    """
+    try:
+        result = subprocess.run(
+            ["xenstore-ls", "/local/domain"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        # Each line:  N name:<domain_name>
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[1].startswith("name:"):
+                domid = parts[0]
+                actual_name = parts[1].split(":", 1)[1]
+                if actual_name == domain_name:
+                    cached = read_xenstore(f"{XENSTORE_DOMIDS_PATH}/{domain_name}")
+                    if cached and cached != domid:
+                        # Write-back to the convenience cache only on difference.
+                        if xenstore_write_fn:
+                            xenstore_write_fn(
+                                f"{XENSTORE_DOMIDS_PATH}/{domain_name}", domid
+                            )
+                        SysLogger("create-vchan-tunnels").info(
+                            f"domid {cached} -> {domid} (self-heal for {domain_name})"
+                        )
+                    return domid
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    return ""
+
+
+def should_write_back(old_domid: str, new_domid: str) -> bool:
+    """Return True when the domid has changed and the cache must be updated."""
+    return bool(old_domid) and bool(new_domid) and old_domid != new_domid
 
 
 def get_socket_path(channel: str, name: str) -> str:
@@ -154,7 +240,9 @@ def main():
         current: dict[tuple[str, str], tuple[str, str, str]] = {}
 
         for name in domain_names:
-            domid = get_domid(name)
+            # Always resolve the live domid (ADR 0006): the convenience cache
+            # is self-healed when a difference is detected.
+            domid = resolve_live_domid(name)
             if not domid:
                 continue
 

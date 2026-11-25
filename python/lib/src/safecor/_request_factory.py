@@ -144,10 +144,15 @@ class RequestFactory:
         }
 
     @staticmethod
-    def create_request_restart_domain(domain_name: str):
-        """Create a request to restart a Domain"""
+    def create_request_restart_domain(domain_name: str, forced: bool = False):
+        """Create a request to restart a Domain.
 
-        return {"domain_name": domain_name}
+        :param domain_name: The name of the domain to restart.
+        :param forced: If True, Dom0 initiates the reboot. If False,
+            the restart is delegated to the domain itself.
+        """
+
+        return {"domain_name": domain_name, "forced": forced}
 
     @staticmethod
     def create_request_ping(ping_id, source_name, data, datetime):

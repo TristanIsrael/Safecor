@@ -131,6 +131,90 @@ class TestDom0Controller(unittest.TestCase):
         self.ctrl._Dom0Controller__handle_restart_domain({})
         self.mqtt.publish.assert_not_called()
 
+    def test_handle_restart_domain_not_found(self):
+        self.topology.domain.return_value = None
+        self.ctrl._Dom0Controller__handle_restart_domain({"domain_name": "unknown"})
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.RESTART_DOMAIN}/response",
+            {
+                "domain_name": "unknown",
+                "state": "refused",
+                "reason": "Domain unknown not found",
+            },
+        )
+
+    def test_handle_restart_domain_core_not_forced(self):
+        """CORE domain with forced=False → self-restart accepted, no Dom0 reboot."""
+        from safecor._topology import DomainType
+
+        core_domain = mock.MagicMock()
+        core_domain.domain_type = DomainType.CORE
+        self.topology.domain.return_value = core_domain
+        self.subprocess.run.return_value.returncode = 0
+        self.ctrl._Dom0Controller__handle_restart_domain(
+            {"domain_name": "sys-usb", "forced": False}
+        )
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.RESTART_DOMAIN}/response",
+            {"domain_name": "sys-usb", "state": "accepted", "reason": ""},
+        )
+
+    def test_handle_restart_domain_core_forced(self):
+        """CORE domain with forced=True → Dom0 reboot (not self-restart).
+
+        This is the escape hatch: when a core domain is hung and cannot
+        self-restart, forced=True forces a Dom0-initiated reboot.
+        """
+        from safecor._topology import DomainType
+
+        core_domain = mock.MagicMock()
+        core_domain.domain_type = DomainType.CORE
+        self.topology.domain.return_value = core_domain
+        self.subprocess.run.return_value.returncode = 0
+        self.ctrl._Dom0Controller__handle_restart_domain(
+            {"domain_name": "sys-usb", "forced": True}
+        )
+        # Should call __reboot_domain → publish reboot response, not self-restart.
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.RESTART_DOMAIN}/response",
+            {"domain_name": "sys-usb", "state": "accepted", "reason": ""},
+        )
+
+    def test_handle_restart_domain_business_not_forced(self):
+        """Business domain should be refused when not forced."""
+        from safecor._topology import DomainType
+
+        business_domain = mock.MagicMock()
+        business_domain.domain_type = DomainType.BUSINESS
+        self.topology.domain.return_value = business_domain
+        self.ctrl._Dom0Controller__handle_restart_domain(
+            {"domain_name": "myapp", "forced": False}
+        )
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.RESTART_DOMAIN}/response",
+            {
+                "domain_name": "myapp",
+                "state": "refused",
+                "reason": "Domain myapp is not self-restartable",
+            },
+        )
+
+    def test_handle_restart_domain_business_forced(self):
+        """Business domain should be restarted when forced=True."""
+        from safecor._topology import DomainType
+
+        business_domain = mock.MagicMock()
+        business_domain.domain_type = DomainType.BUSINESS
+        self.topology.domain.return_value = business_domain
+        self.subprocess.run.return_value.returncode = 0
+        self.ctrl._Dom0Controller__handle_restart_domain(
+            {"domain_name": "myapp", "forced": True}
+        )
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.RESTART_DOMAIN}/response",
+            {"domain_name": "myapp", "state": "accepted", "reason": ""},
+        )
+
     # --- gui ready -------------------------------------------------------
 
     def test_handle_gui_ready(self):

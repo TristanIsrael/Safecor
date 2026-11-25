@@ -190,16 +190,19 @@ class Emulator:
         self.set_energy_state(100.0, plugged=True)
 
     # --- domain restart scenario ---------------------------------------------
-    def restart_domain(self, domain_name: str):
+    def restart_domain(self, domain_name: str, forced: bool = False) -> dict:
         """Simulate a domain restart and record it.
 
         The domain name is recorded in :attr:`restarted_domains`.
 
         :param domain_name: name of the domain to restart.
+        :param forced: If True, Dom0 initiates the reboot (escape hatch).
+            If False, CORE domains self-restart and BUSINESS domains are refused.
+        :returns: the response dict from the mock Dom0.
         """
         if self._dom0 is None:
             raise RuntimeError("Emulator.start() must be called first")
-        self._dom0.record_restart(domain_name)
+        return self._dom0.handle_restart_domain(domain_name, forced)
 
     @property
     def restarted_domains(self):

@@ -2,7 +2,7 @@
 
 > **Scope**: the registry of the decisions made on the Safecor architecture. One short document per decision.
 >
-> **Last updated**: 2026-11-20
+> **Last updated**: 2026-11-25
 
 ## Format
 
@@ -23,3 +23,4 @@ Entries are numbered in chronological order. A decision that is superseded keeps
 | [0003](0003-broker-config-generated-at-boot.md) | The DomU broker configuration is generated at boot, not packaged | Accepted (v2) |
 | [0004](0004-apkovl-directory-permissions.md) | Restore the `/etc` permissions on the DomU at boot | Accepted (v2) |
 | [0005](0005-remove-libvirt-from-dom0.md) | Remove libvirt from Dom0 | Proposed (issue #265) |
+| [0006](0006-domid-source-of-truth.md) | Demote domid cache from "source of truth" to self-healed convenience cache | Proposed (issue #275) |

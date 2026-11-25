@@ -333,9 +333,12 @@ class ConsoleController(QObject):
 
     @Slot(str)
     def restart_domain(self, name: str):
-        """Record a domain restart (W1)."""
+        """Record a domain restart (W1).
+
+        Forced restart: the operator console can restart any domain.
+        """
         em = self.__require_emulator()
-        em.restart_domain(name)
+        em.restart_domain(name, forced=True)
         self.__restarted_domains = list(em.restarted_domains)
         self.stateChanged.emit()
         self.__record_action("restart_domain", {"name": name})

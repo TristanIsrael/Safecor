@@ -51,6 +51,7 @@ class TestApi(unittest.TestCase):
     def test_add_message_callback(self):
         def cb(t, p):
             pass
+
         self.api.add_message_callback(cb)
         self.api.add_message_callback(cb)  # dedupe
         self.assertEqual(self.api._Api__message_callbacks.count(cb), 1)
@@ -62,12 +63,14 @@ class TestApi(unittest.TestCase):
     def test_add_ready_callback(self):
         def cb():
             pass
+
         self.api.add_ready_callback(cb)
         self.assertIn(cb, self.api._Api__ready_callbacks)
 
     def test_add_subscription_callback(self):
         def cb(mid):
             pass
+
         self.api.add_subscription_callback(cb)
         self.assertIn(cb, self.api._Api__subscription_callbacks)
 
@@ -262,7 +265,15 @@ class TestApi(unittest.TestCase):
     def test_restart_domain(self):
         self.api.restart_domain("sys-usb")
         self.mqtt.publish.assert_called_once_with(
-            f"{Topics.RESTART_DOMAIN}/request", {"domain_name": "sys-usb"}
+            f"{Topics.RESTART_DOMAIN}/request",
+            {"domain_name": "sys-usb", "forced": False},
+        )
+
+    def test_restart_domain_forced(self):
+        self.api.restart_domain("sys-usb", forced=True)
+        self.mqtt.publish.assert_called_once_with(
+            f"{Topics.RESTART_DOMAIN}/request",
+            {"domain_name": "sys-usb", "forced": True},
         )
 
     def test_switch_gui(self):

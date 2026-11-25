@@ -84,7 +84,13 @@ class TestRequestFactory(unittest.TestCase):
     def test_create_request_restart_domain(self):
         self.assertEqual(
             RequestFactory.create_request_restart_domain("sys-usb"),
-            {"domain_name": "sys-usb"},
+            {"domain_name": "sys-usb", "forced": False},
+        )
+
+    def test_create_request_restart_domain_forced(self):
+        self.assertEqual(
+            RequestFactory.create_request_restart_domain("sys-usb", forced=True),
+            {"domain_name": "sys-usb", "forced": True},
         )
 
     def test_create_request_ping(self):

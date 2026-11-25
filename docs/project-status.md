@@ -15,20 +15,21 @@ The development branch is **`version-2`** (Safecor v2, packages 2.0-r0). The mai
 
 ### The channels → vchan migration (issue #256)
 
-Validated on real hardware with run sheets: `docs/plans/test-channels-migration/run-<n>.md` (runs 1–19; run 19 is the in-progress final validation after the #273/#274 fixes). The migration plan and its resolutions are in `docs/plans/test-channels-migration/test-channels-migration.md`; the sequence is in `docs/plans/test-channels-migration/finalization-plan.md`.
+Validated on real hardware with run sheets: `docs/plans/test-channels-migration/run-<n>.md` (runs 1–19; run 19 is **NOT GREEN** — §1–§4 green, the OFF path §5 failed on the stale domid after the `sys-usb` self-restart → #275; run 20 hardware-validates the #275 self-heal). The migration plan and its resolutions are in `docs/plans/test-channels-migration/test-channels-migration.md`; the sequence is in `docs/plans/test-channels-migration/finalization-plan.md`.
 
 | Issue | Subject | State |
 |-------|---------|-------|
-| #256 | Migrate all domain-to-Dom0 channels to PV channels (vchan) | In review — runs 15–19 done; finalization: validate #274 at run 19 (§4–§6), then close |
+| #256 | Migrate all domain-to-Dom0 channels to PV channels (vchan) | In review — runs 15–19 done (run 19 §4 green, §5 NOT GREEN); finalization: validate #275 at run 20, then close |
 | #258 | DomU local MQTT broker with an upstream vchan bridge | Validated at run 14 (mosquitto running, multi-clients, e2e, bridge IDs `safecor-<domain>-bridge`) — to close with #256 |
 | #264 | Investigate the libpython EACCES error on the sys-usb domain | Validated at run 14 (the `/etc` permissions restored at boot) — to close with #256 |
-| #260 | Fix the SFTP vchan channel startup order and package the sftp-server | In progress — the per-session bubblewrap sandbox is implemented; see #270–#274 below; the run-19 §4–§6 checks are pending |
-| #262 | Fix the domid write race in `reboot-domain.sh` | In progress — fix implemented on `version-2` (the script polls for the domain to go down, then for the new domid, before writing xenstore); to be validated at run 19 §5 (the sys-usb restart) |
+| #260 | Fix the SFTP vchan channel startup order and package the sftp-server | In progress — the per-session bubblewrap sandbox is implemented; see #270–#275 below; run 19 §4 (file I/O) is green; the OFF-path checks are at run 20 |
+| #262 | Fix the domid write race in `reboot-domain.sh` | Re-scoped into #275 — run 19 §5 used the **non-forced** `restart_domain` (a self-restart) that the forced-path fix cannot cover; the self-heal supersedes it |
 | #270 | Bounded domid wait and all-or-nothing READY with local log trace | Validated on hardware (runs 17–19) |
 | #271 | Grant the controller xenstore access at boot | Validated on hardware (run 18 §1, clean reboot, no manual `chmod`) |
 | #272 | Per-domain sandbox wrapper (socat 512-byte EXEC limit) | Validated on hardware (the channels start at boot since the #273 fix) |
 | #273 | Reject the filtered `my_config` responses in the controller accept filter | Validated on hardware (the run-18 race no longer reproduces: the channels start and the business DomUs mount) |
-| #274 | Mount the remote `/media/usb` instead of the SFTP session root | In review — fix committed and pushed; to be validated at run 19 §4 (the mount point must show the USB tree at the top level) |
+| #274 | Mount the remote `/media/usb` instead of the SFTP session root | Validated on hardware (run 19 §4: the USB tree at the top level of the mount, file I/O, write refused, watchdog remount) |
+| #275 | Self-heal the vchan domid on domain restart (Dom0 cache + SFTP channels) | In progress — the run 19 §5 failure (the stale domid after the `sys-usb` self-restart); the fix is designed and approved, implementation on `version-2`; hardware validation at run 20 (OFF path, single business reboot, Saphir simultaneous reboot) |
 | #259 | Enforce MQTT client ID naming convention and broker authentication | Ready — second pass (hardening), after the #256 closure |
 | #261 | Restrict xenstore write grants to the vchan subtree | Ready — second pass (hardening), after the #256 closure |
 

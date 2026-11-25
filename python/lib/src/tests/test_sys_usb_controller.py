@@ -983,5 +983,532 @@ class TestStartChannelsAllOrNothingReady(unittest.TestCase):
         self.assertEqual(self.controller._SysUsbController__sftp_channels, [])
 
 
+# ---------------------------------------------------------------------------
+# Supervisor thread tests (ADR 0006 — self-heal after domain self-restart)
+# ---------------------------------------------------------------------------
+
+
+class TestChannelSupervisor(unittest.TestCase):
+    """Unit tests for the SFTP channel supervisor thread."""
+
+    def setUp(self):
+        self.mqtt = mock.MagicMock()
+        self.mqtt_client = mock.MagicMock()
+        self.controller = SysUsbController(self.mqtt_client)
+        self.controller._SysUsbController__can_run = True
+
+    # --- __update_cached_domids ----------------------------------------
+
+    def test_update_cached_domids_reads_from_system(self):
+        """__update_cached_domids calls System().get_domain_domid()."""
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("sys-usb", MountMode.RW)],
+            ),
+            mock.patch.object(suc.System, "get_domain_domid") as get_domid,
+        ):
+            get_domid.return_value = 42
+            self.controller._SysUsbController__update_cached_domids()
+        get_domid.assert_called_once_with("sys-usb")
+        self.assertEqual(
+            self.controller._SysUsbController__channels_domids,
+            {"sys-usb": 42},
+        )
+
+    def test_update_cached_domids_ignores_none(self):
+        """None domid → last known value kept, not deleted."""
+        self.controller._SysUsbController__channels_domids = {"sys-usb": 10}
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("sys-usb", MountMode.RW)],
+            ),
+            mock.patch.object(suc.System, "get_domain_domid") as get_domid,
+        ):
+            get_domid.return_value = None
+            self.controller._SysUsbController__update_cached_domids()
+        # Value unchanged.
+        self.assertEqual(
+            self.controller._SysUsbController__channels_domids,
+            {"sys-usb": 10},
+        )
+
+    def test_update_cached_domids_updates_on_difference(self):
+        """Different domid → updated in cache."""
+        self.controller._SysUsbController__channels_domids = {"sys-usb": 10}
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("sys-usb", MountMode.RW)],
+            ),
+            mock.patch.object(suc.System, "get_domain_domid") as get_domid,
+        ):
+            get_domid.return_value = 20
+            self.controller._SysUsbController__update_cached_domids()
+        self.assertEqual(
+            self.controller._SysUsbController__channels_domids,
+            {"sys-usb": 20},
+        )
+
+    def test_update_cached_domids_skips_unchanged(self):
+        """Same domid → no write-back."""
+        self.controller._SysUsbController__channels_domids = {"sys-usb": 10}
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("sys-usb", MountMode.RW)],
+            ),
+            mock.patch.object(suc.System, "get_domain_domid") as get_domid,
+        ):
+            get_domid.return_value = 10
+            self.controller._SysUsbController__update_cached_domids()
+        self.assertEqual(
+            self.controller._SysUsbController__channels_domids,
+            {"sys-usb": 10},
+        )
+
+    def test_update_cached_domids_no_domains(self):
+        """No direct_mount domains → nothing updated."""
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[],
+            ),
+            mock.patch.object(suc.System, "get_domain_domid"),
+        ):
+            self.controller._SysUsbController__update_cached_domids()
+        self.assertEqual(self.controller._SysUsbController__channels_domids, {})
+
+    # --- __is_channel_alive -------------------------------------------
+
+    def test_is_channel_alive_all_present(self):
+        """Both pidfiles + socket present → True."""
+        with (
+            mock.patch("os.path.exists", return_value=True),
+            mock.patch("pathlib.Path.read_text", return_value="9999\n"),
+        ):
+            self.assertTrue(
+                self.controller._SysUsbController__is_channel_alive("app1", 10)
+            )
+
+    def test_is_channel_alive_missing_socket(self):
+        """Socket missing → False."""
+        with (
+            mock.patch("os.path.exists", side_effect=lambda p: not p.endswith(".sock")),
+            mock.patch("pathlib.Path.read_text", return_value="9999\n"),
+        ):
+            self.assertFalse(
+                self.controller._SysUsbController__is_channel_alive("app1", 10)
+            )
+
+    def test_is_channel_alive_missing_pidfile(self):
+        """Pidfile missing → False."""
+        with (
+            mock.patch("os.path.exists", return_value=True),
+            mock.patch("pathlib.Path.read_text", side_effect=FileNotFoundError),
+        ):
+            self.assertFalse(
+                self.controller._SysUsbController__is_channel_alive("app1", 10)
+            )
+
+    def test_is_channel_alive_dead_process(self):
+        """Pidfile exists but /proc/<pid> missing → False."""
+        with (
+            mock.patch(
+                "os.path.exists",
+                side_effect=lambda p: p != "/proc/9999" and not p.endswith(".sock"),
+            ),
+            mock.patch("pathlib.Path.read_text", return_value="9999\n"),
+        ):
+            self.assertFalse(
+                self.controller._SysUsbController__is_channel_alive("app1", 10)
+            )
+
+    # --- __reconcile_channels -----------------------------------------
+
+    def test_reconcile_starts_missing_channel(self):
+        """Domain in cache but not in sftp_channels → channel started."""
+        self.controller._SysUsbController__channels_domids = {"app1": 10}
+        self.controller._SysUsbController__sftp_channels = []
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__is_channel_alive",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__run_channels_helper",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch("os.path.exists", return_value=True),
+        ):
+            self.controller._SysUsbController__reconcile_channels()
+            self.assertIn("app1", self.controller._SysUsbController__sftp_channels)
+            # Helper was called for the missing channel.
+            call_list = (
+                self.controller._SysUsbController__run_channels_helper.call_args_list
+            )
+            self.assertEqual(len(call_list), 1)
+            self.assertEqual(call_list[0][0][0]["action"], "start")
+
+    def test_reconcile_restarts_dead_channel(self):
+        """Dead channel → restarted with cached domid, no duplicate entry."""
+        self.controller._SysUsbController__channels_domids = {"app1": 10}
+        self.controller._SysUsbController__sftp_channels = ["app1"]
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__is_channel_alive",
+                return_value=False,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__run_channels_helper",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch("os.path.exists", return_value=True),
+        ):
+            self.controller._SysUsbController__reconcile_channels()
+            # Only one entry (no duplicate from append).
+            self.assertEqual(self.controller._SysUsbController__sftp_channels, ["app1"])
+            # Verify the call spec includes mode.
+            call_spec = (
+                self.controller._SysUsbController__run_channels_helper.call_args_list[
+                    0
+                ][0][0]
+            )
+            self.assertEqual(call_spec["action"], "start")
+            self.assertEqual(call_spec["domid"], 10)
+            self.assertEqual(call_spec["mode"], "rw")
+
+    def test_reconcile_two_ticks_healthy_no_extra_calls(self):
+        """Two consecutive ticks with healthy channel → no duplicate entries."""
+        self.controller._SysUsbController__channels_domids = {"app1": 10}
+        self.controller._SysUsbController__sftp_channels = ["app1"]
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__is_channel_alive",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__get_channel_domid",
+                return_value=10,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__run_channels_helper",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch("os.path.exists", return_value=True),
+        ):
+            # Tick 1: healthy → no action.
+            self.controller._SysUsbController__reconcile_channels()
+            count_after_1 = (
+                self.controller._SysUsbController__run_channels_helper.call_count
+            )
+            # Tick 2: healthy → no extra calls.
+            self.controller._SysUsbController__reconcile_channels()
+            count_after_2 = (
+                self.controller._SysUsbController__run_channels_helper.call_count
+            )
+            self.assertEqual(count_after_1, 0)
+            self.assertEqual(count_after_2, 0)
+            self.assertEqual(self.controller._SysUsbController__sftp_channels, ["app1"])
+
+    def test_reconcile_supervisor_order_update_before_reconcile(self):
+        """__update_cached_domids runs before __reconcile_channels."""
+        order = []
+        original_reconcile = self.controller._SysUsbController__reconcile_channels
+
+        def patched_update():
+            order.append("update")
+            # Stop the loop after first iteration by setting __can_run to False
+            self.controller._SysUsbController__can_run = False
+
+        def patched_reconcile():
+            order.append("reconcile")
+            original_reconcile()
+
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__update_cached_domids",
+                side_effect=patched_update,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__reconcile_channels",
+                side_effect=patched_reconcile,
+            ),
+            mock.patch("time.sleep"),
+        ):
+            self.controller._SysUsbController__channel_supervisor()
+            self.assertEqual(order, ["update", "reconcile"])
+
+    # --- __get_channel_domid --------------------------------------------
+
+    def test_get_channel_domid_success(self):
+        """Parses cmdline → returns the domid after 'server'."""
+        cmdline = b"vchan-socket-proxy\x00-m\x00server\x0042\x00/local/foo\x00/tmp/sock"
+        with (
+            mock.patch("pathlib.Path.read_text", return_value="100\n"),
+            mock.patch("os.path.exists", return_value=True),
+            mock.patch("pathlib.Path.read_bytes", return_value=cmdline),
+        ):
+            result = self.controller._SysUsbController__get_channel_domid("app1")
+            self.assertEqual(result, 42)
+
+    def test_get_channel_domid_process_gone(self):
+        """/proc/<pid> missing → None."""
+        with (
+            mock.patch("pathlib.Path.read_text", return_value="9999\n"),
+            mock.patch("os.path.exists", return_value=False),
+        ):
+            result = self.controller._SysUsbController__get_channel_domid("app1")
+            self.assertIsNone(result)
+
+    def test_get_channel_domid_pidfile_bad(self):
+        """Corrupt pidfile → None."""
+        with mock.patch("pathlib.Path.read_text", return_value="not-a-pid\n"):
+            result = self.controller._SysUsbController__get_channel_domid("app1")
+            self.assertIsNone(result)
+
+    def test_get_channel_domid_no_server_token(self):
+        """No 'server' token in cmdline → None."""
+        cmdline = b"vchan-socket-proxy\x00-m\x00client\x0042\x00/local/foo\x00/tmp/sock"
+        with (
+            mock.patch("pathlib.Path.read_text", return_value="100\n"),
+            mock.patch("os.path.exists", return_value=True),
+            mock.patch("pathlib.Path.read_bytes", return_value=cmdline),
+        ):
+            result = self.controller._SysUsbController__get_channel_domid("app1")
+            self.assertIsNone(result)
+
+    # --- __reconcile_channels: re-pin ----------------------------------
+
+    def test_reconcile_repin_on_domid_change(self):
+        """Alive channel with stale cmdline domid → re-pin with new domid."""
+        self.controller._SysUsbController__channels_domids = {"app1": 42}
+        self.controller._SysUsbController__sftp_channels = ["app1"]
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__is_channel_alive",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__get_channel_domid",
+                return_value=10,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__run_channels_helper",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch("os.path.exists", return_value=True),
+        ):
+            self.controller._SysUsbController__reconcile_channels()
+            # Exactly one call (re-pin), no append to sftp_channels
+            self.assertEqual(
+                self.controller._SysUsbController__run_channels_helper.call_count, 1
+            )
+            self.assertEqual(self.controller._SysUsbController__sftp_channels, ["app1"])
+            call_spec = (
+                self.controller._SysUsbController__run_channels_helper.call_args_list[
+                    0
+                ][0][0]
+            )
+            self.assertEqual(call_spec["domid"], 42)
+            self.assertEqual(call_spec["mode"], "rw")
+
+    def test_reconcile_repin_no_action_when_matching(self):
+        """Alive channel with matching cmdline domid → no helper call."""
+        self.controller._SysUsbController__channels_domids = {"app1": 42}
+        self.controller._SysUsbController__sftp_channels = ["app1"]
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__is_channel_alive",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__get_channel_domid",
+                return_value=42,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__run_channels_helper",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch("os.path.exists", return_value=True),
+        ):
+            self.controller._SysUsbController__reconcile_channels()
+            self.assertEqual(
+                self.controller._SysUsbController__run_channels_helper.call_count, 0
+            )
+
+    def test_reconcile_repin_unparseable_cmdline_restart(self):
+        """Unparseable cmdline → treated as dead → restart."""
+        self.controller._SysUsbController__channels_domids = {"app1": 42}
+        self.controller._SysUsbController__sftp_channels = ["app1"]
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__is_channel_alive",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__get_channel_domid",
+                return_value=None,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__run_channels_helper",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch("os.path.exists", return_value=True),
+        ):
+            self.controller._SysUsbController__reconcile_channels()
+            self.assertEqual(
+                self.controller._SysUsbController__run_channels_helper.call_count, 1
+            )
+
+    def test_reconcile_dead_channel_includes_mode(self):
+        """Dead-channel restart includes the mode from topology."""
+        self.controller._SysUsbController__channels_domids = {"app1": 10}
+        self.controller._SysUsbController__sftp_channels = ["app1"]
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__is_channel_alive",
+                return_value=False,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__run_channels_helper",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RO)],
+            ),
+            mock.patch("os.path.exists", return_value=True),
+        ):
+            self.controller._SysUsbController__reconcile_channels()
+            call_spec = (
+                self.controller._SysUsbController__run_channels_helper.call_args_list[
+                    0
+                ][0][0]
+            )
+            self.assertEqual(call_spec["action"], "start")
+            self.assertEqual(call_spec["domid"], 10)
+            self.assertEqual(call_spec["mode"], "ro")
+
+    def test_reconcile_default_mode_rw(self):
+        """When mode is absent from topology, defaults to 'rw'."""
+        self.controller._SysUsbController__channels_domids = {"app1": 10}
+        self.controller._SysUsbController__sftp_channels = ["app1"]
+        with (
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__is_channel_alive",
+                return_value=False,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__run_channels_helper",
+                return_value=True,
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__log_channel_event",
+            ),
+            mock.patch.object(
+                self.controller,
+                "_SysUsbController__query_direct_mount_domains",
+                return_value=[("app1", MountMode.RW)],
+            ),
+            mock.patch("os.path.exists", return_value=True),
+        ):
+            self.controller._SysUsbController__reconcile_channels()
+            call_spec = (
+                self.controller._SysUsbController__run_channels_helper.call_args_list[
+                    0
+                ][0][0]
+            )
+            self.assertEqual(call_spec["mode"], "rw")
+
+
 if __name__ == "__main__":
     unittest.main()

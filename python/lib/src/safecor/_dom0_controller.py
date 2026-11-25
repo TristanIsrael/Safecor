@@ -30,6 +30,7 @@ from . import (
     Topics,
     topology,
 )
+from ._topology import DomainType
 
 try:
     from . import XcbController
@@ -254,8 +255,45 @@ class Dom0Controller:
         domain_name = payload.get("domain_name", "")
         forced = payload.get("forced", False)
 
+        # Determine the domain's type from the topology.
+        domain = topology.domain(domain_name)
+
+        if domain is None:
+            Logger().error(f"Domain {domain_name} not found in topology")
+            response = ResponseFactory.create_response_restart_domain(
+                domain_name, False, f"Domain {domain_name} not found"
+            )
+            self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
+            return
+
+        # forced=True takes precedence for any domain: Dom0 reboots even CORE
+        # domains (escape hatch when a core domain is hung and cannot self-restart).
         if forced:
             self.__reboot_domain(domain_name)
+            return
+
+        is_core = domain.domain_type == DomainType.CORE
+
+        if is_core:
+            # CORE + non-forced → self-restart: Dom0 accepts and the domain
+            # restarts itself (e.g. sys-usb runs __handle_restart → publishes
+            # components OFF → stops SFTP channels → reboots).
+            Logger().info(
+                f"Accepted non-forced restart of core domain {domain_name} "
+                f"(self-restart)"
+            )
+            response = ResponseFactory.create_response_restart_domain(
+                domain_name, True, ""
+            )
+            self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
+            return
+
+        # BUSINESS + non-forced → refused.
+        Logger().warn(f"Refusing non-forced restart of business domain {domain_name}")
+        response = ResponseFactory.create_response_restart_domain(
+            domain_name, False, f"Domain {domain_name} is not self-restartable"
+        )
+        self.mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/response", response)
 
     def __handle_gui_ready(self, payload: dict):
         # When GUI is ready we hide the splash screen

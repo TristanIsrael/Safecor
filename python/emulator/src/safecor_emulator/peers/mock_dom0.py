@@ -17,7 +17,9 @@ from safecor import (
     ResponseFactory,
     System,
     Topics,
+    topology,
 )
+from safecor._topology import DomainType
 
 from ..events import EventBus
 
@@ -89,6 +91,29 @@ class MockDom0Controller:
     def record_restart(self, domain_name: str):
         """Record a domain restart (used by the scenario API)."""
         self.__restarted_domains.append(domain_name)
+
+    def handle_restart_domain(self, domain_name: str, forced: bool = False) -> dict:
+        """Handle a restart_domain request from the emulator API.
+
+        Mirrors the Dom0Controller contract: forced=True → Dom0 reboot for
+        any domain; forced=False → CORE self-restart, BUSINESS refused.
+        """
+        # Re-read topology from module in case it was rebound by
+        # System.get_topology() (which does global topology = ...).
+        from safecor._system import topology as loaded_topology
+
+        domain = loaded_topology.domain(domain_name)
+        if forced or (domain is not None and domain.domain_type == DomainType.CORE):
+            self.__restarted_domains.append(domain_name)
+            response = ResponseFactory.create_response_restart_domain(
+                domain_name, True, ""
+            )
+        else:
+            response = ResponseFactory.create_response_restart_domain(
+                domain_name, False, f"Domain {domain_name} is not self-restartable"
+            )
+        self.__publish(f"{Topics.RESTART_DOMAIN}/response", response)
+        return response
 
     # --- lifecycle -----------------------------------------------------------
     def start(self, storage_path: str):
@@ -190,8 +215,21 @@ class MockDom0Controller:
         domain_name = payload.get("domain_name", "")
         if not domain_name:
             return
-        self.__restarted_domains.append(domain_name)
-        response = ResponseFactory.create_response_restart_domain(domain_name, True, "")
+        forced = payload.get("forced", False)
+
+        # Mirror the Dom0Controller contract: forced=True takes precedence
+        # for any domain (Dom0 reboot). CORE domains with forced=False
+        # self-restart. BUSINESS domains with forced=False are refused.
+        domain = topology.domain(domain_name)
+        if domain is not None and (forced or domain.domain_type == DomainType.CORE):
+            self.__restarted_domains.append(domain_name)
+            response = ResponseFactory.create_response_restart_domain(
+                domain_name, True, ""
+            )
+        else:
+            response = ResponseFactory.create_response_restart_domain(
+                domain_name, False, f"Domain {domain_name} is not self-restartable"
+            )
         self.__publish(f"{Topics.RESTART_DOMAIN}/response", response)
 
     def __handle_ping(self, payload: dict):

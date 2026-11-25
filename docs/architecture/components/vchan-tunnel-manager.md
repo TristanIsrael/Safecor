@@ -2,7 +2,7 @@
 
 > **Scope**: the `vchan-socket-proxy` servers on Dom0 that bridge every DomU's PV channels (msg, input, tty, sftp) to local UNIX sockets.
 >
-> **Last updated**: 2026-11-20
+> **Last updated**: 2026-11-25
 >
 > **Main artifacts**: `create-vchan-tunnels.py` (Dom0, discovery loop), the `vchan-socket-proxy` servers, `99-safecor.rules` (udev), the `safecor-vchan-tunnels` initd.
 
@@ -16,6 +16,21 @@
 | `input` | `/var/run/safecor/input.sock` | the orchestrator's inputs proxy (see [inputs.md](inputs.md)) |
 | `tty` | `/var/run/safecor/sys-usb-tty.sock` | the debug tty terminal (see [sys-usb-controller.md](sys-usb-controller.md)) |
 | `sftp` | a per-domain UNIX socket (`/var/run/safecor/direct-mount/vchan-<domain>.sock`) served in `sys-usb` by the `SysUsbController` (`safecor_direct_mount` component) | the SFTP server (see [direct-usb-mount.md](direct-usb-mount.md)) |
+
+## Domid resolution (ADR 0006)
+
+The vchan tunnel manager resolves the **live** domid for every domain on each
+discovery-loop iteration, by scanning ``/local/domain/<N>/name`` in the Xen
+tree.  This is the hypervisor-maintained source of truth (unforgeable).  The
+cached domid at ``/local/domain/system/domids/<name>`` is demoted to a
+**convenience cache**: it is updated in place only when the resolved live domid
+differs from the cached value.  This self-heals the cache after domain
+self-restarts (issue #275), preventing stale domid pinning.
+
+The domid cache update path uses `xenstore-write`; the `svc-vchan-tunnels` user
+needs a narrow doas grant for the cache path
+(`/local/domain/system/domids/*`), defined in
+`conf/doas-svc-vchan-tunnels.conf`.
 
 The vchan data is published in the shared xenstore namespace `/local/domain/system/vchan/<domain name>/<channel>/{ring-ref,event-channel}` (a DomU cannot read `/local/domain/0`). The **server side creates the channel** at runtime and grants read access to the peer domain.
 

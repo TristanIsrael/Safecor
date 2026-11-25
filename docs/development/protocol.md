@@ -2,7 +2,7 @@
 
 > **Scope**: the MQTT contract between the Safecor platform and a product — topics, payloads, message shapes, and who answers. This is the **offline** reference (copy of the Wiki `Protocol` page, **code-authoritative names**, with the mismatches noted inline).
 >
-> **Last updated**: 2026-11-20
+> **Last updated**: 2026-11-25
 >
 > **Code**: `_topics.py` (topic names), `_request_factory.py` / `_response_factory.py` / `_notification_factory.py` (payloads), `_dom0_controller.py` / `_sys_usb_controller.py` (handlers).
 
@@ -149,7 +149,9 @@ Transports and the message bus architecture: [../architecture/components/messagi
 ```
 
 - `domain_name` (str): must match an existing Domain (`sys-usb`, `sys-gui`, or a domain defined in the `topology.json`).
-- `forced` (bool): if true, the restart is forced in Dom0, otherwise the Domain restarts itself.
+- `forced` (bool): if true, the restart is forced in Dom0 (Dom0 reboots the domain).  If false:
+  - **CORE domains** (e.g. `sys-usb`) self-restart: Dom0 publishes an `accepted` response and the domain itself handles the shutdown (stops SFTP channels, publishes components OFF, reboots).  The vchan tunnel manager and SFTP channel supervisor self-heal the domid after the reboot (ADR 0006).
+  - **BUSINESS domains** are refused with `refused` — Dom0 does not reboot them without `forced=True`.
 - Response: `system/workflow/restart_domain/response` — `{ "domain_name", "state", "reason" }` (same semantics as shutdown).
 
 ## Logging

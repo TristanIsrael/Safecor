@@ -717,7 +717,7 @@ class Api(metaclass=SingletonMeta):
 
         self.__mqtt_client.publish(f"{Topics.SHUTDOWN}/request", {})
 
-    def restart_domain(self, domain_name: str):
+    def restart_domain(self, domain_name: str, forced: bool = False):
         """
         Makes a Domain restart.
 
@@ -731,9 +731,11 @@ class Api(metaclass=SingletonMeta):
 
         Args:
             domain_name(str): The name of the Domain to restart.
+            forced(bool, optional): If True, Dom0 initiates the reboot.
+                If False (default), the restart is delegated to the domain itself.
         """
 
-        payload = RequestFactory.create_request_restart_domain(domain_name)
+        payload = RequestFactory.create_request_restart_domain(domain_name, forced)
         self.__mqtt_client.publish(f"{Topics.RESTART_DOMAIN}/request", payload)
 
     def switch_gui(self, domain_name: str):

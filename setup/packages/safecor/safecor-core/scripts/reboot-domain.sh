@@ -20,7 +20,7 @@ UP_TIMEOUT=${UP_TIMEOUT:-60}  # seconds to wait for the domain to come back
 POLL_INTERVAL=${POLL_INTERVAL:-2}
 
 get_domid() {
-    xl info "$1" 2>/dev/null | grep -w ID | awk '{print $3}'
+    xl domid "$1" 2>/dev/null
 }
 
 old_domid=$(get_domid "$1")

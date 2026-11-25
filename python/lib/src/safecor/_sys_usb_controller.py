@@ -103,6 +103,11 @@ DM_CHANNELS_HELPER = "/usr/lib/safecor/bin/safecor-dm-channels.py"
 # channel thread (NFR-1 constrains the MQTT callbacks only).
 MY_CONFIG_QUERY_TIMEOUT = 10
 
+# Supervisor polling interval (seconds) for the SFTP channel reconciliation
+# loop. Runs every 5 s, checking that every tracked channel's cached domid
+# still matches the live domid in Xenstore.
+CHANNEL_SUPERVISOR_INTERVAL = 5
+
 
 def parse_direct_mount_domains(response: dict) -> list[tuple[str, MountMode]]:
     """Extract the (name, mode) pairs of the direct_mount domains.
@@ -533,7 +538,9 @@ class SysUsbController:
         self.__controller_state = ComponentState.READY
         self.__direct_mount_state = ComponentState.STARTING
         self.__sftp_channels: list[str] = []
+        self.__channels_domids: dict[str, int] = {}
         self.__channels_thread_started = False
+        self.__supervisor_thread_started = False
 
         # One-shot my_config query (see __query_direct_mount_domains)
         self.__my_config_result = None
@@ -600,6 +607,17 @@ class SysUsbController:
             threading.Thread(
                 target=self.__start_direct_mount_channels,
                 name="direct_mount_channels",
+                daemon=True,
+            ).start()
+
+        # Supervisor thread: periodically reconciles channels against live
+        # domid cache, starts missing ones, re-pins on domid change,
+        # re-pins on server death (idempotent).
+        if not self.__supervisor_thread_started:
+            self.__supervisor_thread_started = True
+            threading.Thread(
+                target=self.__channel_supervisor,
+                name="channel_supervisor",
                 daemon=True,
             ).start()
 
@@ -1188,6 +1206,230 @@ class SysUsbController:
         for name in list(self.__sftp_channels):
             self.__run_channels_helper({"action": "stop", "name": name})
         self.__sftp_channels.clear()
+        self.__channels_domids.clear()
+
+    def __channel_supervisor(self) -> None:
+        """Periodic supervisor for the SFTP channels.
+
+        Runs every ``CHANNEL_SUPERVISOR_INTERVAL`` seconds. For each tracked
+        channel, checks that the cached domid still matches the live domid in
+        Xenstore.  If a channel has stopped (vchan server exit) the supervisor
+        detects the death and restarts it with the current domid.  If a
+        channel's domain has disappeared the channel is gracefully stopped.
+
+        This is the **self-heal** path for issue #275: when a CORE domain
+        (e.g. sys-usb) restarts itself, the vchan server on Dom0 is pinned to
+        the old domid and dies.  The supervisor detects the death, resolves the
+        new live domid, and restarts the channel with the correct domid so that
+        the direct mount feature recovers without manual intervention.
+        """
+        while self.__can_run:
+            # Update domids BEFORE reconcile so that a freshly rebooted
+            # channel is restarted with the correct domid, not the stale one.
+            self.__update_cached_domids()
+            self.__reconcile_channels()
+            time.sleep(CHANNEL_SUPERVISOR_INTERVAL)
+
+    def __update_cached_domids(self) -> None:
+        """Reads the live domids from the Dom0 cache and updates the cache dict.
+
+        The authoritative domid source for a DomU (sys-usb) is the Dom0 cache at
+        ``/local/domain/system/domids/<name>``, readable via
+        ``System().get_domain_domid()``.  A DomU cannot read sibling domains'
+        ``/local/domain/<N>/name`` (per-domain xenstore grants), so the Xen tree
+        scan used on Dom0 (create-vchan-tunnels.py, ADR 0006) is not available
+        here.
+
+        Idempotent: only overwrites when the new value differs.  A None
+        result (domain not yet in cache) keeps the last known value — the
+        domain may have been rebooted and its new domid is still propagating.
+        """
+        pairs = self.__query_direct_mount_domains()
+        if pairs is None:
+            return
+        for name, _ in pairs:
+            domid = System().get_domain_domid(name)
+            current = self.__channels_domids.get(name)
+            if domid is not None and domid != current:
+                self.__channels_domids[name] = domid
+
+    def __reconcile_channels(self) -> None:
+        """Reconciles active channels against live Xenstore.
+
+        For every domain name in the cached domids map:
+
+        1. **Channel dead** – the vchan server has died (e.g. old domid no
+           longer exists). Stop+start the channel with the current live domid
+           and its topology mode.
+
+        2. **Channel alive but domid changed** – a domain has restarted.
+           Re-pin the channel with the new domid (stop+start via the helper).
+
+        3. **Channel alive** – nothing to do.
+
+        4. **Domain not tracked** – it has a direct_mount in the topology but
+           no channel yet. Start it with the topology mode.
+        """
+        # Build a live-domid map so we can detect domid changes.
+        pairs = self.__query_direct_mount_domains() or []
+        live_domids: dict[str, int] = {}
+        for name, _ in pairs:
+            domid = self.__channels_domids.get(name)
+            if domid is not None:
+                live_domids[name] = domid
+
+        # Resolve the mode for each direct-mount domain once (used by both
+        # the dead-channel restart and the missing-channel start branches).
+        mode_map: dict[str, str] = {}
+        for name, mode in pairs:
+            mode_map[name] = mode.value
+
+        for name in list(live_domids.keys()):
+            cached_domid = live_domids[name]
+            if cached_domid is None:
+                continue
+
+            channel_alive = self.__is_channel_alive(name, cached_domid)
+
+            if channel_alive:
+                # Re-pin on domid change (issue #275, run-20 §3).
+                channel_domid = self.__get_channel_domid(name)
+                if channel_domid is None:
+                    # Unparseable cmdline → treat conservatively as dead
+                    # (don't risk leaving a channel pinned to a stale domid).
+                    channel_alive = False
+                elif channel_domid != cached_domid:
+                    self.__log_channel_event(
+                        f"Re-pinning channel for {name}: "
+                        f"domid {channel_domid} → {cached_domid}"
+                    )
+                    if self.__run_channels_helper(
+                        {
+                            "action": "start",
+                            "name": name,
+                            "domid": cached_domid,
+                            "mode": mode_map.get(name, MountMode.RW.value),
+                        }
+                    ):
+                        self.__log_channel_event(
+                            f"Channel for {name} re-pinned successfully "
+                            f"(domid {cached_domid})"
+                        )
+                    else:
+                        self.__log_channel_event(
+                            f"Failed to re-pin channel for {name} "
+                            f"(domid {cached_domid})",
+                            level="error",
+                        )
+                    continue
+
+            if not channel_alive:
+                self.__log_channel_event(
+                    f"Channel for {name} is dead (domid {cached_domid}), restarting"
+                )
+                if self.__run_channels_helper(
+                    {
+                        "action": "start",
+                        "name": name,
+                        "domid": cached_domid,
+                        "mode": mode_map.get(name, MountMode.RW.value),
+                    }
+                ):
+                    if name not in self.__sftp_channels:
+                        self.__sftp_channels.append(name)
+                    self.__log_channel_event(
+                        f"Channel for {name} restarted successfully "
+                        f"(domid {cached_domid})"
+                    )
+                else:
+                    self.__log_channel_event(
+                        f"Failed to restart channel for {name} (domid {cached_domid})",
+                        level="error",
+                    )
+
+        # Check for domains that have direct_mount but no channel yet.
+        if pairs is not None:
+            direct_mount_names = {name for name, _ in pairs}
+
+            for name in direct_mount_names:
+                if name not in self.__sftp_channels:
+                    live_domid = self.__channels_domids.get(name)
+                    if live_domid is not None:
+                        mode = mode_map.get(name, MountMode.RW.value)
+                        self.__log_channel_event(
+                            f"Missing channel for {name} (domid {live_domid}), starting"
+                        )
+                        if self.__run_channels_helper(
+                            {
+                                "action": "start",
+                                "name": name,
+                                "domid": live_domid,
+                                "mode": mode,
+                            }
+                        ):
+                            self.__sftp_channels.append(name)
+                            self.__channels_domids[name] = live_domid
+                            self.__log_channel_event(
+                                f"Channel for {name} started (domid {live_domid})"
+                            )
+
+    def __is_channel_alive(self, name: str, expected_domid: int) -> bool:
+        """Returns True if the vchan server of *name* is alive.
+
+        Checks the boot-time liveness verification (socat pidfile, vchan
+        pidfile, and socket) that runs at channel start.
+
+        Args:
+            name: Domain name (used to locate pidfiles and socket).
+            expected_domid: Not used here — kept for API compatibility.
+
+        Returns:
+            True if the channel is alive.
+        """
+        for kind in ("socat", "vchan"):
+            pidfile = f"{SFTP_RUNTIME_DIR}/{kind}-{name}.pid"
+            try:
+                pid = int(Path(pidfile).read_text().strip())
+            except (OSError, ValueError):
+                return False
+            if not os.path.exists(f"/proc/{pid}"):
+                return False
+        # vchan socket must also exist.
+        sock = f"{SFTP_RUNTIME_DIR}/vchan-{name}.sock"
+        return os.path.exists(sock)
+
+    def __get_channel_domid(self, name: str) -> int | None:
+        """Extract the domid from the vchan server process command line.
+
+        Reads the vchan pidfile, then parses ``/proc/<pid>/cmdline``
+        (null-separated tokens) looking for ``vchan-socket-proxy -m
+        server`` and returns the domid argument immediately after ``server``.
+
+        Returns:
+            The domid as an integer, or **None** if the process is gone or
+            the command line cannot be parsed.  An unparseable cmdline is
+            treated conservatively: the caller will restart the channel
+            rather than risk leaving it pinned to a stale domid.
+        """
+        pidfile = f"{SFTP_RUNTIME_DIR}/vchan-{name}.pid"
+        try:
+            pid = int(Path(pidfile).read_text().strip())
+        except (OSError, ValueError):
+            return None
+        if not os.path.exists(f"/proc/{pid}"):
+            return None
+        try:
+            cmdline = Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\x00")
+        except OSError:
+            return None
+        # ``vchan-socket-proxy -m server <domid> <xs-path> <sock>``
+        for i, token in enumerate(cmdline):
+            try:
+                if token == b"server" and i + 1 < len(cmdline):
+                    return int(cmdline[i + 1])
+            except (ValueError, IndexError):
+                continue
+        return None
 
     def __shutdown_direct_mount(self) -> None:
         """Publishes the components OFF and stops the SFTP channels (best-effort).
