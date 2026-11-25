@@ -1,6 +1,7 @@
 ---
 description: Anomaly Diagnosis and Root Cause Analysis
 mode: subagent
+steps: 16
 permissions:
   - action: edit
     resource: "*"
@@ -8,6 +9,18 @@ permissions:
   - action: shell
     resource: "*"
     effect: ask
+  - action: shell
+    resource: "git show *"
+    effect: allow
+  - action: shell
+    resource: "git log *"
+    effect: allow
+  - action: shell
+    resource: "head *"
+    effect: allow
+  - action: shell
+    resource: "echo *"
+    effect: allow
   - action: subagent
     resource: "*"
     effect: deny

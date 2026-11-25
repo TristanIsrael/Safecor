@@ -1,6 +1,7 @@
 ---
 description: Independent documentation guard
 mode: subagent
+steps: 8
 permissions:
   - action: edit
     resource: "*.md"

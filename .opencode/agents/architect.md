@@ -1,6 +1,7 @@
 ---
 description: Software Architecture, Design, and Technical Specifications
 mode: subagent
+steps: 24
 permissions:
   - action: edit
     resource: "*"
@@ -8,6 +9,12 @@ permissions:
   - action: shell
     resource: "*"
     effect: deny
+  - action: shell
+    resource: "ls *"
+    effect: allow
+  - action: shell
+    resource: "echo *"
+    effect: allow
   - action: subagent
     resource: "*"
     effect: deny

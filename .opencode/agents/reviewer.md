@@ -1,6 +1,7 @@
 ---
 description: Independent Code Review and Regression Detection
 mode: subagent
+steps: 12
 permissions:
   # --- Files: no write ---
   - action: edit

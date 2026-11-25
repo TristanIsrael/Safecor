@@ -1,6 +1,7 @@
 ---
 description: Python and Qt Development and Test Implementation
 mode: subagent
+steps: 30
 permissions:
   - action: read
     resource: "*"
@@ -19,6 +20,9 @@ permissions:
     effect: allow
   - action: shell
     resource: "tail *"
+    effect: allow
+  - action: shell
+    resource: "timeout *"
     effect: allow
   - action: shell
     resource: "cat *"
@@ -84,19 +88,10 @@ permissions:
     resource: "python *"
     effect: allow
   - action: shell
-    resource: "python -m *"
-    effect: allow
-  - action: shell
     resource: "pip install *"
     effect: allow
   - action: shell
     resource: "python3 *"
-    effect: allow
-  - action: shell
-    resource: "/tmp/opencode/safecor-venv/bin/python *"
-    effect: allow
-  - action: shell
-    resource: "/tmp/opencode/safecor-venv/bin/ruff *"
     effect: allow
   - action: shell
     resource: "sort *"
@@ -104,6 +99,44 @@ permissions:
   - action: shell
     resource: "grep *"
     effect: allow
+  - action: shell
+    resource: "lsof *"
+    effect: allow
+  - action: shell
+    resource: "ss *"
+    effect: allow
+  - action: shell
+    resource: "jobs *"
+    effect: allow
+  - action: shell
+    resource: "kill *"
+    effect: allow
+  # --- External boundary: project venv (tmp area, may move) ---
+  # external_directory gates file-tool access and the shell's working
+  # directory / inferred directories; it does NOT cover the shell command
+  # string itself, hence the path-agnostic rules below.
+  - action: external_directory
+    resource: "~/work/opencode/tmp/safecor-venv/*"
+    effect: allow
+  - action: shell
+    resource: "ruff *"
+    effect: allow
+  - action: shell
+    resource: "pytest *"
+    effect: allow 
+  - action: shell
+    resource: "tee *"
+    effect: allow 
+  - action: shell
+    resource: "pkill *"
+    effect: allow 
+  - action: shell
+    resource: "sleep *"
+    effect: allow 
+  # --- Sub-agents: no nesting ---
+  - action: subagent
+    resource: "*"
+    effect: deny
 ---
 
 You are the project developer.

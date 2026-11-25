@@ -1,6 +1,7 @@
 ---
 description: Lead Project Coordinator - Planning Mode
 mode: primary
+steps: 24
 permissions:
   - action: edit
     resource: "*"

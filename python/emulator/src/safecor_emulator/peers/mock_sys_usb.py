@@ -134,6 +134,7 @@ class MockSysUsbController:
         self.__mqtt_client.subscribe(f"{Topics.CREATE_FILE}/request")
         self.__mqtt_client.subscribe(f"{Topics.MOUNT_FILE}/request")
         self.__mqtt_client.subscribe(f"{Topics.UNMOUNT}/request")
+        self.__mqtt_client.subscribe(f"{Topics.FILE_FINGERPRINT}/request")
         self.__mqtt_client.subscribe(f"{Topics.DISCOVER_COMPONENTS}/request")
 
         # Finally we announce our components
@@ -153,6 +154,8 @@ class MockSysUsbController:
             self.__publish(f"{Topics.LIST_DISKS}/response", response)
         elif topic == f"{Topics.LIST_FILES}/request":
             self.__handle_list_files(payload)
+        elif topic == f"{Topics.FILE_FINGERPRINT}/request":
+            self.__handle_file_fingerprint(payload)
         elif topic == f"{Topics.READ_FILE}/request":
             if not MqttHelper.check_payload(payload, ["disk", "filepath"]):
                 self.__log("Missing arguments")
@@ -312,6 +315,32 @@ class MockSysUsbController:
 
         response = ResponseFactory.create_response_list_files(disk, files)
         self.__publish(f"{Topics.LIST_FILES}/response", response)
+
+    def __handle_file_fingerprint(self, payload: dict):
+        if not MqttHelper.check_payload(payload, ["disk", "filepath"]):
+            self.__log("Missing arguments")
+            return
+
+        disk = payload.get("disk")
+        filepath = payload.get("filepath")
+
+        if disk == Constants.STR_REPOSITORY:
+            # Ignored (mirrors the real sys-usb controller)
+            return
+
+        if disk not in self.__source_disks_list:
+            self.__log(f"ERROR: The disk {disk} does not exist.")
+            return
+
+        # The attached disk root emulates /media/usb/<disk>, so the file
+        # lives at <root><filepath> (filepath starts with "/").
+        source_path = f"{self.__source_disks_list[disk]}{filepath}"
+        fingerprint = FileHelper.calculate_fingerprint(source_path)
+
+        response = ResponseFactory.create_response_file_fingerprint(
+            filepath, disk, fingerprint
+        )
+        self.__publish(f"{Topics.FILE_FINGERPRINT}/response", response)
 
     def __handle_create_file(self, payload: dict):
         if not MqttHelper.check_payload(payload, ["disk", "filepath", "data"]):
