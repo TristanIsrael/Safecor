@@ -1,10 +1,10 @@
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-dynamic = ["version"]
 
 [project]
 name = "safecor"
+dynamic = ["version"]
 authors = [ 
     { name="Tristan Israël", email="tristan.israel@alefbet.net" }, 
 ]
