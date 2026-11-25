@@ -25,6 +25,9 @@ dependencies = [
     "msgpack"
 ]
 
+[tool.hatch.version]
+path = "src/safecor/__init__.py"
+
 [project.urls]
 Homepage = "https://github.com/TristanIsrael/Safecor"
 Issues = "https://github.com/TristanIsrael/Safecor/issues"
