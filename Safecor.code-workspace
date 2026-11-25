@@ -17,6 +17,9 @@
         },
         {
             "path": "../Saphir"
+        },
+        {
+            "path": "../ia-coding-knowledge-base"
         }
     ],    
     "settings": {
