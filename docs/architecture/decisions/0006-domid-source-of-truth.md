@@ -5,7 +5,7 @@
 >
 > **Last updated**: 2026-11-26
 >
-> **Status**: Accepted (issue #275, hardware-validated on Saphir)
+> **Status**: Accepted (issue #275) — the `XenStore` class itself was informally hardware-validated on Saphir; the full-integration validation is the dedicated run 21 (see `docs/plans/test-channels-migration/run-21.md`)
 
 ## Context
 
