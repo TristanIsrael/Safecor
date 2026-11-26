@@ -1,7 +1,7 @@
 ---
 description: Software Architecture, Design, and Technical Specifications
 mode: subagent
-steps: 24
+steps: 48
 permissions:
   - action: edit
     resource: "*"
