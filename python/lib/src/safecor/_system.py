@@ -15,7 +15,7 @@ import platform
 import subprocess
 import threading
 import time
-from typing import Callable, Optional
+from typing import Callable
 
 try:
     import psutil
@@ -37,6 +37,11 @@ try:
     from . import LibvirtHelper
 except ImportError:
     print("Not using Libvirt")
+try:
+    from . import XenStore
+except ImportError:
+    XenStore = None
+    print("System cannot use XenStore")
 try:
     from inotify_simple import INotify, flags
 except Exception:
@@ -121,15 +126,13 @@ class System(metaclass=SingletonMeta):
         if self.__rotation > -1:
             return self.__rotation
 
+        if XenStore is None:
+            return 0
+
         try:
-            res = subprocess.run(
-                ["xenstore-read", "/local/domain/system/screen_rotation"],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if res.returncode == 0:
-                return int(res.stdout)
+            value = XenStore().read_path("/local/domain/system/screen_rotation")
+            if value is not None:
+                return int(value)
         except Exception:
             return 0
 
@@ -143,15 +146,13 @@ class System(metaclass=SingletonMeta):
         A typical value is: "1280x1024"
         """
 
+        if XenStore is None:
+            return self.__DEFAULT_SCREEN_SIZE
+
         try:
-            res = subprocess.run(
-                ["xenstore-read", "/local/domain/system/screen_size"],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if res.returncode == 0:
-                return res.stdout
+            value = XenStore().read_path("/local/domain/system/screen_size")
+            if value is not None:
+                return value
         except Exception:
             return self.__DEFAULT_SCREEN_SIZE
 
@@ -956,34 +957,6 @@ class System(metaclass=SingletonMeta):
             System.__current_domid = self.__read_own_domid()
         return System.__current_domid
 
-    def get_domain_domid(self, domain_name: str) -> Optional[int]:
-        """Return the Xen domain ID of the named domain, or None if not yet available.
-
-        Performs a single non-blocking read from xenstore:
-            /local/domain/system/domids/<domain_name>
-
-        Does NOT poll or sleep (NFR-1: non-blocking for MQTT callback context).
-        The caller is responsible for retrying if None is returned.
-
-        Args:
-            domain_name: The domain name (e.g., "sys-usb").
-
-        Returns:
-            The integer domid, or None if the entry is not yet present in xenstore.
-        """
-        try:
-            result = subprocess.run(
-                ["xenstore-read", f"/local/domain/system/domids/{domain_name}"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                return int(result.stdout.strip())
-        except (subprocess.SubprocessError, ValueError, OSError):
-            pass
-        return None
-
     def is_usb_mountpoint_ready(self) -> bool:
         """Return True if the USB mount point (Constants.USB_MOUNT_POINT) is available.
 
@@ -1036,17 +1009,14 @@ class System(metaclass=SingletonMeta):
 
     def __read_own_domid(self) -> int:
         """Read the current domain's domid from xenstore or /proc."""
+        if XenStore is None:
+            return 0
         try:
-            result = subprocess.run(
-                ["xenstore-read", "/local/domain/0/domid"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                return int(result.stdout.strip())
-        except (subprocess.SubprocessError, ValueError, OSError):
-            pass
+            value = XenStore().read_path("/local/domain/0/domid")
+            if value is not None:
+                return int(value)
+        except Exception:
+            return 0
         return 0
 
     def __mount_watcher_worker(self) -> None:

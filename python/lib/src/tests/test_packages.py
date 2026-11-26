@@ -139,5 +139,54 @@ class TestGenerateMosquittoListeners(unittest.TestCase):
             self.assertIn("do not edit manually", content)
 
 
+class TestDoasConfFiles(unittest.TestCase):
+    """Sanity checks on the doas grant files (security rule: reduce surface).
+
+    Bug history: a missing trailing newline made doas silently drop the last
+    permit (run-20 pre-check, issue #275), and a relative ``cmd`` path would
+    be resolved against the caller's CWD.  Every doas conf shipped in
+    safecor-core must therefore end with a newline and use absolute cmd
+    paths.  And no component may keep a doas grant once it stopped using
+    the CLI (the vchan tunnel manager moved to the ``XenStore`` class —
+    ADR 0006 — and its grant file was removed).
+    """
+
+    CORE_CONF = REPO_ROOT / "setup" / "packages" / "safecor" / "safecor-core" / "conf"
+
+    def test_vchan_tunnels_doas_conf_removed(self):
+        """The vchan tunnels no longer need doas (XenStore class, ADR 0006)."""
+        self.assertFalse(
+            (self.CORE_CONF / "doas-svc-vchan-tunnels.conf").exists(),
+            "doas-svc-vchan-tunnels.conf must be removed: the vchan tunnel "
+            "manager now uses the XenStore class (no xenstore-write CLI).",
+        )
+
+    def test_all_doas_confs_end_with_newline(self):
+        confs = sorted(self.CORE_CONF.glob("doas-*.conf"))
+        self.assertTrue(confs, "no doas conf found in safecor-core/conf")
+        for conf in confs:
+            with self.subTest(conf=conf.name):
+                data = conf.read_bytes()
+                self.assertTrue(
+                    data.endswith(b"\n"),
+                    f"{conf.name} must end with a trailing newline (doas "
+                    "silently drops the last permit otherwise)",
+                )
+
+    def test_doas_confs_use_absolute_cmd_paths(self):
+        for conf in sorted(self.CORE_CONF.glob("doas-*.conf")):
+            for line in conf.read_text().splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split()
+                self.assertIn("cmd", parts, f"{conf.name}: line without cmd: {line}")
+                cmd = parts[parts.index("cmd") + 1]
+                self.assertTrue(
+                    cmd.startswith("/"),
+                    f"{conf.name}: cmd must be an absolute path: {line}",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

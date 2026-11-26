@@ -70,7 +70,6 @@ conf/color_prompt.sh
 conf/inittab
 conf/doas-svc-orchestrator.conf
 conf/doas-svc-safecor-controller.conf
-conf/doas-svc-vchan-tunnels.conf
 conf/issue
 conf/99-safecor.rules
 
@@ -215,7 +214,6 @@ package() {
     install -D -m755 "$srcdir"/hardening.initd "$pkgdir"/etc/init.d/hardening
     install -D -m644 "$srcdir"/doas-svc-orchestrator.conf "$pkgdir"/etc/doas.d/svc-orchestrator.conf
     install -D -m644 "$srcdir"/doas-svc-safecor-controller.conf "$pkgdir"/etc/doas.d/svc-safecor-controller.conf
-    install -D -m644 "$srcdir"/doas-svc-vchan-tunnels.conf "$pkgdir"/etc/doas.d/svc-vchan-tunnels.conf
 
     # Udev rules for the Xen device nodes used by the vchan tunnels
     install -D -m644 "$srcdir"/99-safecor.rules "$pkgdir"/etc/udev/rules.d/99-safecor.rules
@@ -267,7 +265,6 @@ adc411fb18d6012f44c9276f855ae56981db935f725e414766664aa3437c531aef83344ec254c4b0
 71efc3d086c3d3010502067f902a596a8a60da4cf52301c85d64502ad6cfbda7a2db45bfa38ae3239a0b3c1e5fe10a012f73d470c4cc3cbd25e79cc1c29fed09  inittab
 e166dc0f3e2fa5911dbf3f57b838211e28da95b9cd93374f8db3b7fe3384a1c4befddf6152b41fa71021d16d31ec49fa3aede1fddc2d01c29608fda8da391374  doas-svc-orchestrator.conf
 104f072b182bebcc7d51e9da167d245b4025ec16db4266baeb2ab6235cb5b559a8aa0f56dfeeaae7054bde8cc7fb037be0bf4169f9f9d89357b425b590905a6a  doas-svc-safecor-controller.conf
-937284af23ba7e5cf95579e2bae23f0c68861858314cf80605c8f078e2b1166cfeede3bb0e6bacceb2b6efb78a6e16485d8a62664ebfef08b814bdeca46f035b  doas-svc-vchan-tunnels.conf
 dff4c20c1b4195095824bfbff01e0fccb4818798b82693b1e039d9e7a79dec7e9479603f9c988cabef82e63951adc76c32bd1a49bf0064aad9cd0d28d6eb5fc7  issue
 afa6466f3c5a57d6ad89e4adeba9f856eb4214e0d5d84dc7b01c9a69b8e7dbeea0289ac64ba49fa418e084e14cf54e1314dd9a1236e9dc520cee33cb983101a0  99-safecor.rules
 3eb56491e68b28ff21fa2d39bfd21b13ebc48de91c47a37855a1190631f7c2770b6f4dedfe5b671f44c97345ca018fa5ab8a7164f4e420c67cda76004052c70a  rotate-screen.py
@@ -276,7 +273,7 @@ f57e38d69b5547d4815e725046de4553f7eba2ec13b8fd7f4157c78fff897e525edf3c496cbee207
 ed448802addbba1195ee3044ddf3719c6f92985de5054f4098d6fcdb04d0609772e84890c215c82e14e68d9e0b392136d49533ac7c0000e184812b7d40343d9a  write-screen-information-to-xenstore.py
 8b1d43e818d2a3dd0d85fa88acfb12dbccd1aa4b0b02f02be7946bea06e73f4ca20c2d5fac813cf625dac557e23dd3f4c422a1935712d126313ab0f1bc87c707  generate-x-config.py
 9ad5625b5b1421e2e66bee206a88a35d3c4a9b11ef57f9eeb74845a9d505a6256c1f6c61e51a2d08ac29d20eb860cef63905b3bd19639695863d31a586748153  get-total-memory.py
-91cf5062240c6d533cfdb6428b653cfefa9098369753531e4e196bc222b4fcb08c963da40c47b32e6317b3e0d28fa3b6a4db7ce368a539faf38dcebbe074ebba  create-vchan-tunnels.py
+d41c36795f86d73831b916cfc737c03c06d19ac8e47720c70d998d5fb014d80da06e3b5a6bedf43ec9ca201e401f0576b1dc6ce77c5847ed6226f23ffd7d9268  create-vchan-tunnels.py
 16f62dbda50bb1a52c2d69a19e25df2f1bc5c1ca4a27da72920d34b2f885b154728156e07a5834a73bec6cd3d3db4a479cb74cb0f2c6698cb55f581658d760cd  generate-mosquitto-listeners.py
 7acf0da0e8b9f6499c44ac38a128dce2e2f6042291d5037b3848a1b4a6e828ed348a39faf785349b78abf87917657adc24ba91c1e2b01ed431401e09879c18cc  orchestrator.py
 d54f19bd5af419c75169331ae9fd5e579dc664d402633dd47deac9e708e1e3a37e36407565d76e0c9e067db870538e909bccdf463cd24a7b242bce02d6bb736f  create-splash.py

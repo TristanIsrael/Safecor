@@ -1,16 +1,25 @@
 """Tests for the vchan-tunnel-manager pure functions.
 
-These exercise ``resolve_live_domid``, ``should_write_back``, and
-``write_xenstore`` from the Dom0-side ``create-vchan-tunnels.py`` script.
+These exercise ``resolve_live_domid``, ``should_write_back``,
+``list_domain_names`` and ``get_domid`` from the Dom0-side
+``create-vchan-tunnels.py`` script, which resolves and self-heals the domid
+cache through the ``safecor`` library's ``XenStore`` class (no CLI
+subprocesses, ADR 0006).
 
 The script is not a package, so we load it dynamically via
-``importlib.util.spec_from_file_location``.
+``importlib.util.spec_from_file_location``.  On machines without Xen, the
+module-level ``conftest.py`` installs a pure-Python stub of the ``xen``
+bindings so the script's ``from safecor import XenStore`` import succeeds.
+
+Copyright (c) 2024-2026, Tristan Israël
+Safecor Licence — see python/lib/LICENCE.md
+
+.. author:: Tristan Israël
 """
 
 import importlib.util
 import os
 import unittest
-import unittest.mock as mock
 
 # Load the script from its file path.
 _SCRIPT_PATH = os.path.join(
@@ -30,11 +39,52 @@ _SPEC = importlib.util.spec_from_file_location("create_vchan_tunnels", _SCRIPT_P
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 
+list_domain_names = _MODULE.list_domain_names
+get_domid = _MODULE.get_domid
 resolve_live_domid = _MODULE.resolve_live_domid
 should_write_back = _MODULE.should_write_back
-write_xenstore = _MODULE.write_xenstore
-read_xenstore = _MODULE.read_xenstore
-list_domain_names = _MODULE.list_domain_names
+DOMIDS_PATH = _MODULE.XENSTORE_DOMIDS_PATH
+
+
+class FakeStore:
+    """In-memory fake of the ``XenStore`` class used by the script."""
+
+    def __init__(self, tree=None, fail_children=False, fail_write=False):
+        self.tree = tree or {}
+        self.fail_children = fail_children
+        self.fail_write = fail_write
+        self.writes = []
+
+    def read_path(self, path):
+        return self.tree.get(path)
+
+    def read_children(self, path):
+        if self.fail_children:
+            raise OSError("fake xenstore connection lost")
+        prefix = path.rstrip("/") + "/"
+        children = {
+            key[len(prefix) :].split("/", 1)[0]
+            for key in self.tree
+            if key.startswith(prefix)
+        }
+        return sorted(children)
+
+    def write(self, domain_name, key, value):
+        self.writes.append((domain_name, key, value))
+        if self.fail_write:
+            return False
+        self.tree[f"/local/domain/{domain_name}/{key}"] = value
+        return True
+
+
+def _store_with_domains(domids, cache=None):
+    """Builds a fake store: ``/local/domain/<N>/name`` + the domid cache."""
+    tree = {}
+    for domid, name in domids.items():
+        tree[f"/local/domain/{domid}/name"] = name
+    for name, domid in (cache or {}).items():
+        tree[f"{DOMIDS_PATH}/{name}"] = domid
+    return FakeStore(tree)
 
 
 class TestShouldWriteBack(unittest.TestCase):
@@ -56,171 +106,81 @@ class TestShouldWriteBack(unittest.TestCase):
         self.assertFalse(should_write_back("", ""))
 
 
-class TestWriteXenstore(unittest.TestCase):
-    """Write to xenstore (subprocess wrapper through doas)."""
-
-    def test_success(self):
-        with mock.patch.object(_MODULE.subprocess, "run") as run:
-            run.return_value = mock.MagicMock(returncode=0)
-            self.assertTrue(write_xenstore("/some/path", "value"))
-            run.assert_called_once_with(
-                ["/usr/bin/doas", "/usr/bin/xenstore-write", "/some/path", "value"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-
-    def test_failure(self):
-        with mock.patch.object(_MODULE.subprocess, "run") as run:
-            run.return_value = mock.MagicMock(returncode=1)
-            self.assertFalse(write_xenstore("/some/path", "value"))
-
-    def test_process_error(self):
-        with mock.patch.object(
-            _MODULE.subprocess, "run", side_effect=FileNotFoundError
-        ):
-            self.assertFalse(write_xenstore("/some/path", "value"))
-
-
-class TestReadXenstore(unittest.TestCase):
-    """Read from xenstore (subprocess wrapper)."""
-
-    def test_success(self):
-        with mock.patch.object(_MODULE.subprocess, "run") as run:
-            run.return_value = mock.MagicMock(stdout="42\n")
-            self.assertEqual(read_xenstore("/some/path"), "42")
-
-    def test_error(self):
-        with mock.patch.object(
-            _MODULE.subprocess, "run", side_effect=FileNotFoundError
-        ):
-            self.assertEqual(read_xenstore("/some/path"), "")
-
-
 class TestListDomainNames(unittest.TestCase):
-    """List domain names from the domids cache."""
+    """List domain names from the domid cache (XenStore read_children)."""
 
     def test_success(self):
-        with mock.patch.object(_MODULE.subprocess, "run") as run:
-            run.return_value = mock.MagicMock(stdout="sys-usb\nsys-gui\nmyapp\n")
-            self.assertEqual(list_domain_names(), ["sys-usb", "sys-gui", "myapp"])
+        store = _store_with_domains({}, cache={"sys-usb": "1", "app1": "2"})
+        self.assertEqual(list_domain_names(store), ["app1", "sys-usb"])
 
     def test_empty(self):
-        """Empty stdout → strip().split() returns []."""
-        with mock.patch.object(_MODULE.subprocess, "run") as run:
-            run.return_value = mock.MagicMock(stdout="\n")
-            self.assertEqual(list_domain_names(), [])
+        self.assertEqual(list_domain_names(FakeStore({})), [])
 
-    def test_error(self):
-        with mock.patch.object(
-            _MODULE.subprocess, "run", side_effect=FileNotFoundError
-        ):
-            self.assertEqual(list_domain_names(), [])
+    def test_connection_lost_propagates(self):
+        # The caller (the discovery loop) catches and retries.
+        store = FakeStore(fail_children=True)
+        with self.assertRaises(OSError):
+            list_domain_names(store)
+
+
+class TestGetDomid(unittest.TestCase):
+    """Read the cached domid (XenStore read_path)."""
+
+    def test_found(self):
+        store = _store_with_domains({}, cache={"sys-usb": "3"})
+        self.assertEqual(get_domid("sys-usb", store), "3")
+
+    def test_absent(self):
+        self.assertEqual(get_domid("nonexistent", FakeStore({})), "")
+
+    def test_whitespace_stripped(self):
+        store = _store_with_domains({}, cache={"sys-usb": "3\n"})
+        self.assertEqual(get_domid("sys-usb", store), "3")
 
 
 class TestResolveLiveDomid(unittest.TestCase):
-    """Resolve live domid from /local/domain/<N>/name scan (ADR 0006)."""
+    """Resolve the live domid from /local/domain/<N>/name (ADR 0006)."""
 
-    def test_numeric_key_scan(self):
-        """Only numeric directory names are valid domid entries."""
-        with (
-            mock.patch.object(_MODULE.subprocess, "run") as run,
-            mock.patch.object(_MODULE, "read_xenstore", return_value="3") as read_xen,
-        ):
-            run.return_value = mock.MagicMock(
-                stdout="3 name:sys-usb\n4 name:sys-gui\nsystem name:test"
-            )
-            result = resolve_live_domid("sys-usb")
-            self.assertEqual(result, "3")
-            read_xen.assert_called()
-
-    def test_skip_system(self):
-        """The 'system' directory (the cache itself) is not a valid domain."""
-        with mock.patch.object(_MODULE.subprocess, "run") as run:
-            run.return_value = mock.MagicMock(
-                stdout="system name:system\ndomids name:domids"
-            )
-            result = resolve_live_domid("sys-usb")
-            self.assertEqual(result, "")
-
-    def test_name_to_domid_mapping(self):
-        """Maps domain name to correct domid."""
-        with (
-            mock.patch.object(_MODULE.subprocess, "run") as run,
-            mock.patch.object(_MODULE, "read_xenstore", return_value="5"),
-        ):
-            run.return_value = mock.MagicMock(stdout="5 name:sys-usb\n3 name:sys-gui")
-            result = resolve_live_domid("sys-usb")
-            self.assertEqual(result, "5")
+    def test_resolves_live_domid(self):
+        """The scan finds the live domid; a correct cache is left alone."""
+        store = _store_with_domains(
+            {"0": "Dom0", "3": "sys-usb", "4": "sys-gui"},
+            cache={"sys-usb": "3"},
+        )
+        self.assertEqual(resolve_live_domid("sys-usb", store), "3")
+        self.assertEqual(store.writes, [])
 
     def test_no_match(self):
         """Domain not found in the scan → empty string."""
-        with (
-            mock.patch.object(_MODULE.subprocess, "run") as run,
-            mock.patch.object(_MODULE, "read_xenstore", return_value=""),
-        ):
-            run.return_value = mock.MagicMock(stdout="3 name:sys-usb")
-            result = resolve_live_domid("nonexistent")
-            self.assertEqual(result, "")
-
-    def test_malformed_lines_tolerated(self):
-        """Lines that don't match the expected format are skipped."""
-        with (
-            mock.patch.object(_MODULE.subprocess, "run") as run,
-            mock.patch.object(_MODULE, "read_xenstore", return_value="7"),
-        ):
-            run.return_value = mock.MagicMock(
-                stdout="garbage line\n7 name:sys-usb\nanother"
-            )
-            result = resolve_live_domid("sys-usb")
-            self.assertEqual(result, "7")
-
-    def test_write_back_only_on_difference(self):
-        """Cache is updated only when resolved domid differs from cached."""
-        with (
-            mock.patch.object(_MODULE.subprocess, "run") as run,
-            mock.patch.object(_MODULE, "write_xenstore") as write,
-        ):
-            run.return_value = mock.MagicMock(stdout="3 name:sys-usb")
-            # Same value: no write.
-            resolve_live_domid("sys-usb")
-            write.assert_not_called()
+        store = _store_with_domains({"0": "Dom0", "3": "sys-usb"})
+        self.assertEqual(resolve_live_domid("nonexistent", store), "")
 
     def test_write_back_on_difference(self):
-        """Cache is written when resolved domid differs from cached."""
-        read_mock = mock.MagicMock(return_value="1")
-        write_mock = mock.MagicMock(return_value=True)
-        old_defaults = resolve_live_domid.__defaults__
-        resolve_live_domid.__defaults__ = (read_mock, write_mock)
-        try:
-            with mock.patch.object(_MODULE.subprocess, "run") as run:
-                run.return_value = mock.MagicMock(stdout="3 name:sys-usb")
-                result = resolve_live_domid("sys-usb")
-                self.assertEqual(result, "3")
-                write_mock.assert_called_once_with(
-                    _MODULE.XENSTORE_DOMIDS_PATH + "/sys-usb", "3"
-                )
-        finally:
-            resolve_live_domid.__defaults__ = old_defaults
+        """Cache is written when the resolved domid differs from cached."""
+        store = _store_with_domains(
+            {"0": "Dom0", "3": "sys-usb"}, cache={"sys-usb": "1"}
+        )
+        self.assertEqual(resolve_live_domid("sys-usb", store), "3")
+        self.assertEqual(store.writes, [("system", "domids/sys-usb", "3")])
+
+    def test_no_write_back_without_cached_value(self):
+        """No cached value yet → nothing to diff against, no write."""
+        store = _store_with_domains({"0": "Dom0", "3": "sys-usb"}, cache={})
+        self.assertEqual(resolve_live_domid("sys-usb", store), "3")
+        self.assertEqual(store.writes, [])
 
     def test_write_failure_does_not_raise(self):
-        """A failed xenstore-write must not break the resolution."""
-        with (
-            mock.patch.object(_MODULE.subprocess, "run") as run,
-            mock.patch.object(_MODULE, "read_xenstore", return_value="1"),
-            mock.patch.object(_MODULE, "write_xenstore", return_value=False),
-        ):
-            run.return_value = mock.MagicMock(stdout="3 name:sys-usb")
-            result = resolve_live_domid("sys-usb")
-            self.assertEqual(result, "3")
+        """A failed write must not break the resolution."""
+        store = _store_with_domains(
+            {"0": "Dom0", "3": "sys-usb"}, cache={"sys-usb": "1"}
+        )
+        store.fail_write = True
+        self.assertEqual(resolve_live_domid("sys-usb", store), "3")
 
-    def test_process_error_returns_empty(self):
-        """If xenstore-ls fails, return empty string."""
-        with mock.patch.object(
-            _MODULE.subprocess, "run", side_effect=FileNotFoundError
-        ):
-            result = resolve_live_domid("sys-usb")
-            self.assertEqual(result, "")
+    def test_connection_lost_returns_empty(self):
+        """If the enumeration fails, return empty string."""
+        store = FakeStore(fail_children=True)
+        self.assertEqual(resolve_live_domid("sys-usb", store), "")
 
 
 if __name__ == "__main__":

@@ -148,7 +148,7 @@ are the **inputs** the operator console will let a human define.
 |---|----------|-------------|-------|----------|
 | T1 | Product topology | `/etc/safecor/topology.json` → `System.get_topology()` | product name, languages, default language, screen, USB, PCI, business domains, hardware configurations | ✅ (served at that path + parsed → `Environment`) |
 | T2 | System UUID | sysfs `product_uuid` | identity | ✅ (fake `open`) |
-| T3 | Screen size / rotation | xenstore `screen_size`/`screen_rotation` + fb0 | display geometry | ✅ (fake `subprocess.run`/`open`) |
+| T3 | Screen size / rotation | xenstore `screen_size`/`screen_rotation` + fb0 | display geometry | ✅ (in-memory xenstore stub + fake `open`) |
 | T4 | CPU count / affinity | libvirt | compute | ✅ (fake `LibvirtHelper`, hard-coded domains) |
 | T5 | Memory / freq / load | `psutil` | resources | ✅ (fake `psutil`) |
 | T6 | Boot time / uptime | `psutil.boot_time` | elapsed | ✅ (fake `psutil`) |
@@ -167,7 +167,7 @@ Runtime topology access over MQTT, used by DomUs to discover their own configura
 | # | Method | Notes |
 |---|--------|-------|
 | TP2 | `System.get_current_domid()` | Returns the current domain's Xen domid (cached, non-blocking) |
-| TP3 | `System.get_domain_domid(name)` | Single non-blocking xenstore read for another domain's domid |
+| TP3 | `XenStore().read("system", "domids/<name>")` | Single non-blocking xenstore read for another domain's domid (the Dom0 domid cache, ADR 0006) |
 | TP4 | `System.is_usb_mountpoint_ready()` | True if `/media/usb` is mounted (non-blocking) |
 | TP5 | `System.on_usb_mountpoint_ready(callback)` | Event-driven notification when the mount becomes ready |
 

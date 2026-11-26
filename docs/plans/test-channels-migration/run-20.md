@@ -2,20 +2,20 @@
 
 The fix under test (on `version-2`, **not yet pushed**):
 
-- **#275** — the stale-domid self-heal after a domain **self-restart** (the [run 19](run-19.md) §5 failure): the Dom0 discovery loop (`create-vchan-tunnels.py`) resolves the **live** domid from the Xen tree and writes it back to the cache only on difference (the cache is demoted to a self-healed convenience cache — ADR 0006); a SFTP channel supervisor on sys-usb re-conciles each `direct_mount` channel (start a missing one, re-pin on domid change or server death); the `restart_domain` non-forced branch always publishes a response (honest `refused` + reason for a non-self-restartable business domain) and the `forced` field is added to the API/request (default `false`); `reboot-domain.sh get_domid` uses `xl domid`.
+- **#275** — the stale-domid self-heal after a domain **self-restart** (the [run 19](run-19.md) §5 failure), rebuilt around the `safecor` library's **`XenStore` class** (libxenstore bindings — no `xenstore-*` CLI subprocesses, no `doas`): the Dom0 discovery loop (`create-vchan-tunnels.py`) resolves the **live** domid by enumerating `/local/domain/<N>` (`XenStore.read_children`) and reading each `<N>/name`, writing the cache back only on difference (the cache is demoted to a self-healed convenience cache — ADR 0006); the doas grant `conf/doas-svc-vchan-tunnels.conf` is **removed**; all library xenstore reads (`System` screen size/rotation/own domid, the `SysUsbController` domid-cache reads) go through `XenStore` too; a SFTP channel supervisor on sys-usb re-conciles each `direct_mount` channel (start a missing one, re-pin on domid change or server death); the `restart_domain` non-forced branch always publishes a response (honest `refused` + reason for a non-self-restartable business domain) and the `forced` field is added to the API/request (default `false`); `reboot-domain.sh get_domid` uses `xl domid`. The **mechanism-level** validation of the XenStore integration (separated from the end-to-end scenarios below) is in [run 21](run-21.md).
 
 Purpose: hardware-validate the **#275** fix: the OFF path (the run-19 failure) must converge, a single business-domain reboot must converge, and the **Saphir simultaneous-reboot case** (`sys-usb` + the two AV domains at once, order not controlled) must converge **regardless of the order**.
 
 Preparation:
-- [ ] Rebuild **`safecor-lib`** and **`safecor-core`** from the `version-2` tip (no version bump). `safecor-lib` carries the SFTP channel supervisor and the `restart_domain` contract; `safecor-core` carries `create-vchan-tunnels.py` (the self-heal) and `reboot-domain.sh` (`xl domid`) with recalculated sha512s.
-- [ ] Install `safecor-lib` on **Dom0**, **sys-usb** and the business DomUs (version consistency); install `safecor-core` on **Dom0**.
-- [ ] Record the installed versions on each: `apk info -v safecor-lib safecor-core 2>/dev/null`.
-- [ ] **Full cold reboot in debug mode with a USB disk connected before boot** (no manual permission change).
+- [x] Rebuild **`safecor-lib`** and **`safecor-core`** from the `version-2` tip (no version bump). `safecor-lib` carries the SFTP channel supervisor and the `restart_domain` contract; `safecor-core` carries `create-vchan-tunnels.py` (the self-heal) and `reboot-domain.sh` (`xl domid`) with recalculated sha512s.
+- [x] Install `safecor-lib` on **Dom0**, **sys-usb** and the business DomUs (version consistency); install `safecor-core` on **Dom0**.
+- [x] Record the installed versions on each: `apk info -v safecor-lib safecor-core 2>/dev/null`.
+- [x] **Full cold reboot in debug mode with a USB disk connected before boot** (no manual permission change).
 
 ## 1. The boot baseline (must equal run 19 §1–§4)
 
-- [ ] The xenstore grant (#271): `ls -l /dev/xen/xenbus` → `crw-r----- root safecor` (640).
-- [ ] The sandbox wrappers (#272): `ls -l /usr/lib/safecor/tmp/sandbox-*` → the two wrappers, 0755, `#!/bin/sh` + `exec /usr/bin/bwrap`, well over 512 bytes.
+- [x] The xenstore grant (#271): `ls -l /dev/xen/xenbus` → `crw-r----- root safecor` (640).
+- [x] The sandbox wrappers (#272): `ls -l /usr/lib/safecor/tmp/sandbox-*` → the two wrappers, 0755, `#!/bin/sh` + `exec /usr/bin/bwrap`, well over 512 bytes.
 - [ ] The channels start on their own, one socat + one vchan server per direct_mount domain, the component `ready` on the bus (the run-19 §3 probe).
 - [ ] File I/O (the objective): `df /media/usb` / `ls /media/usb` prompt, a file readable at the same path as on sys-usb, a write refused (`Read-only file system`), the watchdog remount works (the run-19 §4 checks).
 - [ ] (New) The cache is consistent at boot: on Dom0, for each domain `<name>`: `xl domid <name>` equals `xenstore-read /local/domain/system/domids/<name>`.

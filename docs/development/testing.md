@@ -21,7 +21,7 @@
 
 The emulator (`python/emulator/src/safecor_emulator/`) reproduces the appliance **on a plain machine, without Xen**, by three means that all keep the `safecor` library untouched:
 
-1. **OS/hardware fakes** (`activate.py`) — patch the module-level OS touch-points of `safecor._system` (`psutil`, `LibvirtHelper`, `subprocess.run` for `xenstore-read`, and `open` for sysfs/proc), driven by a `SystemProfile` dict. Installed from the outside and fully reversible (`uninstall_fakes`).
+1. **OS/hardware fakes** (`activate.py`) — patch the module-level OS touch-points of `safecor._system` (`psutil`, `LibvirtHelper`, and `open` for sysfs/proc) and seed an in-memory `xen` bindings stub (the xenstore tree: `screen_size`/`screen_rotation`, the domid cache — ADR 0006), driven by a `SystemProfile` dict. Installed from the outside and fully reversible (`uninstall_fakes`).
 2. **Mock core peers** (`peers/`) — `MockDom0Controller` and `MockSysUsbController` answer the core MQTT commands over a local broker, operating on local directories instead of real hardware.
 3. **A local broker** (`broker.py`) — an external `mosquitto` on TCP 1883, so the `safecor` clients (in `TCP_DEBUG` mode) and the product under test all connect to the same bus.
 
@@ -39,7 +39,7 @@ Each row is a **function the platform exposes**, where its data comes from on a 
 |----------|-------------|----------------|
 | Product topology | `/etc/safecor/topology.json` → `System.get_topology()` | ✅ served at that path + parsed → `Environment` |
 | System UUID | sysfs `/sys/class/dmi/id/product_uuid` | ✅ fake `open` |
-| Screen size / rotation | xenstore `screen_size` / `screen_rotation` + fb0 | ✅ fake `subprocess.run` + fake `open` |
+| Screen size / rotation | xenstore `screen_size` / `screen_rotation` + fb0 | ✅ in-memory xenstore stub + fake `open` |
 | CPU count / affinity | libvirt `get_cpu_count` / `get_domains` | ✅ fake `LibvirtHelper` (hard-coded Dom0 + sys-usb) |
 | Memory / CPU freq / load | `psutil` | ✅ fake `psutil` |
 | Boot time / uptime | `psutil.boot_time` | ✅ fake `psutil` |

@@ -5,6 +5,11 @@ server that bridges the domain's vchan channel to a local UNIX socket. The
 msg channel connects directly to a Mosquitto broker socket. The input and tty
 channels (sys-usb only) connect to their respective local sockets.
 
+All XenStore access goes through the ``safecor`` library's ``XenStore`` class
+(libxenstore bindings): no ``xenstore-*`` subprocesses and no ``doas`` grant
+are needed — the ``svc-vchan-tunnels`` user has read/write access to the
+``/local/domain/system`` subtree (``set-xenstore-permissions.sh``, ADR 0006).
+
 The domid cache at ``/local/domain/system/domids/<name>`` is demoted to a
 self-healed convenience cache (see ADR 0006): the discovery loop always
 resolves the **live** domid from the Xen tree ``/local/domain/<N>/name``,
@@ -20,11 +25,12 @@ Safecor Licence — see python/lib/LICENCE.md
 import os
 import subprocess
 import time
-from typing import Callable, TextIO
+from typing import TextIO
 
-from safecor import SysLogger
+from safecor import SysLogger, XenStore
 
 VCHAN_POLL_INTERVAL = 1
+LOCAL_DOMAIN_PATH = "/local/domain"
 XENSTORE_DOMIDS_PATH = "/local/domain/system/domids"
 SYS_USB_NAME = "sys-usb"
 SYS_USB_EXTRA_CHANNELS = ["input", "tty"]
@@ -33,56 +39,21 @@ SYS_USB_EXTRA_CHANNELS = ["input", "tty"]
 SERVER_LOG_PATH = "/var/log/safecor/vchan-servers.log"
 
 
-def read_xenstore(path: str) -> str:
-    try:
-        result = subprocess.run(
-            ["xenstore-read", path], capture_output=True, text=True, check=True
-        )
-        return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return ""
+def list_domain_names(store: "XenStore | None" = None) -> list[str]:
+    """List the domain names from the domid convenience cache.
 
-
-def write_xenstore(path: str, value: str) -> bool:
-    """Write *value* to *path* in the Xen store.
-
-    The ``svc-vchan-tunnels`` user is non-root; writes require the narrow
-    doas grant in ``conf/doas-svc-vchan-tunnels.conf`` (ADR 0006).  Reads
-    are done directly via ``xenstore-read`` because the user already has
-    read access to the cache path.
-
-    Returns:
-        True on success, False if the write failed (for instance because the
-        calling user lacks ``xenstore-write`` privileges).
+    The cache is flat: every child of ``/local/domain/system/domids`` is a
+    domain name (equivalent of ``xenstore-ls`` on that path).
     """
-    try:
-        result = subprocess.run(
-            ["/usr/bin/doas", "/usr/bin/xenstore-write", path, value],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return result.returncode == 0
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
+    store = store or XenStore()
+    return [name for name in store.read_children(XENSTORE_DOMIDS_PATH) if name]
 
 
-def list_domain_names() -> list[str]:
-    try:
-        result = subprocess.run(
-            ["xenstore-ls", XENSTORE_DOMIDS_PATH],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return result.stdout.strip().split()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return []
-
-
-def get_domid(domain_name: str) -> str:
+def get_domid(domain_name: str, store: "XenStore | None" = None) -> str:
     """Return the cached domid for *domain_name* (from the convenience cache)."""
-    return read_xenstore(f"{XENSTORE_DOMIDS_PATH}/{domain_name}")
+    store = store or XenStore()
+    cached = store.read_path(f"{XENSTORE_DOMIDS_PATH}/{domain_name}")
+    return cached.strip() if cached else ""
 
 
 # ---------------------------------------------------------------------------
@@ -90,48 +61,41 @@ def get_domid(domain_name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def resolve_live_domid(
-    domain_name: str,
-    xenstore_read_fn: Callable[[str], str] = read_xenstore,
-    xenstore_write_fn: Callable[[str, str], bool] | None = write_xenstore,
-) -> str:
+def resolve_live_domid(domain_name: str, store: "XenStore | None" = None) -> str:
     """Resolve the live domid for *domain_name* from the Xen tree.
 
-    Scans ``/local/domain/<N>/name`` for every known domain; the first match
-    is the live domid (hypervisor-maintained, unforgeable).  If the resolved
-    domid differs from the cached value, the cache is updated in place and
-    ``True`` is logged.
+    Enumerates the children of ``/local/domain`` and reads each
+    ``<N>/name``; the first match is the live domid (hypervisor-maintained,
+    unforgeable).  If the resolved domid differs from the cached value, the
+    cache is updated in place.
 
     Returns:
         The live domid (string), or ``""`` if not found.
     """
+    store = store or XenStore()
     try:
-        result = subprocess.run(
-            ["xenstore-ls", "/local/domain"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        # Each line:  N name:<domain_name>
-        for line in result.stdout.splitlines():
-            parts = line.split()
-            if len(parts) >= 2 and parts[1].startswith("name:"):
-                domid = parts[0]
-                actual_name = parts[1].split(":", 1)[1]
-                if actual_name == domain_name:
-                    cached = read_xenstore(f"{XENSTORE_DOMIDS_PATH}/{domain_name}")
-                    if cached and cached != domid:
-                        # Write-back to the convenience cache only on difference.
-                        if xenstore_write_fn:
-                            xenstore_write_fn(
-                                f"{XENSTORE_DOMIDS_PATH}/{domain_name}", domid
-                            )
-                        SysLogger("create-vchan-tunnels").info(
-                            f"domid {cached} -> {domid} (self-heal for {domain_name})"
-                        )
-                    return domid
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        pass
+        domids = store.read_children(LOCAL_DOMAIN_PATH)
+    except OSError:
+        return ""
+
+    for domid in domids:
+        actual_name = store.read_path(f"{LOCAL_DOMAIN_PATH}/{domid}/name")
+        if actual_name != domain_name:
+            continue
+
+        cached = get_domid(domain_name, store)
+        if should_write_back(cached, domid):
+            if store.write("system", f"domids/{domain_name}", domid):
+                SysLogger("create-vchan-tunnels").info(
+                    f"domid {cached} -> {domid} (self-heal for {domain_name})"
+                )
+            else:
+                SysLogger("create-vchan-tunnels").warn(
+                    f"domid cache self-heal failed for {domain_name} "
+                    f"(cache keeps {cached or 'no value'} until the next "
+                    "iteration)"
+                )
+        return domid
     return ""
 
 
@@ -223,6 +187,9 @@ def main():
     SysLogger("create-vchan-tunnels").info("Starting vchan tunnel manager")
     print("vchan-tunnels: starting discovery loop")
 
+    # A single XenStore connection for the whole discovery loop.
+    store = XenStore()
+
     # Every vchan server inherits this handle for its standard error so that
     # a startup failure is logged instead of being lost.
     server_log = open(SERVER_LOG_PATH, "a")
@@ -233,60 +200,71 @@ def main():
     logged_missing_sockets: set[tuple[str, str]] = set()
 
     while True:
-        # Reap the servers that have exited so that they are restarted.
-        reap_dead_servers(active_servers)
+        # The whole iteration is fault-tolerant (the old CLI contract): a
+        # failing xenstore read must not kill the loop, nor stop the running
+        # servers — the next iteration converges again.
+        try:
+            # Reap the servers that have exited so that they are restarted.
+            reap_dead_servers(active_servers)
 
-        domain_names = list_domain_names()
-        current: dict[tuple[str, str], tuple[str, str, str]] = {}
+            domain_names = list_domain_names(store)
+            current: dict[tuple[str, str], tuple[str, str, str]] = {}
 
-        for name in domain_names:
-            # Always resolve the live domid (ADR 0006): the convenience cache
-            # is self-healed when a difference is detected.
-            domid = resolve_live_domid(name)
-            if not domid:
-                continue
-
-            channels = ["msg"]
-            if name == SYS_USB_NAME:
-                channels.extend(SYS_USB_EXTRA_CHANNELS)
-
-            for channel in channels:
-                current[(domid, channel)] = (name, domid, channel)
-
-        # Stop servers for domains that no longer exist or changed domid
-        for key in list(active_servers.keys()):
-            if key not in current:
-                SysLogger("create-vchan-tunnels").info(
-                    f"Stopping vchan server: domid={key[0]} channel={key[1]}"
-                )
-                stop_server(active_servers[key])
-                del active_servers[key]
-
-        # Start servers for newly discovered domains
-        for key, (name, domid, channel) in current.items():
-            if key not in active_servers:
-                socket_path = get_socket_path(channel, name)
-                if not socket_path:
+            for name in domain_names:
+                # Always resolve the live domid (ADR 0006): the convenience
+                # cache is self-healed when a difference is detected.
+                domid = resolve_live_domid(name, store)
+                if not domid:
                     continue
-                proc = start_vchan_server(domid, name, channel, socket_path, server_log)
-                if proc is not None:
-                    active_servers[key] = proc
-                elif not os.path.exists(socket_path) and (name, channel) not in (
-                    logged_missing_sockets
-                ):
-                    logged_missing_sockets.add((name, channel))
-                    if channel == "msg":
-                        SysLogger("create-vchan-tunnels").error(
-                            f"No mosquitto listener for domain {name} at "
-                            f"{socket_path} — regenerate "
-                            f"/etc/mosquitto/conf.d/safecor-listeners.conf "
-                            f"from the topology"
-                        )
-                    else:
-                        SysLogger("create-vchan-tunnels").info(
-                            f"Socket not ready for domain={name} "
-                            f"channel={channel}, will retry: {socket_path}"
-                        )
+
+                channels = ["msg"]
+                if name == SYS_USB_NAME:
+                    channels.extend(SYS_USB_EXTRA_CHANNELS)
+
+                for channel in channels:
+                    current[(domid, channel)] = (name, domid, channel)
+
+            # Stop servers for domains that no longer exist or changed domid
+            for key in list(active_servers.keys()):
+                if key not in current:
+                    SysLogger("create-vchan-tunnels").info(
+                        f"Stopping vchan server: domid={key[0]} channel={key[1]}"
+                    )
+                    stop_server(active_servers[key])
+                    del active_servers[key]
+
+            # Start servers for newly discovered domains
+            for key, (name, domid, channel) in current.items():
+                if key not in active_servers:
+                    socket_path = get_socket_path(channel, name)
+                    if not socket_path:
+                        continue
+                    proc = start_vchan_server(
+                        domid, name, channel, socket_path, server_log
+                    )
+                    if proc is not None:
+                        active_servers[key] = proc
+                    elif not os.path.exists(socket_path) and (name, channel) not in (
+                        logged_missing_sockets
+                    ):
+                        logged_missing_sockets.add((name, channel))
+                        if channel == "msg":
+                            SysLogger("create-vchan-tunnels").error(
+                                f"No mosquitto listener for domain {name} at "
+                                f"{socket_path} — regenerate "
+                                f"/etc/mosquitto/conf.d/safecor-listeners.conf "
+                                f"from the topology"
+                            )
+                        else:
+                            SysLogger("create-vchan-tunnels").info(
+                                f"Socket not ready for domain={name} "
+                                f"channel={channel}, will retry: {socket_path}"
+                            )
+        except Exception as e:
+            SysLogger("create-vchan-tunnels").error(
+                f"Discovery iteration failed (xenstore connection issue?): "
+                f"{e} — retrying"
+            )
 
         time.sleep(VCHAN_POLL_INTERVAL)
 
