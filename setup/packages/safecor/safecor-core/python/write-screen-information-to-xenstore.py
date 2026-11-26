@@ -1,4 +1,7 @@
-"""Writes screen resolution and rotation to Xenstore so DomUs can query display parameters.
+"""Writes the screen rotation to Xenstore so DomUs can query display parameters.
+
+The screen size is written by the orchestrator's initd as a boot-time one-shot
+shell command (NFR-4 scopes the ``XenStore`` class rule to Python code).
 
 Copyright (c) 2024-2026, Tristan Israël
 Safecor Licence — see python/lib/LICENCE.md
@@ -6,12 +9,10 @@ Safecor Licence — see python/lib/LICENCE.md
 .. author:: Tristan Israël
 """
 
-import subprocess
-import sys
+from safecor import SysLogger, System, XenStore
 
-from safecor import SysLogger, System
 
-if __name__ == "__main__":
+def main() -> None:
     SysLogger("write-screen-information-to-xenstore").info(
         "Write screen information into Xenstore..."
     )
@@ -22,9 +23,12 @@ if __name__ == "__main__":
         SysLogger("write-screen-information-to-xenstore").info(
             "The screen is disabled in the topology"
         )
-        sys.exit(0)
+        return
 
-    command = f"xenstore-write /local/domain/system/screen_rotation {topology.screen.rotation}"
-    subprocess.run(command, shell=True, check=True)
+    XenStore().write("system", "screen_rotation", str(topology.screen.rotation))
 
     SysLogger("write-screen-information-to-xenstore").info("... done")
+
+
+if __name__ == "__main__":
+    main()

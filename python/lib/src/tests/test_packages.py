@@ -15,6 +15,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 CORE_PYTHON = REPO_ROOT / "setup" / "packages" / "safecor" / "safecor-core" / "python"
@@ -186,6 +187,45 @@ class TestDoasConfFiles(unittest.TestCase):
                     cmd.startswith("/"),
                     f"{conf.name}: cmd must be an absolute path: {line}",
                 )
+
+
+class TestWriteScreenInformation(unittest.TestCase):
+    """The screen rotation is written through the XenStore class (NFR-4).
+
+    The script no longer spawns the ``xenstore-write`` CLI; it calls
+    ``XenStore().write("system", "screen_rotation", ...)``.  The screen size
+    is written by the orchestrator's initd (a boot-time one-shot shell
+    command), so it is out of scope for this Python script.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = load_module(
+            "write_screen_information",
+            CORE_PYTHON / "write-screen-information-to-xenstore.py",
+        )
+
+    def _run_main(self, enabled: bool, rotation: int):
+        topology = SimpleNamespace(
+            screen=SimpleNamespace(enabled=enabled, rotation=rotation)
+        )
+        with (
+            mock.patch.object(self.mod, "System") as system_mock,
+            mock.patch.object(self.mod, "XenStore") as xenstore_mock,
+        ):
+            system_mock.get_topology.return_value = topology
+            self.mod.main()
+        return xenstore_mock
+
+    def test_writes_rotation_when_screen_enabled(self):
+        xenstore_mock = self._run_main(enabled=True, rotation=90)
+        xenstore_mock.return_value.write.assert_called_once_with(
+            "system", "screen_rotation", "90"
+        )
+
+    def test_no_write_when_screen_disabled(self):
+        xenstore_mock = self._run_main(enabled=False, rotation=90)
+        xenstore_mock.return_value.write.assert_not_called()
 
 
 if __name__ == "__main__":
