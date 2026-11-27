@@ -2,7 +2,7 @@
 
 > **Scope**: the `vchan-socket-proxy` servers on Dom0 that bridge every DomU's PV channels (msg, input, tty, sftp) to local UNIX sockets.
 >
-> **Last updated**: 2026-11-25
+> **Last updated**: 2026-11-26
 >
 > **Main artifacts**: `create-vchan-tunnels.py` (Dom0, discovery loop), the `vchan-socket-proxy` servers, `99-safecor.rules` (udev), the `safecor-vchan-tunnels` initd.
 
@@ -20,17 +20,20 @@
 ## Domid resolution (ADR 0006)
 
 The vchan tunnel manager resolves the **live** domid for every domain on each
-discovery-loop iteration, by scanning ``/local/domain/<N>/name`` in the Xen
-tree.  This is the hypervisor-maintained source of truth (unforgeable).  The
-cached domid at ``/local/domain/system/domids/<name>`` is demoted to a
-**convenience cache**: it is updated in place only when the resolved live domid
-differs from the cached value.  This self-heals the cache after domain
-self-restarts (issue #275), preventing stale domid pinning.
+discovery-loop iteration, by enumerating the children of ``/local/domain``
+(``XenStore.read_children``) and reading each ``<N>/name``.  This is the
+hypervisor-maintained source of truth (unforgeable).  The cached domid at
+``/local/domain/system/domids/<name>`` is demoted to a **convenience cache**:
+it is updated in place only when the resolved live domid differs from the
+cached value.  This self-heals the cache after domain self-restarts (issue
+#275), preventing stale domid pinning.
 
-The domid cache update path uses `xenstore-write`; the `svc-vchan-tunnels` user
-needs a narrow doas grant for the cache path
-(`/local/domain/system/domids/*`), defined in
-`conf/doas-svc-vchan-tunnels.conf`.
+All xenstore access in the script goes through the `XenStore` class
+(libxenstore bindings, `xen` package): the domain name list comes from
+``read_children("/local/domain/system/domids")`` and the self-heal write-back
+is a plain ``XenStore.write`` — no ``xenstore-*`` CLI subprocesses and no
+``doas`` grant are involved (the dedicated ``conf/doas-svc-vchan-tunnels.conf``
+was removed with the switch).
 
 The vchan data is published in the shared xenstore namespace `/local/domain/system/vchan/<domain name>/<channel>/{ring-ref,event-channel}` (a DomU cannot read `/local/domain/0`). The **server side creates the channel** at runtime and grants read access to the peer domain.
 
@@ -43,8 +46,11 @@ The servers run as `svc-vchan-tunnels`. Creating a vchan requires opening the Xe
 - `gntalloc` — the server allocates the ring page from the grant allocator.
 - `gntdev` — the client maps the ring page through the grant table.
 - `evtchn` — event channels, used by both sides.
+- `xenbus` — the xenstore access path (`XenStore` class): the discovery loop reads the domain list / live names and writes the self-healed domid cache in the `/local/domain/system` subtree.
 
 `safecor-core` therefore depends on `eudev` (started at boot), which applies `/etc/udev/rules.d/99-safecor.rules`: the `safecor` group gets read/write access to those nodes as soon as they are created, with no race between the module load and the permission setup (the rule also covers `uinput`). The service's initd loads the `xen_gntdev`/`xen_gntalloc`/`xen_evtchn` kernel modules and waits for the nodes to appear.
+
+The `XenStore` access needs **no `doas` grant**: `svc-vchan-tunnels` is in the `safecor` group (read/write on `/dev/xen/xenbus`), and `set-xenstore-permissions.sh` grants read/write on the whole `/local/domain/system` subtree to all domains (see [orchestrator.md](orchestrator.md) and follow-up #261).
 
 ## Robustness
 

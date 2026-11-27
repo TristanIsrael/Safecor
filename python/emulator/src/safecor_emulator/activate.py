@@ -10,10 +10,11 @@ import builtins
 import io
 import os
 import time
-import types
 
 import safecor._configuration_helper as _CH
 import safecor._system as S
+
+import xen.lowlevel.xs as xs_mod
 
 _patches = []
 
@@ -143,25 +144,24 @@ def install_fakes(
                     result[name] = _FakeDomain(name, [0])
             return result
 
-    # --- fake xenstore-read (screen size / rotation) via subprocess.run ----
-    orig_run = S.subprocess.run
-
-    def fake_run(cmd, *args, **kwargs):
-        if (
-            isinstance(cmd, (list, tuple))
-            and cmd
-            and os.path.basename(str(cmd[0])) == "xenstore-read"
-            and len(cmd) >= 2
-        ):
-            key = str(cmd[1])
-            if key.endswith("screen_size"):
-                out = f"{screen_w},{screen_h}"
-            elif key.endswith("screen_rotation"):
-                out = str(rotation)
-            else:
-                out = ""
-            return types.SimpleNamespace(stdout=out, stderr="", returncode=0)
-        return orig_run(cmd, *args, **kwargs)
+    # --- fake xenstore tree (screen size / rotation / domid cache) ----------
+    # The ``safecor`` library reads these through the ``XenStore`` class,
+    # which binds against the in-memory ``xen`` stub (``python/emulator/src``).
+    xs_tree = {
+        "/local/domain/system/screen_size": f"{screen_w},{screen_h}",
+        "/local/domain/system/screen_rotation": str(rotation),
+        "/local/domain/0/domid": "0",
+        "/local/domain/0/name": "Dom0",
+        "/local/domain/system/domids/Dom0": "0",
+        "/local/domain/1/domid": "1",
+        "/local/domain/1/name": "sys-usb",
+        "/local/domain/system/domids/sys-usb": "1",
+    }
+    for i, name in enumerate(business_domains, start=2):
+        xs_tree[f"/local/domain/{i}/domid"] = str(i)
+        xs_tree[f"/local/domain/{i}/name"] = name
+        xs_tree[f"/local/domain/system/domids/{name}"] = str(i)
+    xs_mod.set_tree(xs_tree)
 
     # --- fake sysfs / proc reads via `open` --------------------------------
     global _active_fake_files
@@ -194,7 +194,6 @@ def install_fakes(
 
     _patch(S, "psutil", FakePsutil)
     _patch(S, "LibvirtHelper", FakeLibvirtHelper)
-    _patch(S.subprocess, "run", fake_run)
     _patch(S, "open", fake_open)
     # The DMI reads in ConfigurationHelper use its own (built-in) `open`.
     _patch(_CH, "open", fake_open)

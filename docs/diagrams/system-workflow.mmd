@@ -1,0 +1,34 @@
+stateDiagram-v2
+    direction LR
+
+    [*] --> OFF
+
+    OFF --> BOOT : power-on [operator]
+
+    BOOT --> DOMAINS_CREATED : MQTT connect, xl create, domid cache [orchestrator]
+    BOOT --> MAINTENANCE : no_autostart on cmdline [orchestrator]
+
+    DOMAINS_CREATED --> CHANNELS_UP : vchan servers up (1 s loop), DomU setup-vchan [tunnel manager / DomU]
+
+    CHANNELS_UP --> DISCOVERY : controllers publish component states [controllers]
+
+    DISCOVERY --> OPERATIONAL : components ready and gui_ready, splash off [product GUI, core controller]
+
+    OPERATIONAL --> DEGRADED : component error or domain death [failing component / Xen]
+    DEGRADED --> OPERATIONAL : self-heal, domid cache 1 s, SFTP re-pin 5 s [tunnel manager, SFTP supervisor]
+    DEGRADED --> DOMAIN_RESTARTING : forced restart of hung domain [product API, core controller]
+
+    OPERATIONAL --> DOMAIN_RESTARTING : restart_domain, CORE self-restart or forced [product API, core controller]
+    DOMAIN_RESTARTING --> OPERATIONAL : domain back, domids converged [tunnel manager, SFTP supervisor, controllers]
+    DOMAIN_RESTARTING --> DEGRADED : reboot timeout, domain not back [reboot-domain.sh]
+
+    OPERATIONAL --> SHUTTING_DOWN : workflow/shutdown accepted [product API, core controller]
+    DEGRADED --> SHUTTING_DOWN : workflow/shutdown accepted [product API, core controller]
+    SHUTTING_DOWN --> OFF : 5 s grace, then poweroff [core controller]
+
+    MAINTENANCE --> OFF : poweroff [operator]
+
+    note right of BOOT
+        DEBUG=ON (kernel cmdline): the debug TTY bridge is enabled
+        and the vchan tunnel manager runs in debug mode
+    end note

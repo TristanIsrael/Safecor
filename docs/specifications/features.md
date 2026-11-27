@@ -148,7 +148,7 @@ are the **inputs** the operator console will let a human define.
 |---|----------|-------------|-------|----------|
 | T1 | Product topology | `/etc/safecor/topology.json` → `System.get_topology()` | product name, languages, default language, screen, USB, PCI, business domains, hardware configurations | ✅ (served at that path + parsed → `Environment`) |
 | T2 | System UUID | sysfs `product_uuid` | identity | ✅ (fake `open`) |
-| T3 | Screen size / rotation | xenstore `screen_size`/`screen_rotation` + fb0 | display geometry | ✅ (fake `subprocess.run`/`open`) |
+| T3 | Screen size / rotation | xenstore `screen_size`/`screen_rotation` + fb0 | display geometry | ✅ (in-memory xenstore stub + fake `open`) |
 | T4 | CPU count / affinity | libvirt | compute | ✅ (fake `LibvirtHelper`, hard-coded domains) |
 | T5 | Memory / freq / load | `psutil` | resources | ✅ (fake `psutil`) |
 | T6 | Boot time / uptime | `psutil.boot_time` | elapsed | ✅ (fake `psutil`) |
@@ -167,7 +167,7 @@ Runtime topology access over MQTT, used by DomUs to discover their own configura
 | # | Method | Notes |
 |---|--------|-------|
 | TP2 | `System.get_current_domid()` | Returns the current domain's Xen domid (cached, non-blocking) |
-| TP3 | `System.get_domain_domid(name)` | Single non-blocking xenstore read for another domain's domid |
+| TP3 | `XenStore().read("system", "domids/<name>")` | Single non-blocking xenstore read for another domain's domid (the Dom0 domid cache, ADR 0006) |
 | TP4 | `System.is_usb_mountpoint_ready()` | True if `/media/usb` is mounted (non-blocking) |
 | TP5 | `System.on_usb_mountpoint_ready(callback)` | Event-driven notification when the mount becomes ready |
 
@@ -178,6 +178,7 @@ Runtime topology access over MQTT, used by DomUs to discover their own configura
 | NFR-1 | Functions called from MQTT callbacks must be **non-blocking**. | All `safecor` library API methods invoked in the MQTT event loop (callbacks, message handlers). | A blocking call (sleep, polling, I/O with timeout) in a callback stalls all other message processing. Long-running or retry logic must be delegated to the caller (e.g., a dedicated thread/task like `DirectMountManager`). |
 | NFR-2 | Functions called from MQTT callbacks must have **error handling** (no unhandled exceptions). | All `safecor` library API methods invoked in the MQTT event loop. | An unhandled exception in a callback can crash the MQTT handler or leave the system in an inconsistent state. All public API methods must catch and log exceptions, returning a safe default or raising a typed error. |
 | NFR-3 | **Synchronization by messages, not by polling.** Cross-component and cross-domain readiness is established **only** through the **messages and notifications of the MQTT bus** (component states on `system/discover/components`, events). **Polling and retry loops are forbidden** to establish the readiness of a remote component. | All components that establish the readiness of a remote component over the bus. | A component **publishes its state**, the consumers **react to the notification**. A **one-shot** request/response (e.g. `my_config`, `discover_components`) is allowed to fetch the current state at subscribe time. Scope: NFR-3 concerns *cross-domain readiness over the bus*; local state checks (e.g. `System.is_usb_mountpoint_ready()` reading `/proc/mounts`) are out of scope. |
+| NFR-4 | **All xenstore I/O in Python code must go through the `XenStore` class.** No Python script (library code or packaged script) may spawn the `xenstore-read`/`xenstore-write`/`xenstore-ls`/`xenstore-chmod` CLI tools as subprocesses, nor open the `/dev/xen/xenbus` device directly. **Scope: Python code only** — shell scripts (initd, domain start scripts, hardening scripts, and the generated sshfs client script) may still use the `xenstore-*` CLI: shell cannot use a Python class, and their accesses are a fixed, auditable set of one-shot reads/writes (design rule #10 — keep that set small and stable) — converting them is out of scope. | All Python code that reads or writes xenstore (`safecor` library, packaged `.py` scripts). | A single code path (`XenStore`) = one place to fix bugs and one place to test; no subprocess spawning (latency, fragile parsing of CLI error strings); no `doas` escalation is needed (the class runs as the service user, with access granted by `set-xenstore-permissions.sh` — ADR 0006); and it unlocks watch-based event-driven consumers (`XenStore.monitor()`) instead of polling. |
 
 ---
 

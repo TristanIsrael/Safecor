@@ -20,6 +20,7 @@ import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
+from typing import Optional
 
 from . import (
     ComponentState,
@@ -29,7 +30,6 @@ from . import (
     MqttClient,
     MqttHelper,
     ResponseFactory,
-    System,
     Topics,
 )
 
@@ -48,6 +48,12 @@ except ImportError:
     print(
         "Importing ControleurVmSysUsb without inputs monitoring nor benchmarking capacity"
     )
+
+try:
+    from . import XenStore
+except ImportError:
+    XenStore = None
+    print("SysUsbController cannot use XenStore")
 
 
 ####
@@ -1060,6 +1066,25 @@ class SysUsbController:
         except OSError:
             pass  # best-effort: never break the controller
 
+    def __read_cached_domid(self, name: str) -> Optional[int]:
+        """Reads a domain's domid from the Dom0 convenience cache.
+
+        The cache at ``/local/domain/system/domids/<name>`` is the
+        authoritative domid source for a DomU (ADR 0006), read through the
+        XenStore class (no CLI subprocess).  Non-blocking (NFR-1 compliant):
+        a single read, ``None`` when the entry is not present or XenStore is
+        unavailable.
+        """
+        if XenStore is None:
+            return None
+        try:
+            raw = XenStore().read("system", f"domids/{name}")
+            if raw:
+                return int(raw.strip())
+        except Exception:
+            pass
+        return None
+
     def __wait_for_domid(
         self, name: str, timeout: float = 60.0, interval: float = 1.0
     ) -> int | None:
@@ -1070,7 +1095,7 @@ class SysUsbController:
         """
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            domid = System().get_domain_domid(name)
+            domid = self.__read_cached_domid(name)
             if domid is not None:
                 return domid
             time.sleep(interval)
@@ -1234,8 +1259,8 @@ class SysUsbController:
         """Reads the live domids from the Dom0 cache and updates the cache dict.
 
         The authoritative domid source for a DomU (sys-usb) is the Dom0 cache at
-        ``/local/domain/system/domids/<name>``, readable via
-        ``System().get_domain_domid()``.  A DomU cannot read sibling domains'
+        ``/local/domain/system/domids/<name>``, read through the XenStore class
+        (see ``__read_cached_domid``).  A DomU cannot read sibling domains'
         ``/local/domain/<N>/name`` (per-domain xenstore grants), so the Xen tree
         scan used on Dom0 (create-vchan-tunnels.py, ADR 0006) is not available
         here.
@@ -1248,7 +1273,7 @@ class SysUsbController:
         if pairs is None:
             return
         for name, _ in pairs:
-            domid = System().get_domain_domid(name)
+            domid = self.__read_cached_domid(name)
             current = self.__channels_domids.get(name)
             if domid is not None and domid != current:
                 self.__channels_domids[name] = domid

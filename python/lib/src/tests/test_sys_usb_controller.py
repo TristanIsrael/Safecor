@@ -553,9 +553,9 @@ class TestStartDirectMountChannels(unittest.TestCase):
                 "_SysUsbController__query_direct_mount_domains",
                 return_value=[("app1", MountMode.RW)],
             ),
-            mock.patch("safecor._sys_usb_controller.System") as system,
+            mock.patch("safecor._sys_usb_controller.XenStore") as xs,
         ):
-            system.return_value.get_domain_domid.return_value = None
+            xs.return_value.read.return_value = None
             self.controller._SysUsbController__start_direct_mount_channels()
         self.assertEqual(
             self.controller._SysUsbController__direct_mount_state,
@@ -571,12 +571,12 @@ class TestStartDirectMountChannels(unittest.TestCase):
                 "_SysUsbController__query_direct_mount_domains",
                 return_value=[("app1", MountMode.RW), ("app2", MountMode.RO)],
             ),
-            mock.patch("safecor._sys_usb_controller.System") as system,
+            mock.patch("safecor._sys_usb_controller.XenStore") as xs,
             mock.patch("os.path.exists", return_value=True),
             mock.patch("pathlib.Path.read_text", return_value="9999\n"),
             mock.patch("time.sleep"),
         ):
-            system.return_value.get_domain_domid.side_effect = [5, 6]
+            xs.return_value.read.side_effect = ["5", "6"]
             self.controller._SysUsbController__start_direct_mount_channels()
         self.assertEqual(
             self.controller._SysUsbController__direct_mount_state,
@@ -616,9 +616,9 @@ class TestStartDirectMountChannels(unittest.TestCase):
                 "_SysUsbController__query_direct_mount_domains",
                 return_value=[("app1", MountMode.RW)],
             ),
-            mock.patch("safecor._sys_usb_controller.System") as system,
+            mock.patch("safecor._sys_usb_controller.XenStore") as xs,
         ):
-            system.return_value.get_domain_domid.return_value = 5
+            xs.return_value.read.return_value = "5"
             self.controller._SysUsbController__start_direct_mount_channels()
         self.assertEqual(
             self.controller._SysUsbController__direct_mount_state,
@@ -999,19 +999,19 @@ class TestChannelSupervisor(unittest.TestCase):
 
     # --- __update_cached_domids ----------------------------------------
 
-    def test_update_cached_domids_reads_from_system(self):
-        """__update_cached_domids calls System().get_domain_domid()."""
+    def test_update_cached_domids_reads_via_xenstore(self):
+        """__update_cached_domids reads the Dom0 cache via XenStore()."""
         with (
             mock.patch.object(
                 self.controller,
                 "_SysUsbController__query_direct_mount_domains",
                 return_value=[("sys-usb", MountMode.RW)],
             ),
-            mock.patch.object(suc.System, "get_domain_domid") as get_domid,
+            mock.patch.object(suc, "XenStore") as xs,
         ):
-            get_domid.return_value = 42
+            xs.return_value.read.return_value = "42"
             self.controller._SysUsbController__update_cached_domids()
-        get_domid.assert_called_once_with("sys-usb")
+        xs.return_value.read.assert_called_once_with("system", "domids/sys-usb")
         self.assertEqual(
             self.controller._SysUsbController__channels_domids,
             {"sys-usb": 42},
@@ -1026,9 +1026,9 @@ class TestChannelSupervisor(unittest.TestCase):
                 "_SysUsbController__query_direct_mount_domains",
                 return_value=[("sys-usb", MountMode.RW)],
             ),
-            mock.patch.object(suc.System, "get_domain_domid") as get_domid,
+            mock.patch.object(suc, "XenStore") as xs,
         ):
-            get_domid.return_value = None
+            xs.return_value.read.return_value = None
             self.controller._SysUsbController__update_cached_domids()
         # Value unchanged.
         self.assertEqual(
@@ -1045,9 +1045,9 @@ class TestChannelSupervisor(unittest.TestCase):
                 "_SysUsbController__query_direct_mount_domains",
                 return_value=[("sys-usb", MountMode.RW)],
             ),
-            mock.patch.object(suc.System, "get_domain_domid") as get_domid,
+            mock.patch.object(suc, "XenStore") as xs,
         ):
-            get_domid.return_value = 20
+            xs.return_value.read.return_value = "20"
             self.controller._SysUsbController__update_cached_domids()
         self.assertEqual(
             self.controller._SysUsbController__channels_domids,
@@ -1063,9 +1063,9 @@ class TestChannelSupervisor(unittest.TestCase):
                 "_SysUsbController__query_direct_mount_domains",
                 return_value=[("sys-usb", MountMode.RW)],
             ),
-            mock.patch.object(suc.System, "get_domain_domid") as get_domid,
+            mock.patch.object(suc, "XenStore") as xs,
         ):
-            get_domid.return_value = 10
+            xs.return_value.read.return_value = "10"
             self.controller._SysUsbController__update_cached_domids()
         self.assertEqual(
             self.controller._SysUsbController__channels_domids,
@@ -1080,7 +1080,7 @@ class TestChannelSupervisor(unittest.TestCase):
                 "_SysUsbController__query_direct_mount_domains",
                 return_value=[],
             ),
-            mock.patch.object(suc.System, "get_domain_domid"),
+            mock.patch.object(suc, "XenStore"),
         ):
             self.controller._SysUsbController__update_cached_domids()
         self.assertEqual(self.controller._SysUsbController__channels_domids, {})
